@@ -1,0 +1,24 @@
+{
+  "name": "dagex-desktop",
+  "version": "1.4.0",
+  "description": "DaGEx: Standalone desktop application for DataLake Entity Graph Explorer",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --config builder-config.json"
+  },
+  "keywords": [
+    "electron",
+    "knowledge-graph",
+    "desktop-app"
+  ],
+  "author": "Antigravity",
+  "license": "MIT",
+  "dependencies": {
+    "wait-on": "^7.2.0"
+  },
+  "devDependencies": {
+    "electron": "^30.0.0",
+    "electron-builder": "^24.13.3"
+  }
+}

@@ -1,0 +1,206 @@
+'use client';
+
+import { useState, useCallback, useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import DropZone from '@/components/upload/DropZone';
+import FileList from '@/components/upload/FileList';
+import Header from '@/components/layout/Header';
+import StatusBar from '@/components/layout/StatusBar';
+import { useUpload } from '@/hooks/useUpload';
+import { useUploadStore } from '@/store/uploadStore';
+import Button from '@/components/ui/Button';
+export default function HomeClient() {
+  const router = useRouter();
+  const { uploadFiles, isUploading } = useUpload();
+  const { files, doneCount, failedCount } = useUploadStore();
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
+
+  const handleDrop = useCallback(
+    async (accepted: File[]) => {
+      await uploadFiles(accepted);
+    },
+    [uploadFiles]
+  );
+
+  const canExplore = mounted && doneCount() > 0;
+
+  return (
+    <div
+      className="home-layout"
+      style={{
+        minHeight: '100vh',
+        display: 'flex',
+        flexDirection: 'column',
+        background: 'var(--bg-base)',
+      }}
+    >
+      <Header />
+
+      <main
+        className="home-main grid grid-cols-1 md:grid-cols-2 overflow-y-auto md:overflow-hidden"
+        style={{
+          flex: 1,
+          gap: '1px',
+          background: 'var(--color-border)',
+        }}
+      >
+        {/* Left: Drop Zone */}
+        <section
+          className="home-left"
+          style={{
+            background: 'var(--bg-base)',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center',
+            justifyContent: 'center',
+            padding: 'clamp(1.5rem, 4vw, 5rem)',
+            position: 'relative',
+          }}
+        >
+          <div className="home-hero" style={{ width: '100%', maxWidth: '540px', position: 'relative' }}>
+            <p
+              className="home-kicker"
+              style={{
+                fontFamily: 'var(--font-display)',
+                fontSize: '0.75rem',
+                letterSpacing: '0.04em',
+                color: 'var(--color-primary)',
+                marginBottom: '1.25rem',
+                fontWeight: 500,
+              }}
+            >
+              Data Graph Explorer
+            </p>
+            <h1
+              className="home-title"
+              style={{
+                fontSize: '1.75rem',
+                fontWeight: 500,
+                color: 'var(--text-primary)',
+                marginBottom: '1rem',
+                lineHeight: 1.25,
+              }}
+            >
+              Upload files.
+              <br />
+              <span style={{ color: 'var(--text-secondary)' }}>Discover entities.</span>
+            </h1>
+            <p
+              className="home-copy"
+              style={{
+                color: 'var(--text-secondary)',
+                fontSize: '0.875rem',
+                marginBottom: '2rem',
+                lineHeight: 1.7,
+              }}
+            >
+              Drop any file or click to upload ...
+            </p>
+
+            <DropZone onDrop={handleDrop} isLoading={isUploading} />
+
+            {canExplore && (
+              <div style={{ marginTop: '2.5rem' }}>
+                <Button
+                  id="explore-graph-btn"
+                  variant="primary"
+                  size="lg"
+                  fullWidth
+                  onClick={() => router.push('/graph')}
+                  style={{ fontFamily: 'var(--font-display)' }}
+                >
+                  Explore Graph →
+                </Button>
+                <p
+                  className="home-queue-head"
+                  style={{
+                    textAlign: 'center',
+                    fontSize: '0.75rem',
+                    color: 'var(--text-muted)',
+                    marginTop: '1rem',
+                  }}
+                >
+                  {mounted ? doneCount() : 0} file{(mounted ? doneCount() : 0) !== 1 ? 's' : ''} processed
+                  {mounted && failedCount() > 0 && `, ${failedCount()} failed`}
+                </p>
+              </div>
+            )}
+          </div>
+        </section>
+
+        {/* Right: File List */}
+        <section
+          className="home-right flex flex-col min-h-[380px] md:min-h-0"
+          style={{
+            background: 'var(--bg-surface)',
+            display: 'flex',
+            flexDirection: 'column',
+            overflow: 'hidden',
+          }}
+        >
+          <div
+            style={{
+              padding: '1.5rem clamp(1rem, 4vw, 3rem)',
+              borderBottom: '1px solid var(--border)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+            }}
+          >
+            <h2 className="home-queue-label" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
+              Processing Queue
+            </h2>
+            <span
+              className="home-queue-count"
+              style={{
+                fontSize: '0.75rem',
+                color: 'var(--text-muted)',
+                fontFamily: 'var(--font-mono)',
+              }}
+            >
+              {mounted ? files.length : 0} file{(mounted ? files.length : 0) !== 1 ? 's' : ''}
+            </span>
+          </div>
+          <div style={{ flex: 1, overflow: 'auto' }}>
+            {mounted ? <FileList /> : (
+              <div
+                style={{
+                  height: '100%',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '1.5rem',
+                  color: 'var(--text-muted)',
+                }}
+              >
+                <svg
+                  width="36"
+                  height="36"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1"
+                  opacity={0.4}
+                >
+                  <rect x="3" y="3" width="18" height="18" rx="2" />
+                  <line x1="9" y1="9" x2="15" y2="9" />
+                  <line x1="9" y1="12" x2="15" y2="12" />
+                  <line x1="9" y1="15" x2="12" y2="15" />
+                </svg>
+                <p style={{ fontSize: '0.8125rem' }}>No files yet</p>
+                <p style={{ fontSize: '0.7rem' }}>Drop files on the left to begin</p>
+              </div>
+            )}
+          </div>
+        </section>
+      </main>
+
+      <StatusBar />
+    </div>
+  );
+}

@@ -1,0 +1,34 @@
+import re
+import unicodedata
+from models.schemas import EntityType
+
+_ADDRESS_ABBREVIATIONS: dict[str, str] = {
+    r"\brte\b": "route",
+    r"\bave\b": "avenue",
+    r"\brd\b": "road",
+    r"\bblvd\b": "boulevard",
+    r"\bdr\b": "drive",
+    r"\bln\b": "lane",
+    r"\bct\b": "court",
+    r"\bpl\b": "place",
+    r"\brf\b": "route forestière",
+    r"\bst\b": "street",
+}
+
+def canonicalize(text: str, entity_type: EntityType) -> str:
+    """
+    Normalize an entity string to a stable canonical form.
+    """
+    text = text.lower()
+    text = unicodedata.normalize("NFC", text)
+    text = re.sub(r"^[\s\W]+|[\s\W]+$", "", text)
+    text = re.sub(r"\s+", " ", text).strip()
+
+    if not text:
+        return ""
+
+    if entity_type == EntityType.ADDRESS:
+        for abbr, full in _ADDRESS_ABBREVIATIONS.items():
+            text = re.sub(abbr, full, text)
+
+    return text[:500]

@@ -1,0 +1,132 @@
+generator client {
+  provider        = "prisma-client-js"
+  binaryTargets   = ["native"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+// ─── Session ──────────────────────────────────────────────────────────────────
+
+model Session {
+  id             String   @id @default(uuid())
+  createdAt      DateTime @default(now())
+  expiresAt      DateTime
+  files          File[]
+  windowSize     Int      @default(400)
+  minConnections Int      @default(2)
+  minOccurrences Int      @default(2)
+  minEdgeWeight  Float    @default(0.0)
+
+  @@map("sessions")
+}
+
+// ─── File ─────────────────────────────────────────────────────────────────────
+
+model File {
+  id           String       @id @default(uuid())
+  sessionId    String
+  session      Session      @relation(fields: [sessionId], references: [id], onDelete: Cascade)
+  originalName String
+  storagePath  String       @unique
+  mimeType     String
+  sizeBytes    BigInt
+  status       String       @default("PENDING")
+  errorMessage String?
+  uploadedAt   DateTime     @default(now())
+  processedAt  DateTime?
+  originalCreatedAt DateTime?
+  occurrences  Occurrence[]
+  neighborhoods EntityNeighborhood[]
+  emails       Email[]
+
+  @@index([sessionId])
+  @@index([status])
+  @@map("files")
+}
+
+// ─── Entity ───────────────────────────────────────────────────────────────────
+
+model Entity {
+  id          String       @id @default(uuid())
+  canonical   String
+  displayName String
+  type        String
+  metadata    String?
+  createdAt   DateTime     @default(now())
+  occurrences Occurrence[]
+  sourceNeighborhoods EntityNeighborhood[] @relation("NeighborhoodSource")
+  targetNeighborhoods EntityNeighborhood[] @relation("NeighborhoodTarget")
+
+  @@unique([canonical, type])
+  @@map("entities")
+}
+
+// ─── Occurrence ───────────────────────────────────────────────────────────────
+
+model Occurrence {
+  id         String  @id @default(uuid())
+  entityId   String
+  entity     Entity  @relation(fields: [entityId], references: [id], onDelete: Cascade)
+  fileId     String
+  file       File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  count      Int     @default(1)
+  excerpts   String?
+  
+
+  @@unique([fileId, entityId])
+  @@index([fileId])
+  @@index([entityId])
+  @@map("occurrences")
+}
+
+// ─── Entity Neighborhoods ───────────────────────────────────────────────────
+
+model EntityNeighborhood {
+  id             String   @id @default(uuid())
+  fileId         String
+  file           File     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  sourceEntityId String
+  sourceEntity   Entity   @relation("NeighborhoodSource", fields: [sourceEntityId], references: [id], onDelete: Cascade)
+  targetEntityId String
+  targetEntity   Entity   @relation("NeighborhoodTarget", fields: [targetEntityId], references: [id], onDelete: Cascade)
+  weight         Float
+  distance       Int
+  snippet        String
+  sourceOffset   Int
+  targetOffset   Int
+  createdAt      DateTime @default(now())
+
+  @@unique([fileId, sourceEntityId, targetEntityId])
+  @@index([fileId])
+  @@index([sourceEntityId])
+  @@index([targetEntityId])
+  @@map("entity_neighborhoods")
+}
+
+// ─── Email ───────────────────────────────────────────────────────────────────
+
+model Email {
+  id           String    @id @default(uuid())
+  fileId       String?
+  file         File?     @relation(fields: [fileId], references: [id], onDelete: Cascade)
+  messageId    String    @unique
+  inReplyTo    String?
+  references   String?
+  subject      String
+  from         String
+  to           String
+  cc           String?
+  date         DateTime?
+  body         String
+  attachments  String?
+  createdAt    DateTime  @default(now())
+
+  @@index([fileId])
+  @@index([from])
+  @@index([inReplyTo])
+  @@map("emails")
+}
+

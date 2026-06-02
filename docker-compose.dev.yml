@@ -1,0 +1,21 @@
+services:
+  web:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+    environment:
+      NODE_ENV: development
+      CHOKIDAR_USEPOLLING: 'true'
+      WATCHPACK_POLLING: 'true'
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./apps/web:/app
+      - /app/node_modules
+      - /app/.next
+    command: sh -c "npx prisma generate && npx prisma migrate deploy && npm run dev"
+
+  nlp:
+    volumes:
+      - ./data/uploads:/app/uploads:ro
+      - ./apps/nlp-service:/app
+    command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude "uploads/*"

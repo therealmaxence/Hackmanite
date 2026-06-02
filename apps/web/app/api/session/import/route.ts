@@ -353,7 +353,7 @@ export async function POST(req: NextRequest) {
         emailsRestoredCount: emailsToCreate.length,
       };
     }, {
-      timeout: 300000, // 5 min interactive transaction timeout for large graphs (10k+ nodes, 30k+ edges)
+      timeout: 1800000, // 30 min interactive transaction timeout
     });
 
     // 2. Set window size in Redis

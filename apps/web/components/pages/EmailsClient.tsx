@@ -5,6 +5,7 @@ import useSWR from 'swr';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Spinner from '@/components/ui/Spinner';
+import StatsPanelLoader from '@/components/stats/StatsPanelLoader';
 import { useUploadStore } from '@/store/uploadStore';
 
 import { EmailNodeData, EmailStats, LayoutType, ActiveTab } from '@/components/emails/types';
@@ -103,9 +104,10 @@ export default function EmailsClient() {
     return (
       <div style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
         <Header />
-        <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1rem' }}>
-          <Spinner size={32} />
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>Loading email thread database…</p>
+        <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '2rem' }}>
+          <div style={{ width: '100%', maxWidth: '540px' }}>
+            <StatsPanelLoader title="Loading Email Thread Database" duration={3500} />
+          </div>
         </div>
       </div>
     );

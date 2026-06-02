@@ -120,6 +120,13 @@ export const cytoscapeStylesheet = [
     },
   },
   {
+    selector: "node.hide-label",
+    style: {
+      label: "",
+      "text-outline-width": 0,
+    },
+  },
+  {
     selector: "node:selected",
     style: {
       "border-width": 3,
@@ -132,7 +139,7 @@ export const cytoscapeStylesheet = [
     style: {
       "border-width": 3,
       "border-opacity": 1,
-      opacity: 1,
+      "opacity": 1,
     },
   },
   {
@@ -147,7 +154,7 @@ export const cytoscapeStylesheet = [
       width: "mapData(weight, 0, 1, 1, 5)",
       "line-color": "#3a0f25",
       opacity: 0.75,
-      "curve-style": "bezier" as const,
+      "curve-style": "haystack" as const,
     },
   },
   {

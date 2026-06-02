@@ -209,18 +209,18 @@ export async function fetchNeighborhoods(entityId: string, sessionId: string) {
 export async function syncSessionToKuzu(sessionId: string) {
   const files = await prisma.file.findMany({
     where: { sessionId, status: 'DONE' },
-    include: {
-      occurrences: {
-        include: {
-          entity: true,
-        },
-      },
-    },
+    select: { id: true },
   });
 
   if (files.length === 0) return;
 
   const fileIds = files.map((f) => f.id);
+
+  // 1. Query occurrences directly with entity details in a single flat query (avoiding nested file records)
+  const occurrences = await prisma.occurrence.findMany({
+    where: { fileId: { in: fileIds } },
+    include: { entity: true },
+  });
 
   // Group occurrences by entity
   const entityOccurrencesMap = new Map<
@@ -235,20 +235,19 @@ export async function syncSessionToKuzu(sessionId: string) {
     }
   >();
 
-  for (const file of files) {
-    for (const occurrence of file.occurrences) {
-      const entity = occurrence.entity;
-      const cur = entityOccurrencesMap.get(entity.id) ?? {
-        entity,
-        occurrences: [],
-      };
-      cur.occurrences.push({
-        file_id: file.id,
-        count: occurrence.count,
-        excerpts: occurrence.excerpts,
-      });
-      entityOccurrencesMap.set(entity.id, cur);
-    }
+  for (const occ of occurrences) {
+    const entity = occ.entity;
+    if (!entity) continue;
+    const cur = entityOccurrencesMap.get(entity.id) ?? {
+      entity,
+      occurrences: [],
+    };
+    cur.occurrences.push({
+      file_id: occ.fileId,
+      count: occ.count,
+      excerpts: occ.excerpts,
+    });
+    entityOccurrencesMap.set(entity.id, cur);
   }
 
   const nodes = Array.from(entityOccurrencesMap.entries()).map(([entityId, val]) => ({
@@ -260,8 +259,19 @@ export async function syncSessionToKuzu(sessionId: string) {
     occurrences: val.occurrences,
   }));
 
+  // 2. Query neighborhoods selecting only required fields to bypass Prisma heavy model instantiation
   const neighborhoods = await prisma.entityNeighborhood.findMany({
     where: { fileId: { in: fileIds } },
+    select: {
+      sourceEntityId: true,
+      targetEntityId: true,
+      weight: true,
+      distance: true,
+      snippet: true,
+      sourceOffset: true,
+      targetOffset: true,
+      fileId: true,
+    },
   });
 
   const edges = neighborhoods.map((n) => ({
@@ -275,20 +285,63 @@ export async function syncSessionToKuzu(sessionId: string) {
     file_id: n.fileId,
   }));
 
-  const payload = {
-    file_ids: fileIds,
-    nodes,
-    edges,
-  };
+  console.log(
+    `[Sync] Initializing KuzuDB transaction sync for session ${sessionId}: files=${fileIds.length}, nodes=${nodes.length}, edges=${edges.length}`
+  );
 
-  const upstream = await fetch(`${NLP_URL}/graph/import`, {
+  // 3. Register file references in a single quick call
+  let upstream = await fetch(`${NLP_URL}/graph/import`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload),
+    body: JSON.stringify({
+      file_ids: fileIds,
+      nodes: [],
+      edges: [],
+    }),
   });
 
   if (!upstream.ok) {
     const text = await upstream.text();
-    throw new Error(`Failed to sync graph to KuzuDB: ${upstream.status} - ${text}`);
+    throw new Error(`Failed to sync file references to KuzuDB: ${upstream.status} - ${text}`);
   }
+
+  // 4. Batch nodes in groups of 4,000 to keep payload size small and prevent memory bloat
+  const NODE_BATCH_SIZE = 4000;
+  for (let i = 0; i < nodes.length; i += NODE_BATCH_SIZE) {
+    const batchNodes = nodes.slice(i, i + NODE_BATCH_SIZE);
+    upstream = await fetch(`${NLP_URL}/graph/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_ids: [],
+        nodes: batchNodes,
+        edges: [],
+      }),
+    });
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      throw new Error(`Failed to sync node batch (${i}-${i + NODE_BATCH_SIZE}) to KuzuDB: ${upstream.status} - ${text}`);
+    }
+  }
+
+  // 5. Batch edges in groups of 30,000 to keep JSON payloads lightweight and fast to process
+  const EDGE_BATCH_SIZE = 30000;
+  for (let i = 0; i < edges.length; i += EDGE_BATCH_SIZE) {
+    const batchEdges = edges.slice(i, i + EDGE_BATCH_SIZE);
+    upstream = await fetch(`${NLP_URL}/graph/import`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_ids: [],
+        nodes: [],
+        edges: batchEdges,
+      }),
+    });
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      throw new Error(`Failed to sync edge batch (${i}-${i + EDGE_BATCH_SIZE}) to KuzuDB: ${upstream.status} - ${text}`);
+    }
+  }
+
+  console.log(`[Sync] KuzuDB transaction sync completed successfully for session ${sessionId}`);
 }

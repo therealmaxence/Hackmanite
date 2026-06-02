@@ -257,3 +257,121 @@ def delete_file_ref(file_id: str) -> None:
             DELETE e
             """
         )
+
+
+def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> dict:
+    """
+    Bulk import file refs, entities, occurrences, and edges in a single transactional block.
+    This bypasses the catastrophic performance overhead of auto-committing after every single statement.
+    """
+    conn = get_write_conn()
+    import logging
+    logger = logging.getLogger(__name__)
+    
+    with _write_lock:
+        conn.execute("BEGIN TRANSACTION")
+        try:
+            # 1. Upsert file refs
+            for file_id in file_ids:
+                result = conn.execute(
+                    "MATCH (f:FileRef {id: $id}) RETURN f.id LIMIT 1",
+                    {"id": file_id}
+                )
+                if not result.has_next():
+                    conn.execute(
+                        "CREATE (:FileRef {id: $id})",
+                        {"id": file_id}
+                    )
+
+            # 2. Upsert entities and occurrences
+            for node in nodes:
+                node_id = node.id
+                result = conn.execute(
+                    "MATCH (e:Entity {id: $id}) RETURN e.id LIMIT 1",
+                    {"id": node_id}
+                )
+                if not result.has_next():
+                    conn.execute(
+                        """
+                        CREATE (:Entity {
+                            id: $id,
+                            canonical: $canonical,
+                            display_name: $display_name,
+                            type: $type,
+                            metadata: $metadata
+                        })
+                        """,
+                        {
+                            "id": node_id,
+                            "canonical": node.canonical[:500],
+                            "display_name": node.display_name[:500],
+                            "type": node.type,
+                            "metadata": node.metadata or "{}",
+                        },
+                    )
+
+                for occ in node.occurrences:
+                    conn.execute(
+                        """
+                        MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
+                        DELETE r
+                        """,
+                        {"eid": node_id, "fid": occ.file_id},
+                    )
+                    conn.execute(
+                        """
+                        MATCH (e:Entity {id: $eid}), (f:FileRef {id: $fid})
+                        CREATE (e)-[:OCCURS_IN {count: $count, excerpts: $excerpts}]->(f)
+                        """,
+                        {
+                            "eid": node_id,
+                            "fid": occ.file_id,
+                            "count": occ.count,
+                            "excerpts": occ.excerpts or "[]",
+                        },
+                    )
+
+            # 3. Upsert edges
+            for edge in edges:
+                src_id, tgt_id = edge.source, edge.target
+                if src_id > tgt_id:
+                    src_id, tgt_id = tgt_id, src_id
+
+                conn.execute(
+                    """
+                    MATCH (a:Entity {id: $sid}), (b:Entity {id: $tid})
+                    CREATE (a)-[:CO_OCCURS {
+                        weight: $weight,
+                        distance: $distance,
+                        snippet: $snippet,
+                        source_offset: $source_offset,
+                        target_offset: $target_offset,
+                        file_id: $file_id
+                    }]->(b)
+                    """,
+                    {
+                        "sid": src_id,
+                        "tid": tgt_id,
+                        "weight": edge.weight,
+                        "distance": edge.distance,
+                        "snippet": edge.snippet,
+                        "source_offset": edge.source_offset,
+                        "target_offset": edge.target_offset,
+                        "file_id": edge.file_id,
+                    },
+                )
+
+            conn.execute("COMMIT")
+            return {
+                "success": True,
+                "files_imported": len(file_ids),
+                "nodes_imported": len(nodes),
+                "edges_imported": len(edges),
+            }
+        except Exception as exc:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception as rb_exc:
+                logger.error("ROLLBACK failed: %s", rb_exc)
+            raise exc
+

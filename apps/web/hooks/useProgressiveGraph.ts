@@ -153,9 +153,11 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         ...newNodes.map((n) => n.id),
       ];
 
-      const edgesRes = await fetch(
-        `/api/graph/edges?nodeIds=${allKnownIds.join(',')}`
-      );
+      const edgesRes = await fetch('/api/graph/edges', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeIds: allKnownIds }),
+      });
       const edgesData = edgesRes.ok ? await edgesRes.json() : { edges: [] };
       const newEdges: GraphEdge[] = (edgesData.edges ?? []).map(
         (e: { source: string; target: string; weight: number }) => ({
@@ -234,11 +236,13 @@ export function useProgressiveGraph(): ProgressiveGraphState {
 
   const expandNode = useCallback(
     async (nodeId: string) => {
-      const loadedIds = Array.from(loadedNodeIdsRef.current).join(',');
+      const loadedIds = Array.from(loadedNodeIdsRef.current);
       try {
-        const res = await fetch(
-          `/api/graph/neighbors?nodeId=${nodeId}&loadedIds=${encodeURIComponent(loadedIds)}`
-        );
+        const res = await fetch('/api/graph/neighbors', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nodeId, loadedIds }),
+        });
         if (!res.ok) return;
         const data = await res.json();
 

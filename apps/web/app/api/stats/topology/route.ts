@@ -134,7 +134,12 @@ export async function GET(req: NextRequest) {
         : 0;
 
       let totalClustering = 0;
-      for (const nodeId of V) {
+      const nodesList = Array.from(V);
+      const clusteringSampleNodes = nodesList.length <= 500
+        ? nodesList
+        : nodesList.sort(() => 0.5 - Math.random()).slice(0, 500);
+
+      for (const nodeId of clusteringSampleNodes) {
         const neighbors = adj.get(nodeId);
         if (!neighbors || neighbors.size < 2) {
           continue;
@@ -152,31 +157,56 @@ export async function GET(req: NextRequest) {
         const possibleTriangles = (k * (k - 1)) / 2;
         totalClustering += actualTriangles / possibleTriangles;
       }
-      const avgClusteringCoefficient = totalNodesCount > 0 
-        ? totalClustering / totalNodesCount 
+      const avgClusteringCoefficient = clusteringSampleNodes.length > 0 
+        ? totalClustering / clusteringSampleNodes.length 
         : 0;
 
       let pathSum = 0;
       let pathCount = 0;
-      const nodesList = Array.from(V);
-      const sampleNodes = nodesList.length <= 500 
+      const sampleNodes = nodesList.length <= 100 
         ? nodesList 
-        : nodesList.sort(() => 0.5 - Math.random()).slice(0, 500);
+        : nodesList.sort(() => 0.5 - Math.random()).slice(0, 100);
+
+      const nodeToIndex = new Map<string, number>();
+      let indexCounter = 0;
+      for (const nodeId of V) {
+        nodeToIndex.set(nodeId, indexCounter++);
+      }
+
+      const adjIndexed = Array.from({ length: V.size }, () => [] as number[]);
+      for (const [s, neighbors] of adj.entries()) {
+        const sIdx = nodeToIndex.get(s);
+        if (sIdx === undefined) continue;
+        for (const t of neighbors) {
+          const tIdx = nodeToIndex.get(t);
+          if (tIdx !== undefined) {
+            adjIndexed[sIdx].push(tIdx);
+          }
+        }
+      }
 
       for (const startNode of sampleNodes) {
-        const dist = new Map<string, number>();
-        const queue: string[] = [startNode];
-        dist.set(startNode, 0);
+        const startIdx = nodeToIndex.get(startNode);
+        if (startIdx === undefined) continue;
 
-        while (queue.length > 0) {
-          const u = queue.shift()!;
-          const d = dist.get(u)!;
-          const neighbors = adj.get(u) || new Set<string>();
+        const dist = new Int32Array(V.size).fill(-1);
+        let queueHead = 0;
+        const queue = new Int32Array(V.size);
+        
+        queue[0] = startIdx;
+        let queueTail = 1;
+        dist[startIdx] = 0;
 
-          for (const v of neighbors) {
-            if (!dist.has(v)) {
-              dist.set(v, d + 1);
-              queue.push(v);
+        while (queueHead < queueTail) {
+          const u = queue[queueHead++];
+          const d = dist[u];
+          const neighbors = adjIndexed[u] || [];
+
+          for (let i = 0; i < neighbors.length; i++) {
+            const v = neighbors[i];
+            if (dist[v] === -1) {
+              dist[v] = d + 1;
+              queue[queueTail++] = v;
               pathSum += d + 1;
               pathCount++;
             }

@@ -6,7 +6,7 @@ services:
     ports:
       - '3000:3000'
     environment:
-      DATABASE_URL: file:/app/data/dev.db
+      DATABASE_URL: 'file:/app/data/dev.db?connection_limit=1&socket_timeout=900'
       REDIS_URL: redis://redis:6379
       NLP_SERVICE_URL: http://nlp:8000
       SESSION_SECRET: ${SESSION_SECRET}

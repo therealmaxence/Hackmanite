@@ -1,0 +1,10 @@
+kuzu_data/
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+.pytest_cache/
+build/
+dist/
+*.db
+*.log

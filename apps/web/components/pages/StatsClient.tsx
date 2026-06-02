@@ -19,6 +19,7 @@ import SimilarityHeatmap from '@/components/stats/SimilarityHeatmap';
 import BridgeEntitiesTable from '@/components/stats/BridgeEntitiesTable';
 import FileTypeGrid from '@/components/stats/FileTypeGrid';
 import { KPICard } from '@/components/stats/KPICard';
+import StatsPanelLoader from '@/components/stats/StatsPanelLoader';
 
 // Extracted Utilities
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
@@ -88,7 +89,10 @@ export default function StatsClient() {
       ? `/api/stats?sessionId=${sessionId}&types=${filters.entityTypes.join(',')}&limit=${displayLimit}`
       : null,
     fetcher,
-    { refreshInterval: 10000 }
+    { 
+      refreshInterval: 10000,
+      keepPreviousData: true
+    }
   );
 
   // 2. Topology SWR Query (Medium)
@@ -250,7 +254,7 @@ export default function StatsClient() {
                       setSelectedCell={setSelectedCell}
                     />
                   ) : (
-                    <PanelLoader message="Computing Jaccard overlap matrix..." />
+                    <StatsPanelLoader title="Jaccard Overlap Matrix" duration={3500} />
                   )}
                 </div>
 
@@ -259,7 +263,7 @@ export default function StatsClient() {
                   {bridgesData ? (
                     <BridgeEntitiesTable bridgeEntities={bridgesData.bridgeEntities} />
                   ) : (
-                    <PanelLoader message="Discovering bridge centralities..." />
+                    <StatsPanelLoader title="Bridge Centralities" duration={5500} />
                   )}
                 </div>
               </div>

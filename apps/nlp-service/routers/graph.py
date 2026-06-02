@@ -96,59 +96,40 @@ class ImportGraphRequest(BaseModel):
     edges: list[EdgeIn]
 
 
+class NodeCountPostRequest(BaseModel):
+    file_ids: list[str]
+
+
+class NodesPostRequest(BaseModel):
+    file_ids: list[str]
+    limit: Optional[int] = 50
+    offset: Optional[int] = 0
+    types: Optional[str] = None
+
+
+class EdgesPostRequest(BaseModel):
+    node_ids: list[str]
+
+
+class NeighborsPostRequest(BaseModel):
+    node_id: str
+    loaded_ids: Optional[list[str]] = []
+
+
 # API Endpoints
 
 @router.post("/import", response_model=dict)
 async def import_graph(req: ImportGraphRequest):
     """
-    Bulk import a graph session into KuzuDB.
+    Bulk import a graph session into KuzuDB using a single transaction.
     Called when a session is imported or synchronized from SQLite.
     """
     try:
-        # 1. Upsert file refs
-        for file_id in req.file_ids:
-            kuzu_db.upsert_file_ref(file_id)
-
-        # 2. Upsert entities and occurrences
-        for node in req.nodes:
-            kuzu_db.upsert_entity(
-                entity_id=node.id,
-                canonical=node.canonical[:500],
-                display_name=node.display_name[:500],
-                entity_type=node.type,
-                metadata=node.metadata or "{}",
-            )
-            for occ in node.occurrences:
-                kuzu_db.upsert_occurrence(
-                    entity_id=node.id,
-                    file_id=occ.file_id,
-                    count=occ.count,
-                    excerpts_json=occ.excerpts or "[]",
-                )
-
-        # 3. Upsert edges
-        for edge in req.edges:
-            src_id, tgt_id = edge.source, edge.target
-            if src_id > tgt_id:
-                src_id, tgt_id = tgt_id, src_id
-
-            kuzu_db.upsert_co_occurrence(
-                source_id=src_id,
-                target_id=tgt_id,
-                weight=edge.weight,
-                distance=edge.distance,
-                snippet=edge.snippet,
-                source_offset=edge.source_offset,
-                target_offset=edge.target_offset,
-                file_id=edge.file_id,
-            )
-
-        return {
-            "success": True,
-            "files_imported": len(req.file_ids),
-            "nodes_imported": len(req.nodes),
-            "edges_imported": len(req.edges),
-        }
+        return kuzu_db.bulk_import_transaction(
+            file_ids=req.file_ids,
+            nodes=req.nodes,
+            edges=req.edges
+        )
     except Exception as exc:
         logger.error("import_graph failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
@@ -181,6 +162,19 @@ async def node_count(
         return {"count": count}
     except Exception as exc:
         logger.error("node-count failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/node-count", response_model=dict)
+async def node_count_post(req: NodeCountPostRequest):
+    """Return total number of distinct entities across the given files (POST version)."""
+    if not req.file_ids:
+        return {"count": 0}
+    try:
+        count = kuzu_db.get_node_count(req.file_ids)
+        return {"count": count}
+    except Exception as exc:
+        logger.error("node-count post failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
 
 
@@ -226,6 +220,39 @@ async def get_nodes(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.post("/nodes", response_model=NodesResponse)
+async def get_nodes_post(req: NodesPostRequest):
+    """Return a paginated batch of top entities (POST version)."""
+    if not req.file_ids:
+        return NodesResponse(nodes=[], total=0, offset=req.offset, has_more=False)
+
+    type_filter = [t.strip() for t in req.types.split(",") if t.strip()] if req.types else None
+
+    try:
+        rows = kuzu_db.get_top_nodes(req.file_ids, limit=req.limit, offset=req.offset, type_filter=type_filter)
+        total = kuzu_db.get_node_count(req.file_ids)
+
+        nodes = [
+            NodeOut(
+                id=r["id"],
+                display_name=r["display_name"],
+                type=r["type"],
+                total_count=r["total_count"],
+                file_count=r["file_count"],
+            )
+            for r in rows
+        ]
+        return NodesResponse(
+            nodes=nodes,
+            total=total,
+            offset=req.offset,
+            has_more=(req.offset + req.limit) < total,
+        )
+    except Exception as exc:
+        logger.error("get_nodes_post failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.get("/edges", response_model=EdgesResponse)
 async def get_edges(
     node_ids: str = Query(..., description="Comma-separated entity IDs to find edges between"),
@@ -247,6 +274,21 @@ async def get_edges(
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+@router.post("/edges", response_model=EdgesResponse)
+async def get_edges_post(req: EdgesPostRequest):
+    """Return all CO_OCCURS edges where both endpoints are in the given node set (POST version)."""
+    if len(req.node_ids) < 2:
+        return EdgesResponse(edges=[])
+
+    try:
+        raw = kuzu_db.get_edges_for_nodes(req.node_ids)
+        edges = [EdgeOut(**e) for e in raw]
+        return EdgesResponse(edges=edges)
+    except Exception as exc:
+        logger.error("get_edges_post failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.get("/neighbors", response_model=NeighborsResponse)
 async def get_neighbors(
     node_id: str = Query(..., description="Entity ID to expand"),
@@ -265,6 +307,19 @@ async def get_neighbors(
         return NeighborsResponse(nodes=nodes, edges=edges)
     except Exception as exc:
         logger.error("get_neighbors failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
+@router.post("/neighbors", response_model=NeighborsResponse)
+async def get_neighbors_post(req: NeighborsPostRequest):
+    """Return 1-hop neighbors of a node that aren't already in the graph (POST version)."""
+    try:
+        new_nodes_raw, new_edges_raw = kuzu_db.get_neighbors(req.node_id, req.loaded_ids or [])
+        nodes = [NodeOut(**n) for n in new_nodes_raw]
+        edges = [EdgeOut(**e) for e in new_edges_raw]
+        return NeighborsResponse(nodes=nodes, edges=edges)
+    except Exception as exc:
+        logger.error("get_neighbors_post failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
 
 

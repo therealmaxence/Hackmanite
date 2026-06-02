@@ -20,6 +20,12 @@ export async function GET(req: NextRequest) {
     const files = await prisma.file.findMany({
       where: { sessionId },
       select: { id: true, originalName: true },
+      orderBy: {
+        occurrences: {
+          _count: 'desc',
+        },
+      },
+      take: 20,
     });
 
     const fileIds = files.map(f => f.id);

@@ -60,15 +60,18 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ nodes: [], total: 0, offset, has_more: false });
     }
 
-    // 2. Delegate the heavy aggregation to KuzuDB via the Python service
-    const params = new URLSearchParams({
-      file_ids: fileIds.join(','),
-      limit: String(limit),
-      offset: String(offset),
-      ...(types ? { types } : {}),
+    // 2. Delegate the heavy aggregation to KuzuDB via the Python service (using POST to avoid URL limits)
+    let upstream = await fetch(`${NLP_URL}/graph/nodes`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        file_ids: fileIds,
+        limit,
+        offset,
+        ...(types ? { types } : {}),
+      }),
+      cache: 'no-store',
     });
-
-    let upstream = await fetch(`${NLP_URL}/graph/nodes?${params}`, { cache: 'no-store' });
     if (!upstream.ok) {
       throw new Error(`Upstream graph service error ${upstream.status}`);
     }
@@ -85,7 +88,17 @@ export async function GET(req: NextRequest) {
         try {
           await syncSessionToKuzu(sessionId);
           // Re-fetch nodes after successful sync
-          upstream = await fetch(`${NLP_URL}/graph/nodes?${params}`, { cache: 'no-store' });
+          upstream = await fetch(`${NLP_URL}/graph/nodes`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              file_ids: fileIds,
+              limit,
+              offset,
+              ...(types ? { types } : {}),
+            }),
+            cache: 'no-store',
+          });
           if (upstream.ok) {
             data = await upstream.json();
             console.log(`[Self-healing] KuzuDB nodes successfully synchronized. Found: ${data.nodes?.length} nodes`);
@@ -119,6 +132,7 @@ export async function GET(req: NextRequest) {
     await redis.setex(cacheKey, RedisTTL.graph, JSON.stringify(response));
     return NextResponse.json(response);
   } catch (err: unknown) {
+    console.error('Graph Nodes API Error:', err);
     const msg = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(
       { error: msg, code: ErrorCodes.INTERNAL_ERROR },

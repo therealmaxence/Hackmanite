@@ -18,7 +18,8 @@ from db.writers import (
     upsert_occurrence,
     upsert_co_occurrence,
     delete_entity_occurrences,
-    delete_file_ref
+    delete_file_ref,
+    bulk_import_transaction
 )
 from db.readers import (
     get_node_count,

@@ -28,94 +28,104 @@ export async function GET(req: NextRequest) {
     let bridgeEntities: any[] = [];
 
     if (fileIds.length > 0) {
-      const occurrences = await prisma.occurrence.findMany({
-        where: { fileId: { in: fileIds } },
-        select: { entityId: true },
-      });
+      const topEntitiesRaw = await prisma.$queryRaw<any[]>`
+        SELECT o.entityId
+        FROM occurrences o
+        JOIN files f ON f.id = o.fileId
+        WHERE f.sessionId = ${sessionId}
+        GROUP BY o.entityId
+        ORDER BY SUM(o.count) DESC
+        LIMIT 250
+      `;
+      const V = new Set<string>(topEntitiesRaw.map(e => e.entityId));
 
-      const neighborhoods = await prisma.entityNeighborhood.findMany({
-        where: { fileId: { in: fileIds } },
-        select: { sourceEntityId: true, targetEntityId: true },
-      });
-
-      const V = new Set<string>();
       const edgeKeys = new Set<string>();
       const adj = new Map<string, Set<string>>();
 
-      for (const occ of occurrences) {
-        V.add(occ.entityId);
-      }
-
-      if (neighborhoods.length > 0) {
-        for (const edge of neighborhoods) {
-          const s = edge.sourceEntityId;
-          const t = edge.targetEntityId;
-          if (!V.has(s) || !V.has(t)) continue;
-          if (s === t) continue;
-
-          const first = s < t ? s : t;
-          const second = s < t ? t : s;
-          const edgeKey = `${first}:${second}`;
-
-          if (!edgeKeys.has(edgeKey)) {
-            edgeKeys.add(edgeKey);
-            if (!adj.has(s)) adj.set(s, new Set());
-            if (!adj.has(t)) adj.set(t, new Set());
-            adj.get(s)!.add(t);
-            adj.get(t)!.add(s);
-          }
-        }
-      } else if (occurrences.length > 0) {
-        // Fallback co-occurrence calculation
-        const occurrencesWithExcerpts = await prisma.occurrence.findMany({
-          where: { fileId: { in: fileIds } },
-          select: { entityId: true, fileId: true, excerpts: true },
+      if (V.size > 0) {
+        const neighborhoods = await prisma.entityNeighborhood.findMany({
+          where: {
+            fileId: { in: fileIds },
+            sourceEntityId: { in: Array.from(V) },
+            targetEntityId: { in: Array.from(V) },
+          },
+          select: { sourceEntityId: true, targetEntityId: true },
         });
 
-        const windowSizeVal = await redis.get(`session:window_size:${sessionId}`);
-        const windowSize = windowSizeVal ? parseInt(windowSizeVal, 10) : 400;
+        if (neighborhoods.length > 0) {
+          for (const edge of neighborhoods) {
+            const s = edge.sourceEntityId;
+            const t = edge.targetEntityId;
+            if (!V.has(s) || !V.has(t)) continue;
+            if (s === t) continue;
 
-        const occurrencesByFile = new Map<string, { entityId: string; offset: number }[]>();
-        for (const occurrence of occurrencesWithExcerpts) {
-          const offset = Array.isArray(occurrence.excerpts) && occurrence.excerpts.length > 0 && occurrence.excerpts[0] && typeof occurrence.excerpts[0] === 'object' && 'offset' in occurrence.excerpts[0]
-            ? Number((occurrence.excerpts[0] as { offset?: unknown }).offset ?? 0)
-            : 0;
+            const first = s < t ? s : t;
+            const second = s < t ? t : s;
+            const edgeKey = `${first}:${second}`;
 
-          const bucket = occurrencesByFile.get(occurrence.fileId) ?? [];
-          bucket.push({ entityId: occurrence.entityId, offset });
-          occurrencesByFile.set(occurrence.fileId, bucket);
-        }
+            if (!edgeKeys.has(edgeKey)) {
+              edgeKeys.add(edgeKey);
+              if (!adj.has(s)) adj.set(s, new Set());
+              if (!adj.has(t)) adj.set(t, new Set());
+              adj.get(s)!.add(t);
+              adj.get(t)!.add(s);
+            }
+          }
+        } else {
+          // Fallback co-occurrence calculation
+          const occurrencesWithExcerpts = await prisma.occurrence.findMany({
+            where: {
+              fileId: { in: fileIds },
+              entityId: { in: Array.from(V) },
+            },
+            select: { entityId: true, fileId: true, excerpts: true },
+          });
 
-        for (const fileOccurrences of Array.from(occurrencesByFile.values())) {
-          fileOccurrences.sort((a, b) => a.offset - b.offset);
+          const windowSizeVal = await redis.get(`session:window_size:${sessionId}`);
+          const windowSize = windowSizeVal ? parseInt(windowSizeVal, 10) : 400;
 
-          for (let i = 0; i < fileOccurrences.length; i += 1) {
-            const source = fileOccurrences[i];
+          const occurrencesByFile = new Map<string, { entityId: string; offset: number }[]>();
+          for (const occurrence of occurrencesWithExcerpts) {
+            const offset = Array.isArray(occurrence.excerpts) && occurrence.excerpts.length > 0 && occurrence.excerpts[0] && typeof occurrence.excerpts[0] === 'object' && 'offset' in occurrence.excerpts[0]
+              ? Number((occurrence.excerpts[0] as { offset?: unknown }).offset ?? 0)
+              : 0;
 
-            for (let j = i + 1; j < fileOccurrences.length; j += 1) {
-              const target = fileOccurrences[j];
-              const distance = target.offset - source.offset;
+            const bucket = occurrencesByFile.get(occurrence.fileId) ?? [];
+            bucket.push({ entityId: occurrence.entityId, offset });
+            occurrencesByFile.set(occurrence.fileId, bucket);
+          }
 
-              if (distance > windowSize) {
-                break;
-              }
+          for (const fileOccurrences of Array.from(occurrencesByFile.values())) {
+            fileOccurrences.sort((a, b) => a.offset - b.offset);
 
-              if (source.entityId === target.entityId) {
-                continue;
-              }
+            for (let i = 0; i < fileOccurrences.length; i += 1) {
+              const source = fileOccurrences[i];
 
-              const s = source.entityId;
-              const t = target.entityId;
-              const first = s < t ? s : t;
-              const second = s < t ? t : s;
-              const edgeKey = `${first}:${second}`;
+              for (let j = i + 1; j < fileOccurrences.length; j += 1) {
+                const target = fileOccurrences[j];
+                const distance = target.offset - source.offset;
 
-              if (!edgeKeys.has(edgeKey)) {
-                edgeKeys.add(edgeKey);
-                if (!adj.has(s)) adj.set(s, new Set());
-                if (!adj.has(t)) adj.set(t, new Set());
-                adj.get(s)!.add(t);
-                adj.get(t)!.add(s);
+                if (distance > windowSize) {
+                  break;
+                }
+
+                if (source.entityId === target.entityId) {
+                  continue;
+                }
+
+                const s = source.entityId;
+                const t = target.entityId;
+                const first = s < t ? s : t;
+                const second = s < t ? t : s;
+                const edgeKey = `${first}:${second}`;
+
+                if (!edgeKeys.has(edgeKey)) {
+                  edgeKeys.add(edgeKey);
+                  if (!adj.has(s)) adj.set(s, new Set());
+                  if (!adj.has(t)) adj.set(t, new Set());
+                  adj.get(s)!.add(t);
+                  adj.get(t)!.add(s);
+                }
               }
             }
           }

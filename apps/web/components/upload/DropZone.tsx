@@ -3,8 +3,8 @@
 import React from 'react';
 import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
-import Spinner from '@/components/ui/Spinner';
 import { getFilesFromEvent } from '@/lib/upload-utils';
+import StatsPanelLoader from '@/components/stats/StatsPanelLoader';
 
 interface DropZoneProps {
   onDrop: (files: File[]) => void;
@@ -62,10 +62,10 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
       id="dropzone"
       className="dropzone"
       style={{
-        border: `2px dashed ${borderColor}`,
+        border: isLoading ? 'none' : `2px dashed ${borderColor}`,
         borderRadius: 'var(--radius)',
         background: bgColor,
-        padding: 'clamp(1.75rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem)',
+        padding: isLoading ? '0' : 'clamp(1.75rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem)',
         textAlign: 'center',
         cursor: isLoading ? 'not-allowed' : 'pointer',
         transition: 'all var(--transition)',
@@ -75,15 +75,8 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
     >
       <input {...getInputProps()} id="file-input" />
 
-
-
       {isLoading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
-          <Spinner size={32} />
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
-            Uploading files…
-          </p>
-        </div>
+        <StatsPanelLoader title="Processing Deep Ingest Pipeline" duration={5000} />
       ) : (
         <>
           {/* Icon */}

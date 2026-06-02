@@ -34,16 +34,25 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   const renderedNodeIds = useRef<Set<string>>(new Set());
   const renderedEdgeKeys = useRef<Set<string>>(new Set());
 
-  const getLayoutConfig = (layoutName: string, nodeCount: number) => {
+  const getLayoutConfig = (layoutName: string, nodeCount: number, fitViewport = true) => {
     if (layoutName === 'cose-bilkent') {
+      if (nodeCount > 300) {
+        return {
+          name: 'cose',
+          animate: false,
+          fit: fitViewport,
+          padding: 30,
+          nodeRepulsion: 40000,
+          idealEdgeLength: 100,
+          randomize: false,
+        };
+      }
       let numIter = 2500;
       let animate = true;
-      if (nodeCount > 1000) { numIter = 400;  animate = false; }
-      else if (nodeCount > 300) { numIter = 1000; animate = false; }
-      else if (nodeCount > 100) { numIter = 1500; animate = true; }
-      return { ...cytoscapeLayoutConfig, animate, numIter };
+      if (nodeCount > 100) { numIter = 1500; animate = true; }
+      return { ...cytoscapeLayoutConfig, animate, numIter, fit: fitViewport, randomize: false };
     }
-    return { name: layoutName, animate: nodeCount < 500, animationDuration: 600, fit: true, padding: 30 };
+    return { name: layoutName, animate: nodeCount < 500, animationDuration: 600, fit: fitViewport, padding: 30 };
   };
 
   // Memoize adjacency map — recomputed only when edges change
@@ -101,7 +110,17 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
       navigator.clipboard?.writeText(d.fullLabel || d.label).catch(() => {});
     });
 
+    const handleZoom = () => {
+      if (cy.zoom() < 0.35) {
+        cy.nodes().addClass('hide-label');
+      } else {
+        cy.nodes().removeClass('hide-label');
+      }
+    };
+    cy.on('zoom', handleZoom);
+
     return () => {
+      cy.off('zoom', handleZoom);
       cy.destroy();
       cyRef.current = null;
       renderedNodeIds.current.clear();
@@ -163,29 +182,34 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
       for (const e of newEdges) {
         renderedEdgeKeys.current.add(`${e.source}|${e.target}`);
       }
+
+      cy.trigger('zoom');
     }
 
-    // Run layout only on new nodes so existing positions are preserved.
     if (newNodes.length > 0) {
-      if (nodes.length <= 200) {
-        cy.layout(getLayoutConfig(layout, nodes.length)).run();
-      } else {
-        const newNodeSelector = newNodes.map((n) => `#${n.id}`).join(', ');
-        const newCyNodes = cy.nodes(newNodeSelector);
-        const newNodeIdSet = new Set(newNodes.map((n) => n.id));
+      const newNodeSelector = newNodes.map((n) => `#${n.id}`).join(', ');
+      const newCyNodes = cy.nodes(newNodeSelector);
+      const newNodeIdSet = new Set(newNodes.map((n) => n.id));
 
-        newCyNodes.forEach((node) => {
-          const neighborNodes = node.neighborhood('node').filter(
-            (n: cytoscape.NodeSingular) => !newNodeIdSet.has(n.id())
-          );
-          if (neighborNodes.length > 0) {
-            const positions = neighborNodes.map((n: cytoscape.NodeSingular) => n.position());
-            const cx = positions.reduce((s: number, p: cytoscape.Position) => s + p.x, 0) / positions.length;
-            const cy2 = positions.reduce((s: number, p: cytoscape.Position) => s + p.y, 0) / positions.length;
-            node.position({ x: cx + (Math.random() - 0.5) * 80, y: cy2 + (Math.random() - 0.5) * 80 });
-          }
-        });
-      }
+      newCyNodes.forEach((node) => {
+        const neighborNodes = node.neighborhood('node').filter(
+          (n: cytoscape.NodeSingular) => !newNodeIdSet.has(n.id())
+        );
+        if (neighborNodes.length > 0) {
+          const positions = neighborNodes.map((n: cytoscape.NodeSingular) => n.position());
+          const cx = positions.reduce((s: number, p: cytoscape.Position) => s + p.x, 0) / positions.length;
+          const cy2 = positions.reduce((s: number, p: cytoscape.Position) => s + p.y, 0) / positions.length;
+          node.position({ x: cx + (Math.random() - 0.5) * 100, y: cy2 + (Math.random() - 0.5) * 100 });
+        } else {
+          node.position({
+            x: (Math.random() - 0.5) * 800,
+            y: (Math.random() - 0.5) * 800,
+          });
+        }
+      });
+
+      const isInitialBatch = nodes.length <= 100;
+      cy.layout(getLayoutConfig(layout, nodes.length, isInitialBatch)).run();
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [nodes, edges]);
@@ -196,9 +220,8 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     if (!cy || cy.nodes().length === 0) return;
 
     const forceRandomize = layoutTrigger > 0;
-    const config = getLayoutConfig(layout, nodes.length);
+    const config = getLayoutConfig(layout, nodes.length, true);
     if (forceRandomize && layout === 'cose-bilkent') {
-      // @ts-expect-error — override randomize for manual explode
       config.randomize = true;
     }
 
@@ -251,68 +274,72 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     const cy = cyRef.current;
     if (!cy) return;
 
-    const q = filters.searchQuery.toLowerCase();
-    const minConn = filters.minConnections ?? 0;
-    const minOcc = filters.minOccurrences ?? 2;
-    const minEdgeWeight = filters.minEdgeWeight ?? 0;
-    const hiddenComms = filters.hiddenCommunities ?? [];
+    const timer = setTimeout(() => {
+      const q = filters.searchQuery.toLowerCase();
+      const minConn = filters.minConnections ?? 0;
+      const minOcc = filters.minOccurrences ?? 2;
+      const minEdgeWeight = filters.minEdgeWeight ?? 0;
+      const hiddenComms = filters.hiddenCommunities ?? [];
 
-    const degreeActiveIds = new Set(
-      nodes
-        .filter((n) => {
-          if (n.id === selectedNodeId) return true;
-          if ((adjacency.get(n.id)?.size ?? 0) < minConn) return false;
-          if (n.totalOccurrences < minOcc) return false;
-          if (filters.crossDocumentOnly && n.fileCount <= 1) return false;
-          if (hiddenComms.includes(communityMap.get(n.id) || '')) return false;
-          return true;
-        })
-        .map((n) => n.id)
-    );
+      const degreeActiveIds = new Set(
+        nodes
+          .filter((n) => {
+            if (n.id === selectedNodeId) return true;
+            if ((adjacency.get(n.id)?.size ?? 0) < minConn) return false;
+            if (n.totalOccurrences < minOcc) return false;
+            if (filters.crossDocumentOnly && n.fileCount <= 1) return false;
+            if (hiddenComms.includes(communityMap.get(n.id) || '')) return false;
+            return true;
+          })
+          .map((n) => n.id)
+      );
 
-    const neighborhoodIds = selectedNodeId
-      ? collectHopNeighborhood(selectedNodeId, 1, adjacency)
-      : null;
+      const neighborhoodIds = selectedNodeId
+        ? collectHopNeighborhood(selectedNodeId, 1, adjacency)
+        : null;
 
-    const activeIds = neighborhoodIds
-      ? new Set(Array.from(neighborhoodIds).filter((id) => degreeActiveIds.has(id)))
-      : degreeActiveIds;
+      const activeIds = neighborhoodIds
+        ? new Set(Array.from(neighborhoodIds).filter((id) => degreeActiveIds.has(id)))
+        : degreeActiveIds;
 
-    // Batch all DOM mutations into a single Cytoscape pass
-    cy.batch(() => {
-      cy.elements().removeClass('faded highlighted');
-      const hasSelection = !!selectedNodeId;
-      const hasSearch = !!q;
+      // Batch all DOM mutations into a single Cytoscape pass
+      cy.batch(() => {
+        cy.elements().removeClass('faded highlighted');
+        const hasSelection = !!selectedNodeId;
+        const hasSearch = !!q;
 
-      cy.nodes().forEach((node) => {
-        const nodeId = node.id();
-        let isActive = activeIds.has(nodeId);
+        cy.nodes().forEach((node) => {
+          const nodeId = node.id();
+          let isActive = activeIds.has(nodeId);
 
-        if (isActive && minEdgeWeight > 0 && nodeId !== selectedNodeId) {
-          if (!node.connectedEdges().some((e) => (e.data('weight') ?? 0) >= minEdgeWeight)) {
-            isActive = false;
+          if (isActive && minEdgeWeight > 0 && nodeId !== selectedNodeId) {
+            if (!node.connectedEdges().some((e) => (e.data('weight') ?? 0) >= minEdgeWeight)) {
+              isActive = false;
+            }
           }
-        }
 
-        if (!isActive) {
-          node.addClass('faded');
-        } else if (hasSearch) {
-          const label = (node.data('fullLabel') || node.data('label') || '').toLowerCase();
-          node.addClass(label.includes(q) ? 'highlighted' : 'faded');
-        } else if (hasSelection) {
-          node.addClass('highlighted');
-        }
-      });
+          if (!isActive) {
+            node.addClass('faded');
+          } else if (hasSearch) {
+            const label = (node.data('fullLabel') || node.data('label') || '').toLowerCase();
+            node.addClass(label.includes(q) ? 'highlighted' : 'faded');
+          } else if (hasSelection) {
+            node.addClass('highlighted');
+          }
+        });
 
-      cy.edges().forEach((edge) => {
-        const weight = edge.data('weight') ?? 0;
-        if (edge.source().hasClass('faded') || edge.target().hasClass('faded') || weight < minEdgeWeight) {
-          edge.addClass('faded');
-        } else if (edge.source().hasClass('highlighted') && edge.target().hasClass('highlighted')) {
-          edge.addClass('highlighted');
-        }
+        cy.edges().forEach((edge) => {
+          const weight = edge.data('weight') ?? 0;
+          if (edge.source().hasClass('faded') || edge.target().hasClass('faded') || weight < minEdgeWeight) {
+            edge.addClass('faded');
+          } else if (edge.source().hasClass('highlighted') && edge.target().hasClass('highlighted')) {
+            edge.addClass('highlighted');
+          }
+        });
       });
-    });
+    }, 150);
+
+    return () => clearTimeout(timer);
   }, [
     filters.searchQuery, filters.minConnections, filters.minOccurrences, filters.minEdgeWeight,
     filters.crossDocumentOnly, filters.hiddenCommunities,

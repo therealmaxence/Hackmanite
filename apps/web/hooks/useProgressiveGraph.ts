@@ -118,11 +118,16 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     setIsLoadingBatch(true);
     try {
       const offset = offsetRef.current;
+      const from = filtersRef.current.dateRange.from ? filtersRef.current.dateRange.from.toISOString() : '';
+      const to = filtersRef.current.dateRange.to ? filtersRef.current.dateRange.to.toISOString() : '';
+
       const params = new URLSearchParams({
         sessionId: sid,
         limit: String(BATCH_SIZE),
         offset: String(offset),
         types: filtersRef.current.entityTypes.join(','),
+        ...(from ? { from } : {}),
+        ...(to ? { to } : {}),
       });
 
       const res = await fetch(`/api/graph/nodes?${params}`);
@@ -208,9 +213,15 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     if (!sessionIdRef.current) return;
 
     try {
-      const res = await fetch(
-        `/api/graph/count?sessionId=${sessionIdRef.current}&types=${filtersRef.current.entityTypes.join(',')}`
-      );
+      const from = filtersRef.current.dateRange.from ? filtersRef.current.dateRange.from.toISOString() : '';
+      const to = filtersRef.current.dateRange.to ? filtersRef.current.dateRange.to.toISOString() : '';
+      const params = new URLSearchParams({
+        sessionId: sessionIdRef.current!,
+        types: filtersRef.current.entityTypes.join(','),
+        ...(from ? { from } : {}),
+        ...(to ? { to } : {}),
+      });
+      const res = await fetch(`/api/graph/count?${params}`);
       const data = res.ok ? await res.json() : { count: 0 };
       setTotalCount(data.count ?? 0);
     } catch {
@@ -220,12 +231,15 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     fetchBatch();
   }, [fetchBatch]);
 
+  const fromParam = filters.dateRange.from ? filters.dateRange.from.toISOString() : '';
+  const toParam = filters.dateRange.to ? filters.dateRange.to.toISOString() : '';
+
   useEffect(() => {
     resetAndStart();
     return () => {
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     };
-  }, [sessionId, typeParam, refreshTrigger]);
+  }, [sessionId, typeParam, fromParam, toParam, refreshTrigger]);
 
   const loadMore = useCallback(() => {
     if (isLoadingBatch || !hasMore) return;

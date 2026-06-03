@@ -11,6 +11,8 @@ export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get('sessionId');
   const types = searchParams.get('types');
+  const from = searchParams.get('from');
+  const to = searchParams.get('to');
 
   if (!sessionId) {
     return NextResponse.json(
@@ -20,8 +22,22 @@ export async function GET(req: NextRequest) {
   }
 
   try {
+    const fileFrom = from ? new Date(from) : null;
+    const fileTo = to ? new Date(to) : null;
+
     const files = await prisma.file.findMany({
-      where: { sessionId, status: 'DONE' },
+      where: {
+        sessionId,
+        status: 'DONE',
+        ...(fileFrom || fileTo
+          ? {
+              originalCreatedAt: {
+                ...(fileFrom ? { gte: fileFrom } : {}),
+                ...(fileTo ? { lte: fileTo } : {}),
+              },
+            }
+          : {}),
+      },
       select: { id: true },
     });
 

@@ -18,7 +18,7 @@ const AUTO_LOAD_DELAY_MS = 300;
  * After this many auto-loaded batches we stop and show a "Load more" button
  * rather than flooding the browser with 50k nodes automatically.
  */
-const AUTO_STOP_AFTER_BATCHES = 10;
+const AUTO_STOP_AFTER_BATCHES = 1;
 
 
 export interface ProgressiveGraphState {

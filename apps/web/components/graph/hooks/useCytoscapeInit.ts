@@ -8,6 +8,8 @@ interface UseCytoscapeInitProps {
   onNodeExpand?: (nodeId: string) => void;
   renderedNodeIds: React.MutableRefObject<Set<string>>;
   renderedEdgeKeys: React.MutableRefObject<Set<string>>;
+  onNodeRightClick?: (nodeId: string, nodeType: string, nodeLabel: string, x: number, y: number) => void;
+  onCanvasTap?: () => void;
 }
 
 export function useCytoscapeInit({
@@ -15,6 +17,8 @@ export function useCytoscapeInit({
   onNodeExpand,
   renderedNodeIds,
   renderedEdgeKeys,
+  onNodeRightClick,
+  onCanvasTap,
 }: UseCytoscapeInitProps) {
   const [cy, setCy] = useState<cytoscape.Core | null>(null);
   const { selectNode, setSelectedNodeIds } = useGraphStore();
@@ -49,6 +53,7 @@ export function useCytoscapeInit({
       } else {
         selectNode(nodeId);
       }
+      onCanvasTap?.();
     });
 
     instance.on('tap', (e) => {
@@ -56,6 +61,7 @@ export function useCytoscapeInit({
         instance.elements().removeClass('faded highlighted');
         setSelectedNodeIds([]);
       }
+      onCanvasTap?.();
     });
 
     instance.on('dbltap', 'node', (e) => {
@@ -65,8 +71,21 @@ export function useCytoscapeInit({
 
     instance.on('cxttap', 'node', (e) => {
       e.preventDefault();
-      const d = e.target.data();
-      navigator.clipboard?.writeText(d.fullLabel || d.label).catch(() => {});
+      const node = e.target;
+      const nodeId = node.id();
+      const data = node.data();
+      const type = data.type;
+      const label = data.fullLabel || data.label;
+      const origEvent = e.originalEvent;
+      const x = origEvent.clientX || origEvent.pageX;
+      const y = origEvent.clientY || origEvent.pageY;
+      onNodeRightClick?.(nodeId, type, label, x, y);
+    });
+
+    instance.on('cxttap', (e) => {
+      if (e.target === instance) {
+        onCanvasTap?.();
+      }
     });
 
     const handleZoom = () => {
@@ -85,7 +104,7 @@ export function useCytoscapeInit({
       renderedNodeIds.current.clear();
       renderedEdgeKeys.current.clear();
     };
-  }, [containerRef, onNodeExpand, selectNode, setSelectedNodeIds, renderedNodeIds, renderedEdgeKeys]);
+  }, [containerRef, onNodeExpand, selectNode, setSelectedNodeIds, renderedNodeIds, renderedEdgeKeys, onNodeRightClick, onCanvasTap]);
 
   return cy;
 }

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import cytoscape from 'cytoscape';
 import { cytoscapeStylesheet } from '@/lib/graph-builder';
 import { useGraphStore } from '@/store/graphStore';
@@ -22,6 +22,14 @@ export function useCytoscapeInit({
 }: UseCytoscapeInitProps) {
   const [cy, setCy] = useState<cytoscape.Core | null>(null);
   const { selectNode, setSelectedNodeIds } = useGraphStore();
+
+  const onNodeExpandRef = useRef(onNodeExpand);
+  const onNodeRightClickRef = useRef(onNodeRightClick);
+  const onCanvasTapRef = useRef(onCanvasTap);
+
+  onNodeExpandRef.current = onNodeExpand;
+  onNodeRightClickRef.current = onNodeRightClick;
+  onCanvasTapRef.current = onCanvasTap;
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -53,7 +61,7 @@ export function useCytoscapeInit({
       } else {
         selectNode(nodeId);
       }
-      onCanvasTap?.();
+      onCanvasTapRef.current?.();
     });
 
     instance.on('tap', (e) => {
@@ -61,11 +69,11 @@ export function useCytoscapeInit({
         instance.elements().removeClass('faded highlighted');
         setSelectedNodeIds([]);
       }
-      onCanvasTap?.();
+      onCanvasTapRef.current?.();
     });
 
     instance.on('dbltap', 'node', (e) => {
-      onNodeExpand?.(e.target.id());
+      onNodeExpandRef.current?.(e.target.id());
       instance.fit(e.target.closedNeighborhood(), 60);
     });
 
@@ -79,12 +87,12 @@ export function useCytoscapeInit({
       const origEvent = e.originalEvent;
       const x = origEvent.clientX || origEvent.pageX;
       const y = origEvent.clientY || origEvent.pageY;
-      onNodeRightClick?.(nodeId, type, label, x, y);
+      onNodeRightClickRef.current?.(nodeId, type, label, x, y);
     });
 
     instance.on('cxttap', (e) => {
       if (e.target === instance) {
-        onCanvasTap?.();
+        onCanvasTapRef.current?.();
       }
     });
 
@@ -104,7 +112,7 @@ export function useCytoscapeInit({
       renderedNodeIds.current.clear();
       renderedEdgeKeys.current.clear();
     };
-  }, [containerRef, onNodeExpand, selectNode, setSelectedNodeIds, renderedNodeIds, renderedEdgeKeys, onNodeRightClick, onCanvasTap]);
+  }, [containerRef, selectNode, setSelectedNodeIds, renderedNodeIds, renderedEdgeKeys]);
 
   return cy;
 }

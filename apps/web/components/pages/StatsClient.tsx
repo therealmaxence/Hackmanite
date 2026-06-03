@@ -72,6 +72,34 @@ export default function StatsClient() {
   const { sessionId } = useUploadStore();
   const { filters, setFilter } = useGraphStore();
   const [displayLimit, setDisplayLimit] = useState(10);
+  const [showLegend, setShowLegend] = useState(true);
+
+  useEffect(() => {
+    const mainEl = document.querySelector('main');
+    if (!mainEl) return;
+
+    const checkScrollability = () => {
+      const isScrollable = mainEl.scrollHeight > mainEl.clientHeight;
+      setShowLegend(!isScrollable || mainEl.scrollTop > 10);
+    };
+
+    checkScrollability();
+
+    const observer = new ResizeObserver(checkScrollability);
+    observer.observe(mainEl);
+    window.addEventListener('resize', checkScrollability);
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener('resize', checkScrollability);
+    };
+  }, []);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    const mainEl = e.currentTarget;
+    const isScrollable = mainEl.scrollHeight > mainEl.clientHeight;
+    setShowLegend(!isScrollable || mainEl.scrollTop > 10);
+  };
 
   useEffect(() => {
     setFilter('entityTypes', ALL_ENTITY_TYPES);
@@ -124,7 +152,10 @@ export default function StatsClient() {
     <div className="min-h-screen bg-base flex flex-col">
       <Header />
 
-      <main className="flex-1 overflow-y-auto custom-scrollbar">
+      <main
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto custom-scrollbar"
+      >
         <div
           className="w-full mx-auto flex flex-col"
           style={{
@@ -251,13 +282,25 @@ export default function StatsClient() {
             </motion.div>
           ) : null}
 
-          {/* Legend Bar inside main container flow */}
-          <LegendBar
-            nodeCount={generalData?.general?.totalEntities}
-            edgeCount={generalData?.general?.totalOccurrences}
-          />
         </div>
       </main>
+
+      <div
+        style={{
+          transform: showLegend ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+        }}
+      >
+        <LegendBar
+          nodeCount={generalData?.general?.totalEntities}
+          edgeCount={generalData?.general?.totalOccurrences}
+        />
+      </div>
     </div>
   );
 }

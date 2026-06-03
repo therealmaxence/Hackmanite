@@ -8,6 +8,7 @@ interface GraphStore {
   edges: GraphEdge[];
   isLoading: boolean;
   selectedNodeId: string | null;
+  selectedNodeIds: string[];
   layout: "cose-bilkent" | "circle" | "concentric" | "breadthfirst";
   filters: GraphFilters;
   isPanelOpen: boolean;
@@ -18,6 +19,7 @@ interface GraphStore {
   setEdges: (edges: GraphEdge[]) => void;
   setLoading: (val: boolean) => void;
   selectNode: (id: string | null) => void;
+  setSelectedNodeIds: (ids: string[]) => void;
   setLayout: (l: GraphStore["layout"]) => void;
   setFilter: <K extends keyof GraphFilters>(key: K, val: GraphFilters[K]) => void;
   resetFilters: () => void;
@@ -51,6 +53,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
   edges: [],
   isLoading: false,
   selectedNodeId: null,
+  selectedNodeIds: [],
   layout: "cose-bilkent",
   filters: defaultFilters,
   isPanelOpen: false,
@@ -60,7 +63,8 @@ export const useGraphStore = create<GraphStore>((set) => ({
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
   setLoading: (val) => set({ isLoading: val }),
-  selectNode: (id) => set({ selectedNodeId: id, isPanelOpen: id !== null }),
+  selectNode: (id) => set({ selectedNodeId: id, selectedNodeIds: id ? [id] : [], isPanelOpen: id !== null }),
+  setSelectedNodeIds: (ids) => set({ selectedNodeIds: ids, selectedNodeId: ids.length === 1 ? ids[0] : null, isPanelOpen: ids.length > 0 }),
   setLayout: (l) => set({ layout: l }),
   setFilter: (key, val) =>
     set((s) => ({ filters: { ...s.filters, [key]: val } })),
@@ -70,6 +74,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
       ? set((s) => ({
           nodes: s.nodes.filter((n) => n.id !== id),
           edges: s.edges.filter((e) => e.source !== id && e.target !== id),
+          selectedNodeIds: s.selectedNodeIds.filter((x) => x !== id),
         }))
       : undefined,
   clearGraph: () =>
@@ -77,6 +82,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
       nodes: [],
       edges: [],
       selectedNodeId: null,
+      selectedNodeIds: [],
       isPanelOpen: false,
       filters: defaultFilters,
       refreshTrigger: 0,

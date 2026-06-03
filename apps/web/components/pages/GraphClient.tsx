@@ -6,6 +6,7 @@ import GraphControls from '@/components/graph/GraphControls';
 import LegendBar from '@/components/graph/LegendBar';
 import GraphCanvas from '@/components/graph/GraphCanvas';
 import NodePanel from '@/components/graph/NodePanel';
+import MultiNodePanel from '@/components/graph/MultiNodePanel';
 import Spinner from '@/components/ui/Spinner';
 import { useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
@@ -95,6 +96,7 @@ export default function GraphClient() {
           )}
 
           <NodePanel />
+          <MultiNodePanel />
         </div>
       </div>
 

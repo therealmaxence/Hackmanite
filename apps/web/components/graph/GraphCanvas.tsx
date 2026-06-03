@@ -28,7 +28,7 @@ interface GraphCanvasProps {
 export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<Core | null>(null);
-  const { selectNode, filters, selectedNodeId, layout, layoutTrigger } = useGraphStore();
+  const { selectNode, setSelectedNodeIds, filters, selectedNodeId, selectedNodeIds, layout, layoutTrigger } = useGraphStore();
 
   // Track which IDs are already in Cytoscape to enable incremental updates
   const renderedNodeIds = useRef<Set<string>>(new Set());
@@ -87,13 +87,26 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
 
     cy.on('tap', 'node', (e) => {
       const nodeId = e.target.id();
-      selectNode(nodeId);
+      const origEvent = e.originalEvent;
+      const isMulti = origEvent && (origEvent.ctrlKey || origEvent.metaKey);
+      if (isMulti) {
+        const currentSelected = useGraphStore.getState().selectedNodeIds;
+        if (currentSelected.includes(nodeId)) {
+          const nextSelected = currentSelected.filter((id) => id !== nodeId);
+          setSelectedNodeIds(nextSelected);
+        } else {
+          const nextSelected = [...currentSelected, nodeId];
+          setSelectedNodeIds(nextSelected);
+        }
+      } else {
+        selectNode(nodeId);
+      }
     });
 
     cy.on('tap', (e) => {
       if (e.target === cy) {
         cy.elements().removeClass('faded highlighted');
-        selectNode(null);
+        setSelectedNodeIds([]);
       }
     });
 
@@ -233,23 +246,32 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   useEffect(() => {
     const cy = cyRef.current;
     if (!cy) return;
-    if (selectedNodeId) {
-      const node = cy.getElementById(selectedNodeId);
-      if (node.length > 0) {
-        cy.elements().unselect();
-        node.select();
-        cy.animate({
-          center: { eles: node },
-          zoom: Math.max(cy.zoom(), 1.2)
-        }, {
-          duration: 500,
-          easing: 'ease-in-out-cubic'
+
+    const cySelectedIds = cy.nodes(':selected').map((n: cytoscape.NodeSingular) => n.id());
+    const match = cySelectedIds.length === selectedNodeIds.length && cySelectedIds.every((id) => selectedNodeIds.includes(id));
+    if (match) return;
+
+    cy.elements().unselect();
+    if (selectedNodeIds && selectedNodeIds.length > 0) {
+      cy.batch(() => {
+        selectedNodeIds.forEach((id) => {
+          cy.getElementById(id).select();
         });
+      });
+      if (selectedNodeIds.length === 1) {
+        const node = cy.getElementById(selectedNodeIds[0]);
+        if (node.length > 0) {
+          cy.animate({
+            center: { eles: node },
+            zoom: Math.max(cy.zoom(), 1.2)
+          }, {
+            duration: 500,
+            easing: 'ease-in-out-cubic'
+          });
+        }
       }
-    } else {
-      cy.elements().unselect();
     }
-  }, [selectedNodeId]);
+  }, [selectedNodeIds]);
 
   // ── Hop-neighborhood collector (for filter effects) ─────────────────────────
   const collectHopNeighborhood = useCallback(
@@ -284,7 +306,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
       const degreeActiveIds = new Set(
         nodes
           .filter((n) => {
-            if (n.id === selectedNodeId) return true;
+            if (selectedNodeIds.includes(n.id)) return true;
             if ((adjacency.get(n.id)?.size ?? 0) < minConn) return false;
             if (n.totalOccurrences < minOcc) return false;
             if (filters.crossDocumentOnly && n.fileCount <= 1) return false;
@@ -305,14 +327,19 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
       // Batch all DOM mutations into a single Cytoscape pass
       cy.batch(() => {
         cy.elements().removeClass('faded highlighted');
-        const hasSelection = !!selectedNodeId;
+        const hasSelection = selectedNodeIds.length > 0;
         const hasSearch = !!q;
 
         cy.nodes().forEach((node) => {
           const nodeId = node.id();
           let isActive = activeIds.has(nodeId);
 
-          if (isActive && minEdgeWeight > 0 && nodeId !== selectedNodeId) {
+          if (isActive && minEdgeWeight > 0 && !selectedNodeIds.includes(nodeId)) {
+            if (!node.connectedEdges().some((e) => (e.data('weight') ?? 0) >= minEdgeWeight)) {
+              isActive = false;
+            }
+          }
+          else if (isActive && minEdgeWeight > 0 && selectedNodeIds.length === 1 && nodeId !== selectedNodeId) {
             if (!node.connectedEdges().some((e) => (e.data('weight') ?? 0) >= minEdgeWeight)) {
               isActive = false;
             }
@@ -343,7 +370,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   }, [
     filters.searchQuery, filters.minConnections, filters.minOccurrences, filters.minEdgeWeight,
     filters.crossDocumentOnly, filters.hiddenCommunities,
-    selectedNodeId, adjacency, nodes, communityMap, collectHopNeighborhood,
+    selectedNodeId, selectedNodeIds, adjacency, nodes, communityMap, collectHopNeighborhood,
   ]);
 
   return (

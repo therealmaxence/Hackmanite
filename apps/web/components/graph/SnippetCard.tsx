@@ -43,9 +43,15 @@ interface SnippetCardProps {
 
 export default function SnippetCard({ snippet, index, entityDisplayName, entityType, entityId, onSelectRelated }: SnippetCardProps) {
   const isCooccurrence = snippet.relatedEntityId !== entityId;
-  const highlights = [{ term: entityDisplayName, color: ENTITY_COLORS[entityType] || 'var(--color-primary)' }];
+  
+  const primaryTypeUpper = (entityType || '').toUpperCase() as EntityType | 'FILE';
+  const primaryColor = ENTITY_COLORS[primaryTypeUpper] || 'var(--accent, #4c9ef0)';
+  const highlights = [{ term: entityDisplayName, color: primaryColor }];
+  
   if (isCooccurrence) {
-    highlights.push({ term: snippet.relatedEntityName, color: ENTITY_COLORS[snippet.relatedEntityType] || 'var(--color-text)' });
+    const relatedTypeUpper = (snippet.relatedEntityType || '').toUpperCase() as EntityType | 'FILE';
+    const relatedColor = ENTITY_COLORS[relatedTypeUpper] || 'var(--accent, #4c9ef0)';
+    highlights.push({ term: snippet.relatedEntityName, color: relatedColor });
   }
 
   return (

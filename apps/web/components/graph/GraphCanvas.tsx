@@ -42,8 +42,8 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
           animate: false,
           fit: fitViewport,
           padding: 30,
-          nodeRepulsion: 40000,
-          idealEdgeLength: 100,
+          nodeRepulsion: 150000,
+          idealEdgeLength: 300,
           randomize: false,
         };
       }

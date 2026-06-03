@@ -258,6 +258,24 @@ export async function saveExtractionToDatabase(fileId: string, result: any): Pro
   return result.entities.length;
 }
 
+async function saveExtractionWithRetry(
+  fileId: string,
+  result: any,
+  retries = 3,
+  delay = 1000
+): Promise<number> {
+  for (let attempt = 1; attempt <= retries; attempt++) {
+    try {
+      return await saveExtractionToDatabase(fileId, result);
+    } catch (error: any) {
+      logger.warn(`Database save attempt ${attempt} failed for file ${fileId}: ${error.message}`);
+      if (attempt === retries) throw error;
+      await new Promise((res) => setTimeout(res, delay * Math.pow(2, attempt - 1)));
+    }
+  }
+  throw new Error("Failed to save extraction to database");
+}
+
 export async function executeExtraction(jobId: string, data: ExtractionJobPayload, controller: AbortController) {
   const { fileId, sessionId, storagePath, mimeType, windowSize } = data;
   logger.info("Processing extraction job", { jobId, fileId });
@@ -275,8 +293,8 @@ export async function executeExtraction(jobId: string, data: ExtractionJobPayloa
   // Call Python NLP service (with HTTP retry logic)
   const result = await fetchNLPResult(fileId, storagePath, mimeType, windowSize, controller, sessionId);
 
-  // Write entities, occurrences, neighborhoods, and emails to SQLite in a single transaction
-  const entityCount = await saveExtractionToDatabase(fileId, result);
+  // Write entities, occurrences, neighborhoods, and emails to SQLite in a single transaction with retry logic
+  const entityCount = await saveExtractionWithRetry(fileId, result);
 
   await prisma.file.update({
     where: { id: fileId },

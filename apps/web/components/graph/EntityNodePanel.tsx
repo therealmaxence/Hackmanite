@@ -137,14 +137,16 @@ function FileSnippetBlock({ file, entityId, entityDisplayName, entityType, expan
   return (
     <div style={{ background: 'rgba(16,0,43,0.6)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1.25rem', marginBottom: '1rem' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.5rem' }}>
-        <span
-          onClick={() => onSelectNode(file.fileId)}
+        <a
+          href={`/api/files/${file.fileId}/download`}
+          target="_blank"
+          rel="noopener noreferrer"
           style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text)', cursor: 'pointer', textDecoration: 'underline', textDecorationColor: 'transparent', transition: 'all var(--transition-fast)' }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary)'; e.currentTarget.style.textDecorationColor = 'var(--color-primary)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.textDecorationColor = 'transparent'; }}
         >
           {file.fileName}
-        </span>
+        </a>
         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)', fontWeight: 600 }}>×{file.count}</span>
       </div>
       <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.625rem', fontSize: '0.7rem', color: 'var(--color-text-muted)', marginBottom: '1rem', fontFamily: 'var(--font-mono)', borderBottom: '1px solid var(--color-border)', paddingBottom: '0.5rem' }}>

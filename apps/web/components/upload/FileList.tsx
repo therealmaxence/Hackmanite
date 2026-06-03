@@ -7,7 +7,29 @@ import ProgressBar from '@/components/upload/ProgressBar';
 import useSWR from 'swr';
 
 function FileRow({ file }: { file: UploadedFile }) {
-  const { removeFile } = useUploadStore();
+  const { removeFile, sessionId, updateFileStatus } = useUploadStore();
+
+  const handleRetry = async (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (!sessionId) return;
+    try {
+      updateFileStatus(file.jobId, { status: 'PENDING', error: null, entityCount: 0 });
+      const res = await fetch('/api/jobs/retry', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId, fileId: file.fileId }),
+      });
+      if (!res.ok) {
+        throw new Error('Retry request failed');
+      }
+    } catch (err) {
+      console.error('Failed to retry file', err);
+      updateFileStatus(file.jobId, {
+        status: 'FAILED',
+        error: err instanceof Error ? err.message : 'Failed to trigger retry',
+      });
+    }
+  };
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -98,6 +120,36 @@ function FileRow({ file }: { file: UploadedFile }) {
             )}
           </div>
 
+          {file.status === 'FAILED' && (
+            <button
+              onClick={handleRetry}
+              aria-label={`Retry ${file.originalName}`}
+              title={`Retry ${file.originalName}`}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--text-muted)',
+                cursor: 'pointer',
+                padding: '4px',
+                borderRadius: 'var(--radius-sm)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'color var(--transition-fast)',
+              }}
+              onMouseEnter={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary)';
+              }}
+              onMouseLeave={(e) => {
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--text-muted)';
+              }}
+            >
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l.73-.73" />
+              </svg>
+            </button>
+          )}
+
           <button
             onClick={handleDelete}
             aria-label={`Remove ${file.originalName}`}
@@ -168,19 +220,34 @@ function StatusDot({ status }: { status: UploadedFile['status'] }) {
 export default function FileList() {
   const { files, sessionId, resetSession, updateFileStatus } = useUploadStore();
 
-  // 1. Identify if we have any active PENDING or PROCESSING files in the queue
   const hasActiveJobs = files.some(
     (f) => f.status === 'PENDING' || f.status === 'PROCESSING'
   );
+  const hasFailedJobs = files.some((f) => f.status === 'FAILED');
 
-  // 2. Poll only when active jobs are present, querying the entire session in one single database GET request
   const { data } = useSWR(
     hasActiveJobs && sessionId ? `/api/jobs?sessionId=${sessionId}` : null,
     (url: string) => fetch(url).then((r) => r.json()),
     { refreshInterval: 2000 }
   );
 
-  // 3. Batch update changed file records in a single run loop to prevent UI thrashes
+  useEffect(() => {
+    if (sessionId) {
+      fetch('/api/jobs/resume', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ sessionId }),
+      })
+        .then((r) => r.json())
+        .then((data) => {
+          if (data.resumedCount > 0) {
+            console.log(`Auto-resumed ${data.resumedCount} stalled files`);
+          }
+        })
+        .catch((err) => console.error('Failed to trigger auto-resume', err));
+    }
+  }, [sessionId]);
+
   useEffect(() => {
     if (data && data.jobs) {
       const now = Date.now();
@@ -188,8 +255,6 @@ export default function FileList() {
         if (f.status === 'PENDING' || f.status === 'PROCESSING') {
           const backendJob = data.jobs.find((j: any) => j.fileId === f.fileId);
           if (!backendJob) {
-            // Grace period: Wait at least 8 seconds after local insertion before flagging a file as lost.
-            // This safely bypasses stale SWR poll lists during active parallel chunk uploads.
             const age = f.addedAt ? now - f.addedAt : 10000;
             if (age >= 8000) {
               updateFileStatus(f.jobId, {
@@ -279,6 +344,53 @@ export default function FileList() {
           Queue ({files.length})
         </span>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
+          {hasFailedJobs && (
+            <button
+              onClick={async () => {
+                if (confirm('Retry all failed files?')) {
+                  try {
+                    for (const f of files) {
+                      if (f.status === 'FAILED') {
+                        updateFileStatus(f.jobId, { status: 'PENDING', error: null, entityCount: 0 });
+                      }
+                    }
+                    const res = await fetch('/api/jobs/retry', {
+                      method: 'POST',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({ sessionId, allFailed: true }),
+                    });
+                    if (!res.ok) {
+                      throw new Error('Bulk retry request failed');
+                    }
+                  } catch (err) {
+                    console.error('Failed to retry all failed files', err);
+                  }
+                }
+              }}
+              aria-label="Retry Failed"
+              style={{
+                fontSize: '0.8rem',
+                color: 'var(--color-primary)',
+                background: 'var(--bg-raised)',
+                border: '1px solid var(--border)',
+                cursor: 'pointer',
+                padding: '0 12px',
+                minHeight: 36,
+                borderRadius: 'var(--radius-sm)',
+                fontWeight: 500,
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.5rem',
+              }}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-raised)')}
+            >
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l.73-.73" />
+              </svg>
+              Retry Failed
+            </button>
+          )}
           {hasActiveJobs && (
             <button
               onClick={async () => {

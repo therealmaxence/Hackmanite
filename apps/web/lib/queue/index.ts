@@ -1,5 +1,5 @@
 import { logger } from "@/lib/logger";
-import { redis, RedisKeys, RedisTTL } from "@/lib/redis";
+import { redis, RedisKeys, RedisTTL, clearSessionGraphCache } from "@/lib/redis";
 import { ExtractionJobPayload, FileStatus, JobStatus } from "./types";
 import { memoryQueue } from "./memoryQueue";
 import {
@@ -7,6 +7,7 @@ import {
   bullQueue,
   activeControllers,
 } from "./bullQueue";
+import { prisma } from "@/lib/prisma";
 
 export * from "./types";
 
@@ -141,4 +142,129 @@ export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
       error: job.error,
     };
   }
+}
+
+export async function retryFile(fileId: string): Promise<void> {
+  const file = await prisma.file.findUnique({
+    where: { id: fileId },
+    include: { session: true },
+  });
+
+  if (!file) {
+    throw new Error(`File not found: ${fileId}`);
+  }
+
+  await prisma.$transaction([
+    prisma.occurrence.deleteMany({ where: { fileId } }),
+    prisma.entityNeighborhood.deleteMany({ where: { fileId } }),
+    prisma.email.deleteMany({ where: { fileId } }),
+    prisma.file.update({
+      where: { id: fileId },
+      data: {
+        status: "PENDING",
+        errorMessage: null,
+        processedAt: null,
+      },
+    }),
+  ]);
+
+  try {
+    const nlpUrl = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+    const res = await fetch(`${nlpUrl}/graph/file/${fileId}`, {
+      method: "DELETE",
+    });
+    if (!res.ok) {
+      logger.error(`Failed to delete file ${fileId} in KuzuDB, status: ${res.status}`);
+    }
+  } catch (err: any) {
+    logger.error("Failed to contact Python service for KuzuDB file delete:", { error: err.message });
+  }
+
+  await clearSessionGraphCache(file.sessionId);
+
+  const isSlow = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf";
+  const priority = isSlow ? 10 : 1;
+
+  await extractionQueue.add(
+    {
+      fileId: file.id,
+      sessionId: file.sessionId,
+      storagePath: file.storagePath,
+      mimeType: file.mimeType,
+      windowSize: file.session.windowSize,
+    },
+    { priority }
+  );
+
+  logger.info("File re-enqueued for retry", { fileId, originalName: file.originalName });
+}
+
+export async function resumeStuckJobs(sessionId: string): Promise<number> {
+  const stuckFiles = await prisma.file.findMany({
+    where: {
+      sessionId,
+      status: { in: ["PENDING", "PROCESSING"] },
+    },
+    include: { session: true },
+  });
+
+  if (stuckFiles.length === 0) {
+    return 0;
+  }
+
+  const active = await extractionQueue.getActive();
+  const pending = await extractionQueue.getPending();
+
+  const queuedFileIds = new Set([
+    ...active.map((j) => j.data.fileId),
+    ...pending.map((j) => j.data.fileId),
+  ]);
+
+  let resumedCount = 0;
+
+  for (const file of stuckFiles) {
+    if (!queuedFileIds.has(file.id)) {
+      if (file.status === "PROCESSING") {
+        await prisma.$transaction([
+          prisma.occurrence.deleteMany({ where: { fileId: file.id } }),
+          prisma.entityNeighborhood.deleteMany({ where: { fileId: file.id } }),
+          prisma.email.deleteMany({ where: { fileId: file.id } }),
+          prisma.file.update({
+            where: { id: file.id },
+            data: { status: "PENDING", errorMessage: null, processedAt: null },
+          }),
+        ]);
+
+        try {
+          const nlpUrl = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+          await fetch(`${nlpUrl}/graph/file/${file.id}`, { method: "DELETE" });
+        } catch (err: any) {
+          logger.error("Failed KuzuDB clean during resume:", { error: err.message });
+        }
+      }
+
+      const isSlow = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf";
+      const priority = isSlow ? 10 : 1;
+
+      await extractionQueue.add(
+        {
+          fileId: file.id,
+          sessionId: file.sessionId,
+          storagePath: file.storagePath,
+          mimeType: file.mimeType,
+          windowSize: file.session.windowSize,
+        },
+        { priority }
+      );
+
+      resumedCount++;
+      logger.info("Stuck file resumed and re-enqueued", { fileId: file.id, originalName: file.originalName });
+    }
+  }
+
+  if (resumedCount > 0) {
+    await clearSessionGraphCache(sessionId);
+  }
+
+  return resumedCount;
 }

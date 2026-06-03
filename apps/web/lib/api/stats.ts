@@ -68,7 +68,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       GROUP BY e.type
     `,
     prisma.$queryRaw<any[]>`
-      SELECT mimeType, COUNT(id) as count
+      SELECT mimeType, COUNT(id) as count, SUM(sizeBytes) as totalSize
       FROM files
       WHERE sessionId = ${sessionId}
       GROUP BY mimeType
@@ -85,6 +85,10 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
     },
     topEntities: topEntitiesRaw.map((e) => ({ ...e, count: Number(e.count) })),
     entityTypeDistribution: typeDistributionRaw.map((e) => ({ ...e, count: Number(e.count) })),
-    fileTypeDistribution: fileTypeDistributionRaw.map((e) => ({ ...e, count: Number(e.count) })),
+    fileTypeDistribution: fileTypeDistributionRaw.map((e) => ({
+      ...e,
+      count: Number(e.count),
+      totalSize: Number(e.totalSize || 0),
+    })),
   });
 }

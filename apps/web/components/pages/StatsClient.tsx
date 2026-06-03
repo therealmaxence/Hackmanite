@@ -15,10 +15,10 @@ import StatsKPIGrid from '@/components/stats/StatsKPIGrid';
 import NetworkTopologyKPIs from '@/components/stats/NetworkTopologyKPIs';
 import EntityDistributionChart from '@/components/stats/EntityDistributionChart';
 import TopEntitiesLeaderboard from '@/components/stats/TopEntitiesLeaderboard';
-import SimilarityHeatmap from '@/components/stats/SimilarityHeatmap';
 import BridgeEntitiesTable from '@/components/stats/BridgeEntitiesTable';
 import FileTypeGrid from '@/components/stats/FileTypeGrid';
 import { KPICard } from '@/components/stats/KPICard';
+import EntityFilterBar from '@/components/shared/EntityFilterBar';
 
 // Extracted Utilities
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
@@ -43,6 +43,7 @@ interface StatsData {
   fileTypeDistribution: Array<{
     mimeType: string;
     count: number;
+    totalSize: number;
   }>;
 }
 
@@ -72,11 +73,6 @@ export default function StatsClient() {
   const { sessionId } = useUploadStore();
   const { filters, setFilter } = useGraphStore();
   const [displayLimit, setDisplayLimit] = useState(10);
-  const [selectedCell, setSelectedCell] = useState<{
-    fileA: { id: string; name: string };
-    fileB: { id: string; name: string };
-    similarity: number;
-  } | null>(null);
 
   useEffect(() => {
     setFilter('entityTypes', ALL_ENTITY_TYPES);
@@ -119,15 +115,7 @@ export default function StatsClient() {
     { refreshInterval: 10000 }
   );
 
-  // 4. Similarity SWR Query (Heavy)
-  const { data: similarityData } = useSWR<{
-    files: Array<{ id: string; name: string }>;
-    matrix: number[][];
-  }>(
-    sessionId ? `/api/stats/similarity?sessionId=${sessionId}` : null,
-    fetcher,
-    { refreshInterval: 10000 }
-  );
+
 
   // Only block the whole page if the basic general statistics are not loaded yet
   const isPageLoading = generalLoading || !generalData;
@@ -161,6 +149,24 @@ export default function StatsClient() {
               </p>
             </motion.div>
           </header>
+
+          {/* Sticky Entity Filter Bar */}
+          <div
+            style={{
+              position: 'sticky',
+              top: 0,
+              zIndex: 30,
+              background: 'color-mix(in srgb, var(--bg-base) 85%, transparent)',
+              backdropFilter: 'blur(12px)',
+              borderBottom: '1px solid var(--color-border)',
+              margin: '0 -2rem',
+              padding: '0.75rem 2rem',
+              marginTop: '-2rem',
+              marginBottom: '-2.5rem',
+            }}
+          >
+            <EntityFilterBar />
+          </div>
 
           {!sessionId ? (
             <div
@@ -242,19 +248,11 @@ export default function StatsClient() {
                 />
               </div>
 
-              {/* Advanced Graph Intelligence Dashboard (Progressively Loaded) */}
+              {/* Advanced Graph Intelligence Dashboard */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12" style={{ gap: '2.5rem', width: '100%' }}>
-                {/* Jaccard Similarity Heatmap */}
+                {/* File Type Breakdown */}
                 <div className="lg:col-span-2">
-                  {similarityData ? (
-                    <SimilarityHeatmap
-                      similarityData={similarityData}
-                      selectedCell={selectedCell}
-                      setSelectedCell={setSelectedCell}
-                    />
-                  ) : (
-                    <PanelLoader message="Calculating Jaccard similarity matrix..." />
-                  )}
+                  <FileTypeGrid fileTypeDistribution={generalData.fileTypeDistribution} />
                 </div>
 
                 {/* Bridge Entities Table */}
@@ -266,9 +264,6 @@ export default function StatsClient() {
                   )}
                 </div>
               </div>
-
-              {/* Data Sources (Rendered Immediately) */}
-              <FileTypeGrid fileTypeDistribution={generalData.fileTypeDistribution} />
 
             </motion.div>
           ) : null}

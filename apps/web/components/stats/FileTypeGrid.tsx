@@ -1,8 +1,9 @@
-import { formatMimeType } from '@/lib/stats-utils';
+import { formatMimeType, formatBytes } from '@/lib/stats-utils';
 
 interface FileTypeItem {
   mimeType: string;
   count: number;
+  totalSize: number;
 }
 
 interface FileTypeGridProps {
@@ -42,7 +43,7 @@ export default function FileTypeGrid({ fileTypeDistribution }: FileTypeGridProps
                 {formatMimeType(item.mimeType)}
               </p>
               <p className="text-[10px] text-white/25 uppercase tracking-widest mt-0.5">
-                {item.count} {item.count === 1 ? 'File' : 'Files'}
+                {item.count} {item.count === 1 ? 'File' : 'Files'} ({formatBytes(item.totalSize)})
               </p>
             </div>
           </div>

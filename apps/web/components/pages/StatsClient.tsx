@@ -19,7 +19,6 @@ import SimilarityHeatmap from '@/components/stats/SimilarityHeatmap';
 import BridgeEntitiesTable from '@/components/stats/BridgeEntitiesTable';
 import FileTypeGrid from '@/components/stats/FileTypeGrid';
 import { KPICard } from '@/components/stats/KPICard';
-import StatsPanelLoader from '@/components/stats/StatsPanelLoader';
 
 // Extracted Utilities
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
@@ -254,7 +253,7 @@ export default function StatsClient() {
                       setSelectedCell={setSelectedCell}
                     />
                   ) : (
-                    <StatsPanelLoader title="Jaccard Overlap Matrix" duration={3500} />
+                    <PanelLoader message="Calculating Jaccard similarity matrix..." />
                   )}
                 </div>
 
@@ -263,7 +262,7 @@ export default function StatsClient() {
                   {bridgesData ? (
                     <BridgeEntitiesTable bridgeEntities={bridgesData.bridgeEntities} />
                   ) : (
-                    <StatsPanelLoader title="Bridge Centralities" duration={5500} />
+                    <PanelLoader message="Identifying central bridge entities..." />
                   )}
                 </div>
               </div>

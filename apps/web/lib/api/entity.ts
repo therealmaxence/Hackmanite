@@ -201,18 +201,27 @@ export async function fetchNeighborhoods(entityId: string, sessionId: string) {
   });
 }
 
+const activeSyncs = new Map<string, Promise<void>>();
+
 /**
  * Synchronizes SQLite (Prisma) session entities, occurrences, and relationships
  * into KuzuDB by posting them to the Python NLP service bulk import endpoint.
  * This enables fully self-healing dynamic sync for imported sessions.
  */
 export async function syncSessionToKuzu(sessionId: string) {
-  const files = await prisma.file.findMany({
-    where: { sessionId, status: 'DONE' },
-    select: { id: true },
-  });
+  const existing = activeSyncs.get(sessionId);
+  if (existing) {
+    console.log(`[Sync] Lock hit: sync already running for session ${sessionId}. Reusing promise.`);
+    return existing;
+  }
 
-  if (files.length === 0) return;
+  const promise = (async () => {
+    const files = await prisma.file.findMany({
+      where: { sessionId, status: 'DONE' },
+      select: { id: true },
+    });
+
+    if (files.length === 0) return;
 
   const fileIds = files.map((f) => f.id);
 
@@ -343,5 +352,13 @@ export async function syncSessionToKuzu(sessionId: string) {
     }
   }
 
-  console.log(`[Sync] KuzuDB transaction sync completed successfully for session ${sessionId}`);
+    console.log(`[Sync] KuzuDB transaction sync completed successfully for session ${sessionId}`);
+  })();
+
+  activeSyncs.set(sessionId, promise);
+  try {
+    await promise;
+  } finally {
+    activeSyncs.delete(sessionId);
+  }
 }

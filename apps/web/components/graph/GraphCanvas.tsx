@@ -71,7 +71,6 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     cy,
     nodes,
     edges,
-    layout,
     renderedNodeIds,
     renderedEdgeKeys,
   });

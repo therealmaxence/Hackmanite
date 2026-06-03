@@ -1,13 +1,11 @@
 import { useEffect } from 'react';
 import cytoscape from 'cytoscape';
 import { buildCytoscapeElements, GraphNode, GraphEdge } from '@/lib/graph-builder';
-import { getLayoutConfig } from '../utils/layoutHelpers';
 
 interface UseCytoscapeElementsProps {
   cy: cytoscape.Core | null;
   nodes: GraphNode[];
   edges: GraphEdge[];
-  layout: string;
   renderedNodeIds: React.MutableRefObject<Set<string>>;
   renderedEdgeKeys: React.MutableRefObject<Set<string>>;
 }
@@ -16,7 +14,6 @@ export function useCytoscapeElements({
   cy,
   nodes,
   edges,
-  layout,
   renderedNodeIds,
   renderedEdgeKeys,
 }: UseCytoscapeElementsProps) {
@@ -88,9 +85,6 @@ export function useCytoscapeElements({
           });
         }
       });
-
-      const isInitialBatch = nodes.length <= 100;
-      cy.layout(getLayoutConfig(layout, nodes.length, isInitialBatch)).run();
     }
-  }, [cy, nodes, edges, layout, renderedNodeIds, renderedEdgeKeys]);
+  }, [cy, nodes, edges, renderedNodeIds, renderedEdgeKeys]);
 }

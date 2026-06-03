@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import cytoscape from 'cytoscape';
 import { getLayoutConfig } from '../utils/layoutHelpers';
 
@@ -15,15 +15,42 @@ export function useCytoscapeLayout({
   layout,
   layoutTrigger,
 }: UseCytoscapeLayoutProps) {
+  const activeLayoutRef = useRef<any>(null);
+
   useEffect(() => {
     if (!cy || cy.nodes().length === 0) return;
 
+    if (activeLayoutRef.current) {
+      try {
+        activeLayoutRef.current.stop();
+      } catch (e) {}
+    }
+
     const forceRandomize = layoutTrigger > 0;
-    const config = getLayoutConfig(layout, nodesCount, true);
+    const isInitialBatch = nodesCount <= 100;
+    const config = getLayoutConfig(layout, nodesCount, isInitialBatch);
     if (forceRandomize && layout === 'cose-bilkent') {
       config.randomize = true;
     }
 
-    cy.layout(config).run();
+    const instance = cy.layout(config);
+    activeLayoutRef.current = instance;
+
+    instance.one('layoutstop', () => {
+      if (activeLayoutRef.current === instance) {
+        activeLayoutRef.current = null;
+      }
+    });
+
+    instance.run();
+
+    return () => {
+      if (activeLayoutRef.current) {
+        try {
+          activeLayoutRef.current.stop();
+        } catch (e) {}
+        activeLayoutRef.current = null;
+      }
+    };
   }, [cy, layout, layoutTrigger, nodesCount]);
 }

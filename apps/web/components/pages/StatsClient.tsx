@@ -18,7 +18,6 @@ import TopEntitiesLeaderboard from '@/components/stats/TopEntitiesLeaderboard';
 import BridgeEntitiesTable from '@/components/stats/BridgeEntitiesTable';
 import FileTypeGrid from '@/components/stats/FileTypeGrid';
 import { KPICard } from '@/components/stats/KPICard';
-import EntityFilterBar from '@/components/shared/EntityFilterBar';
 
 // Extracted Utilities
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
@@ -73,6 +72,11 @@ export default function StatsClient() {
   const { sessionId } = useUploadStore();
   const { filters, setFilter } = useGraphStore();
   const [displayLimit, setDisplayLimit] = useState(10);
+  const [showLegend, setShowLegend] = useState(false);
+
+  const handleScroll = (e: React.UIEvent<HTMLDivElement>) => {
+    setShowLegend(e.currentTarget.scrollTop > 50);
+  };
 
   useEffect(() => {
     setFilter('entityTypes', ALL_ENTITY_TYPES);
@@ -125,7 +129,10 @@ export default function StatsClient() {
     <div className="min-h-screen bg-base flex flex-col">
       <Header />
 
-      <main className="flex-1 overflow-y-auto custom-scrollbar">
+      <main
+        onScroll={handleScroll}
+        className="flex-1 overflow-y-auto custom-scrollbar"
+      >
         <div
           className="w-full mx-auto flex flex-col"
           style={{
@@ -150,23 +157,7 @@ export default function StatsClient() {
             </motion.div>
           </header>
 
-          {/* Sticky Entity Filter Bar */}
-          <div
-            style={{
-              position: 'sticky',
-              top: 0,
-              zIndex: 30,
-              background: 'color-mix(in srgb, var(--bg-base) 85%, transparent)',
-              backdropFilter: 'blur(12px)',
-              borderBottom: '1px solid var(--color-border)',
-              margin: '0 -2rem',
-              padding: '0.75rem 2rem',
-              marginTop: '-2rem',
-              marginBottom: '-2.5rem',
-            }}
-          >
-            <EntityFilterBar />
-          </div>
+
 
           {!sessionId ? (
             <div
@@ -270,10 +261,22 @@ export default function StatsClient() {
         </div>
       </main>
 
-      <LegendBar
-        nodeCount={generalData?.general?.totalEntities}
-        edgeCount={generalData?.general?.totalOccurrences}
-      />
+      <div
+        style={{
+          transform: showLegend ? 'translateY(0)' : 'translateY(100%)',
+          transition: 'transform 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+          position: 'fixed',
+          bottom: 0,
+          left: 0,
+          right: 0,
+          zIndex: 100,
+        }}
+      >
+        <LegendBar
+          nodeCount={generalData?.general?.totalEntities}
+          edgeCount={generalData?.general?.totalOccurrences}
+        />
+      </div>
     </div>
   );
 }

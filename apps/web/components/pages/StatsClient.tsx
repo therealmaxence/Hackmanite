@@ -18,6 +18,9 @@ import TopEntitiesLeaderboard from '@/components/stats/TopEntitiesLeaderboard';
 import BridgeEntitiesTable from '@/components/stats/BridgeEntitiesTable';
 import FileTypeGrid from '@/components/stats/FileTypeGrid';
 import { KPICard } from '@/components/stats/KPICard';
+import ConnectivityStats from '@/components/stats/ConnectivityStats';
+import CooccurrencePairs from '@/components/stats/CooccurrencePairs';
+import TemporalActivity from '@/components/stats/TemporalActivity';
 
 // Extracted Utilities
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
@@ -44,6 +47,23 @@ interface StatsData {
     count: number;
     totalSize: number;
   }>;
+  connectivity: {
+    sharedEntitiesCount: number;
+    uniqueEntitiesCount: number;
+  };
+  cooccurrences: Array<{
+    typeA: string;
+    typeB: string;
+    count: number;
+  }>;
+  temporal: {
+    minDate: string | null;
+    maxDate: string | null;
+    activityHours: Array<{ hour: number; count: number }>;
+  };
+  density: {
+    entitiesPerKb: number;
+  };
 }
 
 const fetcher = (url: string) => fetch(url).then((res) => {
@@ -262,14 +282,24 @@ export default function StatsClient() {
                 />
               </div>
 
-              {/* Advanced Graph Intelligence Dashboard */}
+              {/* Temporal & Linkage Analytics */}
               <div className="grid grid-cols-1 lg:grid-cols-3 gap-12" style={{ gap: '2.5rem', width: '100%' }}>
-                {/* File Type Breakdown */}
-                <div className="lg:col-span-2">
+                <TemporalActivity temporal={generalData.temporal} />
+                <ConnectivityStats
+                  connectivity={generalData.connectivity}
+                  density={generalData.density}
+                />
+              </div>
+
+              {/* Source & Structural Intelligence */}
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12" style={{ gap: '2.5rem', width: '100%' }}>
+                <div className="lg:col-span-3">
                   <FileTypeGrid fileTypeDistribution={generalData.fileTypeDistribution} />
                 </div>
+              </div>
 
-                {/* Bridge Entities Table */}
+              {/* Centrality & Neighborhood Clusters */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12" style={{ gap: '2.5rem', width: '100%' }}>
                 <div>
                   {bridgesData ? (
                     <BridgeEntitiesTable bridgeEntities={bridgesData.bridgeEntities} />
@@ -277,6 +307,7 @@ export default function StatsClient() {
                     <PanelLoader message="Identifying central bridge entities..." />
                   )}
                 </div>
+                <CooccurrencePairs cooccurrences={generalData.cooccurrences} />
               </div>
 
             </motion.div>

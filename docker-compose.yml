@@ -34,9 +34,11 @@ services:
     environment:
       REDIS_URL: redis://redis:6379
       UPLOAD_DIR: /app/uploads
+      KUZU_DB_PATH: /app/kuzu_data/kuzu.db
       LOG_LEVEL: info
     volumes:
       - ./data/uploads:/app/uploads:ro
+      - ./data/kuzu_data:/app/kuzu_data
     networks:
       - app-network
     restart: unless-stopped

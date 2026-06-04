@@ -314,8 +314,8 @@ export async function syncSessionToKuzu(sessionId: string) {
     throw new Error(`Failed to sync file references to KuzuDB: ${upstream.status} - ${text}`);
   }
 
-  // 4. Batch nodes in groups of 4,000 to keep payload size small and prevent memory bloat
-  const NODE_BATCH_SIZE = 4000;
+  // 4. Batch nodes conservatively to keep payloads and server memory pressure low.
+  const NODE_BATCH_SIZE = 1000;
   for (let i = 0; i < nodes.length; i += NODE_BATCH_SIZE) {
     const batchNodes = nodes.slice(i, i + NODE_BATCH_SIZE);
     upstream = await fetch(`${NLP_URL}/graph/import`, {
@@ -333,8 +333,8 @@ export async function syncSessionToKuzu(sessionId: string) {
     }
   }
 
-  // 5. Batch edges in groups of 30,000 to keep JSON payloads lightweight and fast to process
-  const EDGE_BATCH_SIZE = 30000;
+  // 5. Batch edges more aggressively because edge payloads are substantially larger.
+  const EDGE_BATCH_SIZE = 5000;
   for (let i = 0; i < edges.length; i += EDGE_BATCH_SIZE) {
     const batchEdges = edges.slice(i, i + EDGE_BATCH_SIZE);
     upstream = await fetch(`${NLP_URL}/graph/import`, {

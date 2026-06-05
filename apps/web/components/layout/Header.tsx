@@ -94,8 +94,11 @@ export default function Header() {
           style={{
             fontFamily: 'var(--font-display)',
             fontSize: '1.1rem',
-            fontWeight: 500,
-            color: 'var(--color-text)',
+            fontWeight: 600,
+            background: 'linear-gradient(to right, #ffffff 40%, var(--color-primary-hover) 100%)',
+            WebkitBackgroundClip: 'text',
+            WebkitTextFillColor: 'transparent',
+            display: 'inline-block',
             letterSpacing: '-0.01em',
           }}
         >

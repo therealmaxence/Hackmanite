@@ -1,6 +1,9 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   distDir: process.env.BUILD_DIR || '.next',
+  images: {
+    unoptimized: true,
+  },
   experimental: {
     serverComponentsExternalPackages: ["winston", "bull"],
   },

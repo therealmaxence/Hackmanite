@@ -1,3 +1,6 @@
+import os
+from pathlib import Path
+
 import structlog
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -40,8 +43,11 @@ async def health():
 @app.on_event("startup")
 async def startup_event():
     logger.info("NLP service starting up")
-    # Initialize KuzuDB schema (creates tables if they don't exist)
-    kuzu_db.init_schema()
+    db_path = Path(os.environ.get("KUZU_DB_PATH", "./kuzu_data/kuzu.db"))
+    if db_path.exists():
+        logger.info("KuzuDB already exists; skipping schema init", db_path=str(db_path))
+    else:
+        kuzu_db.init_schema()
     logger.info("KuzuDB ready")
 
 

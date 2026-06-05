@@ -21,11 +21,22 @@ type ExtendedSessionExportResponse = SessionExportResponse & {
   emails?: EmailData[];
 };
 
-function sanitizeFilename(name: string): string {
-  return name
+function sanitizeFilename(name: string, maxLen = 100): string {
+  const sanitized = name
     .replace(/[\\/:*?"<>|]/g, ' ')
     .replace(/\s+/g, ' ')
     .trim();
+  
+  if (sanitized.length <= maxLen) return sanitized;
+
+  const extIndex = sanitized.lastIndexOf('.');
+  if (extIndex > 0 && sanitized.length - extIndex <= 10) {
+    const ext = sanitized.substring(extIndex);
+    const base = sanitized.substring(0, extIndex);
+    return base.substring(0, maxLen - ext.length).trim() + ext;
+  }
+
+  return sanitized.substring(0, maxLen).trim();
 }
 
 function formatExcerpts(excerpts: any): string {

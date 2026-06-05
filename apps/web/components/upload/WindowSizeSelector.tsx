@@ -26,12 +26,11 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
         display: 'flex',
         flexDirection: 'column',
         gap: '1rem',
-        background: 'rgba(16, 0, 43, 0.4)',
-        border: '1px solid var(--color-border)',
+        background: 'var(--color-surface-raised)',
+        border: 'none',
         borderRadius: 'var(--radius)',
         padding: '1.5rem',
         boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
-        backdropFilter: 'blur(4px)',
       }}
     >
       {/* Slider Header */}
@@ -80,8 +79,8 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
       {/* Dynamic Snippet Visual Previewer */}
       <div
         style={{
-          background: 'rgba(0, 0, 0, 0.3)',
-          border: '1px dashed var(--color-border)',
+          background: 'var(--color-bg)',
+          border: 'none',
           borderRadius: 'var(--radius)',
           padding: '1rem',
           marginTop: '0.5rem',
@@ -97,7 +96,7 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
             fontSize: '0.55rem',
             textTransform: 'uppercase',
             color: 'var(--color-primary)',
-            background: 'rgba(123, 47, 190, 0.15)',
+            background: 'var(--color-surface-hover)',
             padding: '2px 6px',
             borderRadius: '0 0 0 var(--radius-sm)',
             fontWeight: 600,
@@ -110,7 +109,7 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
         <p style={{ lineHeight: 1.6, fontSize: '0.78rem', letterSpacing: '0.01em', margin: 0, color: 'var(--color-text-muted)' }}>
           <span
             style={{
-              background: 'rgba(123, 47, 190, 0.08)',
+              background: 'var(--color-surface)',
               color: 'var(--color-text)',
               borderBottom: '2px solid var(--color-primary)',
               transition: 'all 0.12s ease',

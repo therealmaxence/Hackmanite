@@ -27,7 +27,7 @@ function updateStatus(status, percent) {
 }
 
 function createSplashWindow() {
-  const iconPath = path.join(__dirname, '../dagex_app.ico');
+  const iconPath = path.join(__dirname, '../hackmanite_main_icon.ico');
   splashWindow = new BrowserWindow({
     width: 480,
     height: 480,
@@ -98,7 +98,7 @@ function saveWindowState() {
 
 function createMainWindow() {
   const windowState = loadWindowState();
-  const iconPath = path.join(__dirname, '../dagex_app.ico');
+  const iconPath = path.join(__dirname, '../hackmanite_main_icon.ico');
 
   mainWindow = new BrowserWindow({
     width: windowState.width,

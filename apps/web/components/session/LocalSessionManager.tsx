@@ -33,7 +33,7 @@ export default function LocalSessionManager({
           <Spinner size={24} />
         </div>
       ) : sessions.length === 0 ? (
-        <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: 'var(--color-surface)', borderRadius: 'var(--radius)', border: '1px dashed var(--color-border)' }}>
+        <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: 'var(--color-surface-raised)', borderRadius: 'var(--radius)', border: 'none' }}>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0, marginBottom: '1rem' }}>
             No saved sessions found in the SQLite database.
           </p>
@@ -59,18 +59,15 @@ export default function LocalSessionManager({
             <button
               onClick={handleDeleteAllSessions}
               style={{
-                padding: '0.45rem 1rem',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
-                background: 'rgba(239, 68, 68, 0.08)',
+                background: '#2a171d',
                 color: '#EF4444',
-                border: '1px solid rgba(239, 68, 68, 0.2)',
+                border: 'none',
                 borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 transition: 'background 0.2s',
               }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.08)'; }}
+              onMouseEnter={(e) => { e.currentTarget.style.background = '#3d1d26'; }}
+              onMouseLeave={(e) => { e.currentTarget.style.background = '#2a171d'; }}
             >
               Delete All Sessions
             </button>
@@ -81,9 +78,9 @@ export default function LocalSessionManager({
                 padding: '0.45rem 1rem',
                 fontSize: '0.8125rem',
                 fontWeight: 600,
-                background: 'rgba(255,255,255,0.06)',
+                background: 'var(--color-surface-raised)',
                 color: 'var(--color-text)',
-                border: '1px solid var(--color-border)',
+                border: 'none',
                 borderRadius: 'var(--radius-sm)',
                 cursor: 'pointer',
                 display: 'flex',
@@ -103,8 +100,8 @@ export default function LocalSessionManager({
                   key={s.id}
                   style={{
                     padding: '1.25rem',
-                    background: isActive ? 'var(--color-surface-hover)' : 'rgba(255, 255, 255, 0.02)',
-                    border: '1px solid var(--color-border)',
+                    background: isActive ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                    border: 'none',
                     borderRadius: 'var(--radius)',
                     display: 'flex',
                     justifyContent: 'space-between',
@@ -123,8 +120,8 @@ export default function LocalSessionManager({
                       </span>
                       {isActive && (
                         <span style={{
-                          fontSize: '0.6875rem', fontWeight: 600, background: 'rgba(16, 185, 129, 0.1)',
-                          color: '#10B981', border: '1px solid rgba(16, 185, 129, 0.3)',
+                          fontSize: '0.6875rem', fontWeight: 600, background: '#0e2316',
+                          color: '#10B981', border: 'none',
                           borderRadius: 'var(--radius-sm)', padding: '1px 6px',
                         }}>
                           Active
@@ -137,10 +134,10 @@ export default function LocalSessionManager({
                     </div>
                     
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
+                      <span style={{ fontSize: '0.75rem', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
                         {s.fileCount} files
                       </span>
-                      <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.06)', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
+                      <span style={{ fontSize: '0.75rem', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
                         {s.entityCount} entities
                       </span>
                     </div>
@@ -170,9 +167,9 @@ export default function LocalSessionManager({
                           padding: '0.45rem 1rem',
                           fontSize: '0.8125rem',
                           fontWeight: 600,
-                          background: 'color-mix(in srgb, var(--color-secondary) 15%, transparent)',
+                          background: 'var(--color-surface)',
                           color: 'var(--color-primary)',
-                          border: '1px solid color-mix(in srgb, var(--color-secondary) 30%, transparent)',
+                          border: 'none',
                           borderRadius: 'var(--radius-sm)',
                           cursor: 'pointer',
                         }}

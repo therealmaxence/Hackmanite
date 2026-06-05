@@ -18,22 +18,22 @@ const variantStyles: Record<ButtonVariant, CSSProperties> = {
   primary: {
     background: 'var(--color-primary)',
     color: 'var(--color-on-primary)',
-    border: '1px solid var(--color-primary)',
+    border: 'none',
   },
   secondary: {
-    background: 'transparent',
+    background: 'var(--color-surface-raised)',
     color: 'var(--color-text)',
-    border: '1px solid var(--color-border)',
+    border: 'none',
   },
   ghost: {
-    background: 'transparent',
+    background: 'var(--color-surface)',
     color: 'var(--color-text-muted)',
-    border: '1px solid transparent',
+    border: 'none',
   },
   danger: {
-    background: 'transparent',
+    background: '#2a171d',
     color: 'var(--color-error)',
-    border: '1px solid var(--color-error)',
+    border: 'none',
   },
 };
 
@@ -70,7 +70,7 @@ export default function Button({
         fontWeight: 500,
         cursor: isDisabled ? 'not-allowed' : 'pointer',
         opacity: isDisabled ? 0.5 : 1,
-        transition: 'all var(--transition-fast)',
+        transition: 'background-color 80ms ease, box-shadow 350ms ease-in, color 300ms ease-in',
         outline: 'none',
         width: fullWidth ? '100%' : undefined,
         ...variantStyles[variant],
@@ -80,39 +80,40 @@ export default function Button({
       onMouseEnter={(e) => {
         if (isDisabled) return;
         const el = e.currentTarget;
+        el.style.transition = 'background-color 80ms ease, box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), color 180ms ease-out';
         if (variant === 'primary') {
-          el.style.background = 'var(--color-primary-hover)';
-          el.style.borderColor = 'var(--color-primary-hover)';
+          el.style.background = 'var(--color-primary-hover) var(--noise-bg)';
+          el.style.boxShadow = 'var(--glow-leger)';
         }
         if (variant === 'secondary') {
-          el.style.borderColor = 'var(--color-secondary)';
-          el.style.background = 'color-mix(in srgb, var(--color-secondary) 10%, transparent)';
+          el.style.background = 'var(--color-surface-hover) var(--noise-bg)';
+          el.style.boxShadow = 'var(--glow-trace)';
         }
         if (variant === 'ghost') {
-          el.style.color = 'var(--color-text)';
-          el.style.background = 'color-mix(in srgb, var(--color-secondary) 5%, transparent)';
+          el.style.color = 'var(--color-primary-hover)';
+          el.style.background = 'var(--color-surface-hover) var(--noise-bg)';
         }
         if (variant === 'danger') {
-          el.style.background = 'color-mix(in srgb, var(--color-error) 10%, transparent)';
+          el.style.background = '#3d1d26 var(--noise-bg)';
         }
       }}
       onMouseLeave={(e) => {
         const el = e.currentTarget;
         el.style.opacity = isDisabled ? '0.5' : '1';
+        el.style.transition = 'background-color 80ms ease, box-shadow 350ms ease-in, color 300ms ease-in';
+        el.style.boxShadow = 'none';
         if (variant === 'primary') {
           el.style.background = 'var(--color-primary)';
-          el.style.borderColor = 'var(--color-primary)';
         }
         if (variant === 'secondary') {
-          el.style.borderColor = 'var(--color-border)';
-          el.style.background = 'transparent';
+          el.style.background = 'var(--color-surface-raised)';
         }
         if (variant === 'ghost') {
           el.style.color = 'var(--color-text-muted)';
-          el.style.background = 'transparent';
+          el.style.background = 'var(--color-surface)';
         }
         if (variant === 'danger') {
-          el.style.background = 'transparent';
+          el.style.background = '#2a171d';
         }
       }}
     >

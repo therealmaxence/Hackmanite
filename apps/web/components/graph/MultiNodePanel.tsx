@@ -34,7 +34,7 @@ export default function MultiNodePanel() {
         bottom: 0,
         width: 'clamp(400px, 45vw, 650px)',
         background: 'var(--color-surface)',
-        borderLeft: '1px solid var(--color-border)',
+        borderLeft: 'none',
         display: 'flex',
         flexDirection: 'column',
         overflow: 'hidden',
@@ -45,7 +45,7 @@ export default function MultiNodePanel() {
       <div
         style={{
           padding: '1.5rem 2rem',
-          borderBottom: '1px solid var(--color-border)',
+          background: 'var(--color-surface-raised)',
           display: 'flex',
           alignItems: 'flex-start',
           gap: '1.25rem',
@@ -134,9 +134,9 @@ export default function MultiNodePanel() {
             style={{
               padding: '3rem 1rem',
               textAlign: 'center',
-              border: '1px dashed var(--color-border)',
+              border: 'none',
               borderRadius: 'var(--radius)',
-              background: 'rgba(255,255,255,0.01)',
+              background: 'var(--color-surface-raised)',
             }}
           >
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>

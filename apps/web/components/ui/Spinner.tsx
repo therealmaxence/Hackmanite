@@ -7,7 +7,7 @@ interface SpinnerProps {
   color?: string;
 }
 
-export default function Spinner({ size = 20, color = 'var(--accent)' }: SpinnerProps) {
+export default function Spinner({ size = 20, color = 'var(--color-text-muted)' }: SpinnerProps) {
   return (
     <svg
       width={size}

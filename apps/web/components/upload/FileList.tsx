@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useUploadStore, UploadedFile } from '@/store/uploadStore';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/upload/ProgressBar';
@@ -8,6 +8,16 @@ import useSWR from 'swr';
 
 function FileRow({ file }: { file: UploadedFile }) {
   const { removeFile, sessionId, updateFileStatus } = useUploadStore();
+  const [coords, setCoords] = useState({ x: 0, y: 0 });
+  const [isHovered, setIsHovered] = useState(false);
+
+  const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const rect = e.currentTarget.getBoundingClientRect();
+    setCoords({
+      x: e.clientX - rect.left,
+      y: e.clientY - rect.top,
+    });
+  };
 
   const handleRetry = async (e: React.MouseEvent) => {
     e.stopPropagation();
@@ -51,19 +61,19 @@ function FileRow({ file }: { file: UploadedFile }) {
       className="file-row"
       style={{
         padding: '1.25rem clamp(1rem, 4vw, 3rem)',
-        borderBottom: '1px solid var(--border-subtle)',
+        borderBottom: 'none',
         display: 'flex',
         flexDirection: 'column',
         gap: '0.75rem',
-        transition: 'background var(--transition-fast)',
+        transition: isHovered ? 'none' : 'background 250ms ease',
         position: 'relative',
+        background: isHovered
+          ? `var(--noise-bg), radial-gradient(circle 120px at ${coords.x}px ${coords.y}px, var(--color-surface-hover), var(--bg-surface))`
+          : 'var(--bg-surface)',
       }}
-      onMouseEnter={(e) =>
-        ((e.currentTarget as HTMLDivElement).style.background = 'var(--bg-raised)')
-      }
-      onMouseLeave={(e) =>
-        ((e.currentTarget as HTMLDivElement).style.background = 'transparent')
-      }
+      onMouseEnter={() => setIsHovered(true)}
+      onMouseLeave={() => setIsHovered(false)}
+      onMouseMove={handleMouseMove}
     >
       <div className="file-row-top flex flex-col md:flex-row md:items-center justify-between gap-3 md:gap-4">
         {/* Name and Extension */}
@@ -89,7 +99,7 @@ function FileRow({ file }: { file: UploadedFile }) {
               fontFamily: 'var(--font-mono)',
               color: 'var(--text-muted)',
               background: 'var(--bg-raised)',
-              border: '1px solid var(--border)',
+              border: 'none',
               borderRadius: 'var(--radius-sm)',
               padding: '1px 6px',
               flexShrink: 0,
@@ -332,7 +342,7 @@ export default function FileList() {
       <div
         style={{
           padding: '1rem clamp(1rem, 4vw, 3rem)',
-          borderBottom: '1px solid var(--border)',
+          borderBottom: 'none',
           display: 'flex',
           justifyContent: 'space-between',
           alignItems: 'center',
@@ -372,7 +382,7 @@ export default function FileList() {
                 fontSize: '0.8rem',
                 color: 'var(--color-primary)',
                 background: 'var(--bg-raised)',
-                border: '1px solid var(--border)',
+                border: 'none',
                 cursor: 'pointer',
                 padding: '0 12px',
                 minHeight: 36,
@@ -382,7 +392,7 @@ export default function FileList() {
                 alignItems: 'center',
                 gap: '0.5rem',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-raised)')}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -413,7 +423,7 @@ export default function FileList() {
                 fontSize: '0.8rem',
                 color: 'var(--text-primary)',
                 background: 'var(--bg-raised)',
-                border: '1px solid var(--border)',
+                border: 'none',
                 cursor: 'pointer',
                 padding: '0 12px',
                 minHeight: 36,
@@ -423,7 +433,7 @@ export default function FileList() {
                 alignItems: 'center',
                 gap: '0.5rem',
               }}
-              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--border)')}
+              onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-hover)')}
               onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-raised)')}
             >
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
@@ -438,16 +448,16 @@ export default function FileList() {
             style={{
               fontSize: '0.8rem',
               color: 'var(--error)',
-              background: 'none',
-              border: '1px solid transparent',
+              background: 'var(--bg-raised)',
+              border: 'none',
               cursor: 'pointer',
               padding: '0 12px',
               minHeight: 36,
               borderRadius: 'var(--radius-sm)',
               fontWeight: 500,
             }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(240,76,106,0.06)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'none')}
+            onMouseEnter={(e) => (e.currentTarget.style.background = '#2a171d')}
+            onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-raised)')}
           >
             Clear All
           </button>

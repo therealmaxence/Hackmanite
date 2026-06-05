@@ -69,9 +69,9 @@ export default function NodePanel() {
   return (
     <div
       className="node-panel animate-slide-in"
-      style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 'clamp(400px, 45vw, 650px)', background: 'var(--color-surface)', borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)' }}
+      style={{ position: 'absolute', right: 0, top: 0, bottom: 0, width: 'clamp(400px, 45vw, 650px)', background: 'var(--color-surface)', borderLeft: 'none', display: 'flex', flexDirection: 'column', overflow: 'hidden', zIndex: 10, transition: 'width 0.3s cubic-bezier(0.4,0,0.2,1)' }}
     >
-      <div style={{ padding: '1.5rem 2rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
+      <div style={{ padding: '1.5rem 2rem', background: 'var(--color-surface-raised)', display: 'flex', alignItems: 'flex-start', gap: '1.25rem' }}>
         {data && (
           <div style={{ width: 10, height: 10, borderRadius: '50%', background: isFile ? ENTITY_COLORS.FILE : (ENTITY_COLORS[data.type as EntityType] || 'var(--accent)'), marginTop: 4, flexShrink: 0 }} />
         )}

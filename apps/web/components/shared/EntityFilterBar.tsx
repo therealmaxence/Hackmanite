@@ -45,10 +45,9 @@ export default function EntityFilterBar({ className = '', showCounts = false }: 
           onClick={resetFilters}
           disabled={isDefault}
           title="Reset to default filters"
-          className="flex items-center justify-center gap-1.5 w-[120px] h-[28px] px-2 rounded-sm border transition-all duration-300 shrink-0"
+          className="flex items-center justify-center gap-1.5 w-[120px] h-[28px] px-2 rounded-sm transition-all duration-300 shrink-0"
           style={{
-            borderColor: isDefault ? 'var(--color-border)' : 'var(--color-primary)',
-            background: isDefault ? 'transparent' : 'rgba(255, 184, 48, 0.1)',
+            background: isDefault ? 'var(--color-surface-raised)' : '#2a2438',
             color: isDefault ? 'var(--color-text-muted)' : 'var(--color-primary)',
             opacity: isDefault ? 0.4 : 1,
             cursor: isDefault ? 'not-allowed' : 'pointer',
@@ -63,7 +62,7 @@ export default function EntityFilterBar({ className = '', showCounts = false }: 
             Reset
           </span>
         </button>
-        <div className="w-[1px] h-4 bg-border shrink-0 mx-1" />
+        <div className="w-[1px] h-4 shrink-0 mx-1" style={{ background: 'var(--color-surface-hover)' }} />
         {ENTITY_TYPES.map((type) => {
           const active = filters.entityTypes.includes(type);
           return (
@@ -73,12 +72,11 @@ export default function EntityFilterBar({ className = '', showCounts = false }: 
               onClick={() => toggleType(type)}
               title={`Toggle ${formatTypeLabel(type)}`}
               className={`
-                flex items-center justify-center gap-1.5 w-[120px] h-[28px] px-2 rounded-sm border transition-all duration-300 shrink-0
+                flex items-center justify-center gap-1.5 w-[120px] h-[28px] px-2 rounded-sm transition-all duration-300 shrink-0
                 ${active ? 'opacity-100 scale-100' : 'opacity-40 grayscale scale-95 hover:opacity-60'}
               `}
               style={{
-                borderColor: active ? `${ENTITY_COLORS[type]}60` : 'var(--border)',
-                background: active ? `${ENTITY_COLORS[type]}20` : 'transparent',
+                background: active ? `color-mix(in srgb, ${ENTITY_COLORS[type]} 22%, var(--color-surface-raised))` : 'var(--color-surface-raised)',
               }}
             >
               <div

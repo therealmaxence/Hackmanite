@@ -90,12 +90,12 @@ export const cytoscapeStylesheet = [
     style: {
       "background-color": "data(color)",
       label: "data(label)",
-      color: "#fff2f5",
+      color: "#f0f0f4",
       "font-family": "var(--font-mono, DM Mono, monospace)",
       "font-size": "11px",
       "text-valign": "bottom" as const,
       "text-margin-y": 6,
-      "text-outline-color": "#120108",
+      "text-outline-color": "#0e0e10",
       "text-outline-width": 2,
       width: "mapData(totalOccurrences, 1, 50, 22, 64)",
       height: "mapData(totalOccurrences, 1, 50, 22, 64)",
@@ -132,6 +132,7 @@ export const cytoscapeStylesheet = [
       "border-width": 3,
       "border-opacity": 1,
       "background-opacity": 0.9,
+      "border-color": "var(--color-primary-hover)",
     },
   },
   {
@@ -140,6 +141,7 @@ export const cytoscapeStylesheet = [
       "border-width": 3,
       "border-opacity": 1,
       "opacity": 1,
+      "border-color": "var(--color-secondary)",
     },
   },
   {
@@ -152,7 +154,7 @@ export const cytoscapeStylesheet = [
     selector: "edge",
     style: {
       width: "mapData(weight, 0, 1, 1, 5)",
-      "line-color": "#3a0f25",
+      "line-color": "#242430",
       opacity: 0.75,
       "curve-style": "haystack" as const,
     },

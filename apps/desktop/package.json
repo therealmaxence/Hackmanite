@@ -1,7 +1,7 @@
 {
-  "name": "dagex-desktop",
+  "name": "hackmanite-desktop",
   "version": "1.4.0",
-  "description": "DaGEx: Standalone desktop application for DataLake Entity Graph Explorer",
+  "description": "Hackmanite: Standalone desktop application for Entity Graph Explorer",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

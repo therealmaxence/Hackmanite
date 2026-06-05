@@ -1,6 +1,6 @@
 {
-  "appId": "com.datalake.dagex",
-  "productName": "DaGEx",
+  "appId": "com.datalake.hackmanite",
+  "productName": "Hackmanite",
   "npmRebuild": false,
   "compression": "normal",
   "directories": {
@@ -10,9 +10,10 @@
     "main.js",
     "preload.js",
     "splash.html",
+    "hackmanite_main_nobg.png",
     "package.json",
     "node_modules/**/*",
-    "dagex_app.ico",
+    "hackmanite_main_icon.ico",
     "lib/**/*"
   ],
   "extraResources": [
@@ -42,6 +43,6 @@
         ]
       }
     ],
-    "icon": "dagex_app.ico"
+    "icon": "hackmanite_main_icon.ico"
   }
 }

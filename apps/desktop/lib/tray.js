@@ -5,12 +5,12 @@ const fs = require('fs');
 let tray = null;
 
 function createTray(isPackaged, createMainWindow, getMainWindow, onRestart, onStop) {
-  const icoPath = path.join(__dirname, '../dagex_app.ico');
+  const icoPath = path.join(__dirname, '../hackmanite_main_icon.ico');
   const pngPath = path.resolve(__dirname, '../../web/public/dagex_app.png');
   const iconPath = (!isPackaged && fs.existsSync(pngPath)) ? pngPath : icoPath;
 
   tray = new Tray(iconPath);
-  tray.setToolTip('DaGEx');
+  tray.setToolTip('Hackmanite');
 
   const contextMenu = Menu.buildFromTemplate([
     {

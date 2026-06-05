@@ -3,20 +3,20 @@ import "@/styles/globals.css";
 import ElectronTitleBar from "@/components/layout/ElectronTitleBar";
 
 export const metadata: Metadata = {
-  title: "DataLake Entity Graph Explorer",
+  title: "Hackmanite",
   description:
-    "Upload files from your data lake and explore extracted entities as an interactive knowledge graph. Discover connections between persons, organizations, locations, and more.",
-  keywords: ["entity graph", "NLP", "data lake", "knowledge graph", "NER", "OSINT", "Datalake", "Graph analysis", "Information Extraction"],
+    "Explore extracted entities as an interactive knowledge graph. Discover connections between persons, organizations, locations, and more.",
+  keywords: ["hackmanite", "entity graph", "NLP", "data lake", "knowledge graph", "NER", "OSINT", "Graph analysis", "Information Extraction"],
   icons: {
-    icon: "/dagex-nobg.png",
-    shortcut: "/dagex-nobg.png",
-    apple: "/dagex-nobg.png",
+    icon: "/hackmanite_nobg.png",
+    shortcut: "/hackmanite_nobg.png",
+    apple: "/hackmanite_nobg.png",
   },
   openGraph: {
-    title: "DataLake Entity Graph Explorer",
+    title: "Hackmanite",
     description: "Interactive entity relationship graph built from heterogeneous data.",
     type: "website",
-    images: [{ url: "/dagex-nobg.png", width: 512, height: 512 }],
+    images: [{ url: "/hackmanite_main_icon.png", width: 512, height: 512 }],
   },
 };
 

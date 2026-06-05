@@ -207,8 +207,8 @@ export default function StatsClient() {
               className="h-[400px] signature-card flex flex-col items-center justify-center gap-6"
             >
               <Image
-                src="/dagex-nobg.png"
-                alt="EntityGraph"
+                src="/hackmanite_main_nobg.png"
+                alt="Hackmanite"
                 width={180}
                 height={180}
                 style={{ objectFit: 'contain', opacity: 0.07, userSelect: 'none', pointerEvents: 'none' }}

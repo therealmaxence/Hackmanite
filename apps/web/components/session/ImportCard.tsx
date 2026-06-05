@@ -96,12 +96,12 @@ export default function ImportCard() {
         onDrop={handleDrop}
         onClick={() => !isImportBusy && fileInputRef.current?.click()}
         style={{
-          border: `2px dashed ${dragOver ? 'var(--color-primary)' : 'var(--color-border)'}`,
+          border: 'none',
           borderRadius: 'var(--radius)',
           padding: '2.5rem 1.5rem',
           textAlign: 'center',
           cursor: isImportBusy ? 'not-allowed' : 'pointer',
-          background: dragOver ? 'var(--color-surface-hover)' : 'var(--color-surface)',
+          background: dragOver ? 'var(--color-surface-overlay)' : 'var(--color-surface)',
           transition: 'all 0.15s ease-in-out',
           display: 'flex',
           flexDirection: 'column',
@@ -137,7 +137,7 @@ export default function ImportCard() {
                 Drop JSON file here or <span style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>browse</span>
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                Accepts <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', background: 'rgba(255,255,255,0.06)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>.json</code> files exported from EntityGraph
+                Accepts <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', background: 'var(--color-surface-raised)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>.json</code> files exported from EntityGraph
               </p>
             </div>
           </>
@@ -158,8 +158,8 @@ export default function ImportCard() {
       {importState === 'done' && importResult && (
         <div style={{
           padding: '1.25rem',
-          background: 'var(--color-surface)',
-          border: '1px solid #10B981',
+          background: '#0e2316',
+          border: 'none',
           borderRadius: 'var(--radius)',
           display: 'flex',
           flexDirection: 'column',
@@ -176,7 +176,7 @@ export default function ImportCard() {
               { label: 'Entities found', value: String(importResult.files.reduce((s, f) => s + f.entityCount, 0)) },
               { label: 'Emails restored', value: String(importResult.emailsRestoredCount || 0) },
             ].map(({ label, value }) => (
-              <div key={label} style={{ padding: '0.75rem', background: 'var(--bg-base)', borderRadius: 'var(--radius-sm)', border: '1px solid var(--color-border)' }}>
+              <div key={label} style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: 'none' }}>
                 <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', margin: 0, marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
                 <p style={{ fontSize: '0.9rem', fontWeight: 600, fontFamily: 'var(--font-mono)', color: 'var(--color-text)', margin: 0 }}>{value}</p>
               </div>
@@ -195,7 +195,7 @@ export default function ImportCard() {
               <button
                 id="goto-emails-btn"
                 onClick={() => router.push('/emails')}
-                style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'color-mix(in srgb, var(--color-secondary) 15%, transparent)', color: 'var(--color-primary)', border: '1px solid color-mix(in srgb, var(--color-secondary) 30%, transparent)', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-surface-raised)', color: 'var(--color-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
                 Open in Emails →
               </button>
@@ -203,7 +203,7 @@ export default function ImportCard() {
             <button
               id="goto-stats-btn"
               onClick={() => router.push('/stats')}
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'rgba(255,255,255,0.06)', color: 'var(--color-text)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+              style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-surface-raised)', color: 'var(--color-text)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
             >
               View Stats
             </button>

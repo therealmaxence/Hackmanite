@@ -51,7 +51,7 @@ export default function ElectronTitleBar() {
       {/* Title */}
       <div className="flex items-center gap-2">
         <span className="text-sm">🕸️</span>
-        <span className="font-medium tracking-tight">DaGEx</span>
+        <span className="font-medium tracking-tight">Hackmanite</span>
       </div>
 
       {/* Window Controls */}
@@ -61,7 +61,7 @@ export default function ElectronTitleBar() {
           onClick={handleMinimize}
           className="h-8 w-11 flex items-center justify-center hover:bg-[var(--color-surface-hover)] transition-colors duration-150 outline-none border-none cursor-pointer"
           title="Minimize"
-          style={{ background: 'transparent', color: '#ffe9c3' }}
+          style={{ background: 'transparent', color: 'var(--color-text)' }}
         >
           <svg width="10" height="1" viewBox="0 0 10 1" fill="none" xmlns="http://www.w3.org/2000/svg">
             <rect width="10" height="1" fill="currentColor"/>
@@ -73,7 +73,7 @@ export default function ElectronTitleBar() {
           onClick={handleMaximize}
           className="h-8 w-11 flex items-center justify-center hover:bg-[var(--color-surface-hover)] transition-colors duration-150 outline-none border-none cursor-pointer"
           title={isMaximized ? "Restore Down" : "Maximize"}
-          style={{ background: 'transparent', color: '#ffe9c3' }}
+          style={{ background: 'transparent', color: 'var(--color-text)' }}
         >
           {isMaximized ? (
             <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -90,7 +90,7 @@ export default function ElectronTitleBar() {
         {/* Close */}
         <button 
           onClick={handleClose}
-          className="h-8 w-11 flex items-center justify-center hover:bg-[#ee3254] hover:text-white transition-colors duration-150 outline-none border-none cursor-pointer"
+          className="h-8 w-11 flex items-center justify-center hover:bg-[#e11d48] hover:text-white transition-colors duration-150 outline-none border-none cursor-pointer"
           title="Close"
           style={{ background: 'transparent', color: 'currentColor' }}
         >

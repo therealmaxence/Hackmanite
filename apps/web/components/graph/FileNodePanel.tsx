@@ -23,7 +23,7 @@ export default function FileNodePanel({ data, fileId, onSelectNode, onDelete }: 
     <>
       <section style={{ marginBottom: '2.5rem' }}>
         <SectionLabel>File Information</SectionLabel>
-        <div style={{ background: 'rgba(16,0,43,0.6)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
+        <div style={{ background: 'var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
           <InfoRow label="Name">{data.originalName}</InfoRow>
           <InfoRow label="Type"><span style={{ fontFamily: 'var(--font-mono)' }}>{data.mimeType}</span></InfoRow>
           <InfoRow label="Size"><span style={{ fontFamily: 'var(--font-mono)' }}>{formatBytes(data.sizeBytes)}</span></InfoRow>
@@ -57,9 +57,9 @@ export default function FileNodePanel({ data, fileId, onSelectNode, onDelete }: 
               <div
                 key={ent.id}
                 onClick={() => onSelectNode(ent.id)}
-                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0.875rem', background: 'rgba(16,0,43,0.4)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', cursor: 'pointer', transition: 'all var(--transition-fast)' }}
-                onMouseEnter={(e) => { e.currentTarget.style.borderColor = ENTITY_COLORS[ent.type] || 'var(--color-secondary)'; e.currentTarget.style.background = 'var(--color-surface-hover)'; }}
-                onMouseLeave={(e) => { e.currentTarget.style.borderColor = 'var(--color-border)'; e.currentTarget.style.background = 'rgba(16,0,43,0.4)'; }}
+                style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', padding: '0.625rem 0.875rem', background: 'var(--color-surface-raised)', border: 'none', borderRadius: 'var(--radius)', cursor: 'pointer', transition: 'all var(--transition-fast)' }}
+                onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)'; }}
+                onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-surface-raised)'; }}
               >
                 <div style={{ width: 8, height: 8, borderRadius: '50%', background: ENTITY_COLORS[ent.type] || 'var(--color-text-muted)', flexShrink: 0 }} />
                 <span style={{ flex: 1, fontSize: '0.8rem', color: 'var(--color-text)', fontWeight: 500 }}>{ent.displayName}</span>
@@ -73,7 +73,7 @@ export default function FileNodePanel({ data, fileId, onSelectNode, onDelete }: 
         )}
       </section>
 
-      <section style={{ marginTop: '3.5rem', borderTop: '1px solid var(--color-border)', paddingTop: '1.5rem' }}>
+      <section style={{ marginTop: '3.5rem', paddingTop: '1.5rem' }}>
         <DangerButton onClick={onDelete}>Delete File from Graph</DangerButton>
       </section>
     </>
@@ -101,9 +101,9 @@ function DangerButton({ onClick, children }: { onClick: () => void; children: Re
   return (
     <button
       onClick={onClick}
-      style={{ width: '100%', padding: '0.875rem', background: 'transparent', border: '1px solid var(--color-error)', borderRadius: 'var(--radius)', color: 'var(--color-error)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all var(--transition-fast)' }}
-      onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(238,50,84,0.12)'; }}
-      onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
+      style={{ width: '100%', padding: '0.875rem', background: '#2a171d', border: 'none', borderRadius: 'var(--radius)', color: 'var(--color-error)', fontSize: '0.8rem', fontWeight: 600, cursor: 'pointer', transition: 'all var(--transition-fast)' }}
+      onMouseEnter={(e) => { e.currentTarget.style.background = '#3d1d26'; }}
+      onMouseLeave={(e) => { e.currentTarget.style.background = '#2a171d'; }}
     >
       {children}
     </button>

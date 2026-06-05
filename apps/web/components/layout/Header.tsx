@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import Image from 'next/image';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
@@ -17,6 +17,41 @@ const NAV_ITEMS = [
 export default function Header() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, height: 0, top: 0 });
+
+  useEffect(() => {
+    const activeItem = NAV_ITEMS.find((item) => pathname === item.href);
+    if (activeItem) {
+      const el = document.getElementById(activeItem.id);
+      if (el) {
+        setPillStyle({
+          left: el.offsetLeft,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+          top: el.offsetTop,
+        });
+      }
+    } else {
+      setPillStyle({ left: 0, width: 0, height: 0, top: 0 });
+    }
+  }, [pathname]);
+
+  const handleNavMouseLeave = () => {
+    const activeItem = NAV_ITEMS.find((item) => pathname === item.href);
+    if (activeItem) {
+      const el = document.getElementById(activeItem.id);
+      if (el) {
+        setPillStyle({
+          left: el.offsetLeft,
+          width: el.offsetWidth,
+          height: el.offsetHeight,
+          top: el.offsetTop,
+        });
+      }
+    } else {
+      setPillStyle({ left: 0, width: 0, height: 0, top: 0 });
+    }
+  };
 
   return (
     <header
@@ -24,14 +59,14 @@ export default function Header() {
       style={{
         height: 64,
         background: 'var(--color-surface)',
-        borderBottom: '1px solid var(--color-border)',
+        borderBottom: 'none',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'space-between',
         padding: '0 clamp(0.75rem, 3vw, 1.5rem)',
         position: 'sticky',
         top: 0,
-        zIndex: 100,
+        zIndex: 10,
       }}
     >
 
@@ -48,10 +83,10 @@ export default function Header() {
         }}
       >
         <Image
-          src="/dagex-nobg.png"
-          alt="EntityGraph logo"
-          width={54}
-          height={54}
+          src="/hackmanite_main_nobg.png"
+          alt="Hackmanite logo"
+          width={40}
+          height={40}
           priority
           style={{ objectFit: 'contain' }}
         />
@@ -64,15 +99,15 @@ export default function Header() {
             letterSpacing: '-0.01em',
           }}
         >
-          EntityGraph
+          Hackmanite
         </span>
         <span
           className="hidden sm:inline-block"
           style={{
             fontSize: '0.7rem',
             color: 'var(--color-text-muted)',
-            background: 'color-mix(in srgb, var(--color-secondary) 15%, transparent)',
-            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface-raised)',
+            border: 'none',
             borderRadius: 'var(--radius-sm)',
             padding: '2px 8px',
             fontFamily: 'var(--font-mono)',
@@ -82,8 +117,25 @@ export default function Header() {
         </span>
       </Link>
 
-      {/* Desktop Nav (Hidden on Mobile) */}
-      <nav className="header-nav hidden md:flex" style={{ gap: '0.25rem' }}>
+      <nav
+        className="header-nav hidden md:flex"
+        style={{ gap: '0.25rem', position: 'relative' }}
+        onMouseLeave={handleNavMouseLeave}
+      >
+        {/* Sliding Pill */}
+        <div
+          style={{
+            position: 'absolute',
+            background: 'var(--color-surface-raised) var(--noise-bg)',
+            borderRadius: 'var(--radius-sm)',
+            transition: 'all 220ms cubic-bezier(0.25, 1, 0.5, 1)',
+            zIndex: 0,
+            opacity: pillStyle.width === 0 ? 0 : 1,
+            pointerEvents: 'none',
+            ...pillStyle,
+          }}
+        />
+
         {NAV_ITEMS.map((item) => {
           const active = pathname === item.href;
           return (
@@ -101,10 +153,30 @@ export default function Header() {
                 fontSize: '0.875rem',
                 fontWeight: 500,
                 textDecoration: 'none',
-                color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                background: active ? 'color-mix(in srgb, var(--color-secondary) 15%, transparent)' : 'transparent',
-                border: `1px solid ${active ? 'var(--color-secondary)' : 'transparent'}`,
-                transition: 'all var(--transition-fast)',
+                color: active ? 'var(--color-primary-hover)' : 'var(--color-text-muted)',
+                background: 'transparent',
+                border: 'none',
+                boxShadow: 'none',
+                position: 'relative',
+                zIndex: 1,
+                transition: 'color 180ms ease-out',
+              }}
+              onMouseEnter={(e) => {
+                const el = e.currentTarget;
+                if (!active) {
+                  el.style.color = 'var(--color-primary-hover)';
+                }
+                setPillStyle({
+                  left: el.offsetLeft,
+                  width: el.offsetWidth,
+                  height: el.offsetHeight,
+                  top: el.offsetTop,
+                });
+              }}
+              onMouseLeave={(e) => {
+                if (!active) {
+                  e.currentTarget.style.color = 'var(--color-text-muted)';
+                }
               }}
             >
               {item.label}
@@ -119,8 +191,8 @@ export default function Header() {
           onClick={() => setIsOpen(!isOpen)}
           aria-label="Toggle navigation menu"
           style={{
-            background: 'color-mix(in srgb, var(--color-secondary) 8%, transparent)',
-            border: '1px solid var(--color-border)',
+            background: 'var(--color-surface-raised)',
+            border: 'none',
             borderRadius: 'var(--radius-sm)',
             width: 40,
             height: 40,
@@ -171,7 +243,7 @@ export default function Header() {
                 right: 0,
                 width: '180px',
                 background: 'var(--color-surface)',
-                border: '1px solid var(--color-border)',
+                border: 'none',
                 borderRadius: 'var(--radius)',
                 padding: '6px',
                 boxShadow: '0 12px 30px rgba(0, 0, 0, 0.6)',
@@ -197,9 +269,9 @@ export default function Header() {
                       fontSize: '0.875rem',
                       fontWeight: 500,
                       textDecoration: 'none',
-                      color: active ? 'var(--color-primary)' : 'var(--color-text-muted)',
-                      background: active ? 'color-mix(in srgb, var(--color-secondary) 15%, transparent)' : 'transparent',
-                      transition: 'all var(--transition-fast)',
+                      color: active ? 'var(--color-primary-hover)' : 'var(--color-text-muted)',
+                      background: active ? 'var(--color-surface-raised)' : 'transparent',
+                      transition: 'background-color 80ms ease, color 300ms ease-in',
                     }}
                   >
                     {item.label}

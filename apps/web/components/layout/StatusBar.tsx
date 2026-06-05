@@ -43,7 +43,7 @@ export default function StatusBar() {
           <span style={{ color: 'var(--error)' }}>{failedCount()}</span> failed
         </span>
       )}
-      <span>DataLake Entity Graph Explorer</span>
+      <span>Hackmanite</span>
     </footer>
   );
 }

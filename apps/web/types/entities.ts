@@ -65,16 +65,16 @@ export interface EntityDetail extends Entity {
   }>;
 }
 
-// Color map for entity types
+// Color map for entity types (UV Hackmanite spectrum)
 export const ENTITY_COLORS: Record<EntityType | "FILE", string> = {
-  PERSON: "#8b5cf6",
-  ORGANIZATION: "#3b82f6",
-  LOCATION: "#10b981",
-  EMAIL: "#f59e0b",
-  PHONE: "#ec4899",
-  IP_ADDRESS: "#3db2ff",
-  URL: "#d946ef",
-  DATE: "#14b8a6",
-  ADDRESS: "#f97316",
-  FILE: "#ffffff",
+  PERSON: "#a78bfa",       // Vibrant lavender
+  ORGANIZATION: "#00f0ff", // Neon cyan/teal
+  LOCATION: "#34d399",     // Mint green
+  EMAIL: "#ff2a85",        // Neon pink/rose
+  PHONE: "#ff9f1c",        // Amber orange
+  IP_ADDRESS: "#818cf8",   // Neon indigo
+  URL: "#d946ef",          // Electric magenta
+  DATE: "#facc15",         // Gold/yellow
+  ADDRESS: "#c084fc",      // Orchid purple
+  FILE: "#e0e0e8",         // Neutral stone gray
 };

@@ -46,15 +46,11 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
     disabled: isLoading,
   });
 
-  const borderColor = isDragReject
-    ? 'var(--error)'
+  const bgColor = isDragReject
+    ? '#2d141a'
     : isDragActive
-    ? 'var(--accent)'
-    : 'var(--border-strong)';
-
-  const bgColor = isDragActive
-    ? 'var(--bg-raised)'
-    : 'transparent';
+    ? '#221d2d'
+    : 'var(--color-surface)';
 
   return (
     <div
@@ -62,13 +58,13 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
       id="dropzone"
       className="dropzone"
       style={{
-        border: `2px dashed ${borderColor}`,
         borderRadius: 'var(--radius)',
         background: bgColor,
+        boxShadow: isDragActive ? 'var(--glow-modere)' : 'none',
         padding: 'clamp(1.75rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem)',
         textAlign: 'center',
         cursor: isLoading ? 'not-allowed' : 'pointer',
-        transition: 'all var(--transition)',
+        transition: 'background-color 80ms ease, box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1)',
         position: 'relative',
         overflow: 'hidden',
       }}
@@ -78,7 +74,7 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
       {isLoading ? (
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
           <Spinner size={32} />
-          <p style={{ color: 'var(--text-secondary)', fontSize: '0.875rem' }}>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
             Uploading files…
           </p>
         </div>
@@ -90,13 +86,13 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
               width: 48,
               height: 48,
               borderRadius: 2,
-              background: isDragActive ? 'var(--accent)' : 'var(--bg-raised)',
-              border: `1px solid ${isDragActive ? 'var(--accent)' : 'var(--border)'}`,
+              background: isDragActive ? 'var(--color-primary)' : 'var(--color-bg)',
+              border: 'none',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
               margin: '0 auto 1.5rem',
-              transition: 'all var(--transition)',
+              transition: 'background-color 80ms ease',
             }}
           >
             <svg
@@ -104,7 +100,7 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
               height="26"
               viewBox="0 0 24 24"
               fill="none"
-              stroke={isDragActive ? '#fff' : 'var(--text-secondary)'}
+              stroke={isDragActive ? 'var(--color-on-primary)' : 'var(--color-text-muted)'}
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
@@ -116,20 +112,20 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
           </div>
 
           {isDragReject ? (
-            <p style={{ color: 'var(--error)', fontWeight: 500 }}>
+            <p style={{ color: 'var(--color-error)', fontWeight: 500 }}>
               Unsupported file type
             </p>
           ) : isDragActive ? (
-            <p style={{ color: 'var(--accent)', fontWeight: 500 }}>
+            <p style={{ color: 'var(--color-primary-hover)', fontWeight: 500 }}>
               Release to upload
             </p>
           ) : (
             <>
-              <p style={{ color: 'var(--text-primary)', fontWeight: 500, marginBottom: '0.75rem' }}>
+              <p style={{ color: 'var(--color-text)', fontWeight: 500, marginBottom: '0.75rem' }}>
                 Drop files here or{' '}
-                <span style={{ color: 'var(--accent)' }}>click to browse</span>
+                <span style={{ color: 'var(--color-primary-hover)' }}>click to browse</span>
               </p>
-              <p style={{ color: 'var(--text-muted)', fontSize: '0.75rem', lineHeight: 1.6 }}>
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', lineHeight: 1.6 }}>
                 PDF, DOCX, XLSX, TXT, MD, JSON, CSV, PY, JS, PNG, JPG, TIFF, EML, PST
                 <br />
                 Up to 100 MB per file · Multiple files supported

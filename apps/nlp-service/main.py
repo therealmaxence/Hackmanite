@@ -17,7 +17,7 @@ logger = structlog.get_logger()
 
 app = FastAPI(
     title="DataLake NLP Service",
-    description="Entity extraction pipeline for the DataLake Entity Graph Explorer",
+    description="Entity extraction pipeline for Hackmanite",
     version="1.4.0",
 )
 

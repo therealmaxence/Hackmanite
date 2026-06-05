@@ -73,8 +73,8 @@ export default function GraphClient() {
             /* Empty state */
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>
               <Image
-                src="/dagex-nobg.png"
-                alt="EntityGraph"
+                src="/hackmanite_main_nobg.png"
+                alt="Hackmanite"
                 width={240}
                 height={240}
                 style={{ objectFit: 'contain', opacity: 0.06, userSelect: 'none', pointerEvents: 'none' }}
@@ -165,7 +165,7 @@ function ProgressBar({
           style={{
             height: '100%',
             width: `${pct}%`,
-            background: done ? '#10b981' : 'var(--accent, #4c9ef0)',
+            background: done ? 'var(--color-success)' : 'var(--color-primary)',
             borderRadius: 2,
             transition: 'width 0.3s ease',
           }}
@@ -198,19 +198,19 @@ function ProgressBar({
                 fontWeight: 600,
                 letterSpacing: '0.04em',
                 background: 'transparent',
-                border: '1px solid var(--accent, #4c9ef0)',
-                color: 'var(--accent, #4c9ef0)',
+                border: '1px solid var(--color-primary)',
+                color: 'var(--color-primary-hover)',
                 borderRadius: 4,
                 cursor: 'pointer',
                 transition: 'background 0.15s, color 0.15s',
               }}
               onMouseEnter={(e) => {
-                (e.currentTarget as HTMLButtonElement).style.background = 'var(--accent, #4c9ef0)';
-                (e.currentTarget as HTMLButtonElement).style.color = '#0a0c10';
+                (e.currentTarget as HTMLButtonElement).style.background = 'var(--color-primary)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-on-primary)';
               }}
               onMouseLeave={(e) => {
                 (e.currentTarget as HTMLButtonElement).style.background = 'transparent';
-                (e.currentTarget as HTMLButtonElement).style.color = 'var(--accent, #4c9ef0)';
+                (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary-hover)';
               }}
             >
               Load more

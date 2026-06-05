@@ -2,8 +2,8 @@
 
 import { useState } from 'react';
 import Button from '@/components/ui/Button';
-import exportSessionAsJson from '@/lib/sessionExport';
 import { UploadedFile } from '@/store/uploadStore';
+import ExportModal from '@/components/graph/ExportModal';
 
 interface Props {
   sessionId: string | null;
@@ -14,16 +14,16 @@ interface Props {
 }
 
 export default function GraphActions({ sessionId, onResetFilters, onResetGraph, onExplodeGraph, onImportSuccess }: Props) {
-  const [isSaving, setIsSaving] = useState(false);
+  const [exportModalType, setExportModalType] = useState<'json' | 'obsidian' | null>(null);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
 
-  const handleSave = async () => {
-    if (!sessionId) return;
-    setIsSaving(true);
-    try { await exportSessionAsJson(sessionId); }
-    catch (err) { console.error('Failed to export session', err); }
-    finally { setIsSaving(false); }
+  const handleSave = () => {
+    setExportModalType('json');
+  };
+
+  const handleSaveObsidian = () => {
+    setExportModalType('obsidian');
   };
 
   const handleImportClick = () => {
@@ -68,9 +68,10 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
   return (
     <div className="graph-actions" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <Button id="save-session-export" variant="secondary" size="xs" onClick={handleSave} disabled={!sessionId} loading={isSaving}>Save JSON</Button>
+        <Button id="save-session-export" variant="secondary" size="xs" onClick={handleSave} disabled={!sessionId}>Save JSON</Button>
         <Button id="import-session-json" variant="secondary" size="xs" onClick={handleImportClick} loading={isImporting}>Import JSON</Button>
       </div>
+      <Button id="save-session-obsidian" variant="secondary" size="xs" onClick={handleSaveObsidian} disabled={!sessionId} style={{ width: '100%' }}>Export Obsidian</Button>
       <input id="import-graph-file-input" type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
       {importError && <span style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: 4, display: 'block', textAlign: 'center' }}>{importError}</span>}
       <Button
@@ -94,6 +95,14 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
       </Button>
       <Button id="reset-graph-filters" variant="ghost" size="xs" onClick={onResetFilters}>Reset View</Button>
       <Button id="reset-graph-data" variant="ghost" size="xs" onClick={onResetGraph} style={{ color: 'var(--error)' }}>Reset Graph</Button>
+
+      {exportModalType && sessionId && (
+        <ExportModal
+          sessionId={sessionId}
+          exportType={exportModalType}
+          onClose={() => setExportModalType(null)}
+        />
+      )}
     </div>
   );
 }

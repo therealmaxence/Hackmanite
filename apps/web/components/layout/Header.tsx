@@ -17,6 +17,7 @@ const NAV_ITEMS = [
 export default function Header() {
   const pathname = usePathname();
   const [isOpen, setIsOpen] = useState(false);
+  const [logoHovered, setLogoHovered] = useState(false);
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, height: 0, top: 0 });
 
   useEffect(() => {
@@ -75,6 +76,8 @@ export default function Header() {
       <Link
         href="/"
         className="header-brand"
+        onMouseEnter={() => setLogoHovered(true)}
+        onMouseLeave={() => setLogoHovered(false)}
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -82,14 +85,30 @@ export default function Header() {
           textDecoration: 'none',
         }}
       >
-        <Image
-          src="/hackmanite_main_nobg.png"
-          alt="Hackmanite logo"
-          width={40}
-          height={40}
-          priority
-          style={{ objectFit: 'contain' }}
-        />
+        <div style={{ position: 'relative', width: 40, height: 40, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div
+            style={{
+              position: 'absolute',
+              width: 30,
+              height: 30,
+              borderRadius: '50%',
+              background: 'radial-gradient(circle, rgba(124, 58, 237, 0.5) 0%, rgba(217, 70, 239, 0.15) 60%, transparent 100%)',
+              filter: 'blur(5px)',
+              zIndex: 0,
+              opacity: logoHovered ? 1 : 0,
+              transform: logoHovered ? 'scale(1.2)' : 'scale(0.8)',
+              transition: 'all 200ms cubic-bezier(0.22, 1, 0.36, 1)',
+            }}
+          />
+          <Image
+            src="/hackmanite_main_nobg.png"
+            alt="Hackmanite logo"
+            width={40}
+            height={40}
+            priority
+            style={{ objectFit: 'contain', position: 'relative', zIndex: 1 }}
+          />
+        </div>
         <span
           style={{
             fontFamily: 'var(--font-display)',

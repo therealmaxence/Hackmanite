@@ -211,7 +211,7 @@ export default function StatsClient() {
                 alt="Hackmanite"
                 width={180}
                 height={180}
-                style={{ objectFit: 'contain', opacity: 0.07, userSelect: 'none', pointerEvents: 'none' }}
+                style={{ objectFit: 'contain', opacity: 0.15, userSelect: 'none', pointerEvents: 'none' }}
                 draggable={false}
               />
               <p className="text-sm text-white/40 font-mono font-medium">No active session</p>

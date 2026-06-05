@@ -77,7 +77,7 @@ export default function GraphClient() {
                 alt="Hackmanite"
                 width={240}
                 height={240}
-                style={{ objectFit: 'contain', opacity: 0.06, userSelect: 'none', pointerEvents: 'none' }}
+                style={{ objectFit: 'contain', opacity: 0.15, userSelect: 'none', pointerEvents: 'none' }}
                 draggable={false}
               />
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.5 }}>

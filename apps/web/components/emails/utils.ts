@@ -38,8 +38,10 @@ export function useSenderColors(senders: string[]): Record<string, string> {
   return useMemo(() => {
     const colors: Record<string, string> = {};
     senders.forEach((sender, idx) => {
-      const hue = (idx * 137.5) % 360; // Golden angle distribution
-      colors[sender.toLowerCase()] = `hsl(${hue}, 70%, 55%)`;
+      // Confining hues to the UV fluorescent spectrum [170, 350] (cyan to rose)
+      // and using golden angle distribution to distribute them beautifully.
+      const hue = 170 + ((idx * 137.5) % 180);
+      colors[sender.toLowerCase()] = `hsl(${hue}, 85%, 65%)`;
     });
     return colors;
   }, [senders]);

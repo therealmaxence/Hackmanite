@@ -31,12 +31,12 @@ interface FiltersPanelProps {
 const inputStyle: React.CSSProperties = {
   padding: '0.5rem 0.75rem',
   fontSize: '0.8125rem',
-  background: '#120108',
-  border: '1px solid var(--color-border)',
+  background: 'var(--color-surface-input)',
+  border: 'none',
   borderRadius: 'var(--radius-sm)',
   color: 'var(--color-text)',
   outline: 'none',
-  transition: 'all 0.15s ease-in-out',
+  transition: 'all var(--transition-fast)',
   width: '100%',
 };
 
@@ -142,7 +142,7 @@ export default function FiltersPanel({
     <div
       style={{
         width: '280px',
-        borderRight: '1px solid var(--color-border)',
+        borderRight: 'none',
         background: 'var(--color-surface)',
         display: 'flex',
         flexDirection: 'column',
@@ -167,15 +167,33 @@ export default function FiltersPanel({
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             style={inputStyle}
-            onFocus={(e) => (e.target.style.borderColor = 'var(--color-primary)')}
-            onBlur={(e) => (e.target.style.borderColor = 'var(--color-border)')}
+            onFocus={(e) => {
+              e.target.style.background = 'var(--color-surface-hover)';
+              e.target.style.boxShadow = 'var(--glow-trace)';
+            }}
+            onBlur={(e) => {
+              e.target.style.background = 'var(--color-surface-input)';
+              e.target.style.boxShadow = 'none';
+            }}
           />
         </div>
 
         {/* Sender filter */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1rem' }}>
           <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>From Sender</label>
-          <select value={senderFilter} onChange={(e) => onSenderChange(e.target.value)} style={inputStyle}>
+          <select
+            value={senderFilter}
+            onChange={(e) => onSenderChange(e.target.value)}
+            style={inputStyle}
+            onFocus={(e) => {
+              e.target.style.background = 'var(--color-surface-hover)';
+              e.target.style.boxShadow = 'var(--glow-trace)';
+            }}
+            onBlur={(e) => {
+              e.target.style.background = 'var(--color-surface-input)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
             <option value="all">All Senders</option>
             {filterOptions.senders.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
@@ -184,7 +202,19 @@ export default function FiltersPanel({
         {/* Recipient filter */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1rem' }}>
           <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>To/Cc Recipient</label>
-          <select value={recipientFilter} onChange={(e) => onRecipientChange(e.target.value)} style={inputStyle}>
+          <select
+            value={recipientFilter}
+            onChange={(e) => onRecipientChange(e.target.value)}
+            style={inputStyle}
+            onFocus={(e) => {
+              e.target.style.background = 'var(--color-surface-hover)';
+              e.target.style.boxShadow = 'var(--glow-trace)';
+            }}
+            onBlur={(e) => {
+              e.target.style.background = 'var(--color-surface-input)';
+              e.target.style.boxShadow = 'none';
+            }}
+          >
             <option value="all">All Recipients</option>
             {filterOptions.recipients.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
@@ -196,15 +226,15 @@ export default function FiltersPanel({
             style={{
               marginTop: '0.5rem',
               padding: '0.75rem',
-              background: 'rgba(76, 158, 240, 0.08)',
-              border: '1px solid rgba(76, 158, 240, 0.25)',
+              background: 'color-mix(in srgb, var(--color-info) 12%, var(--color-surface-raised))',
+              border: 'none',
               borderRadius: 'var(--radius-sm)',
               display: 'flex',
               flexDirection: 'column',
               gap: '0.375rem',
             }}
           >
-            <p style={{ fontSize: '0.75rem', fontWeight: 500, color: '#4C9EF0', margin: 0 }}>
+            <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-info)', margin: 0 }}>
               Focused Conversation Active
             </p>
             <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', margin: 0 }}>
@@ -227,7 +257,7 @@ export default function FiltersPanel({
         </h3>
 
         {/* View mode tabs */}
-        <div style={{ display: 'flex', background: '#120108', padding: '3px', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', marginBottom: '1rem' }}>
+        <div style={{ display: 'flex', background: 'var(--color-surface-input)', padding: '3px', borderRadius: 'var(--radius)', border: 'none', marginBottom: '1rem' }}>
           {(['graph', 'list'] as ActiveTab[]).map((tab) => (
             <button
               key={tab}
@@ -258,6 +288,14 @@ export default function FiltersPanel({
               value={layoutType}
               onChange={(e) => onLayoutChange(e.target.value as LayoutType)}
               style={inputStyle}
+              onFocus={(e) => {
+                e.target.style.background = 'var(--color-surface-hover)';
+                e.target.style.boxShadow = 'var(--glow-trace)';
+              }}
+              onBlur={(e) => {
+                e.target.style.background = 'var(--color-surface-input)';
+                e.target.style.boxShadow = 'none';
+              }}
             >
               <option value="breadthfirst">Hierarchy Tree (DAG)</option>
               <option value="cose-bilkent">Force-directed</option>
@@ -267,7 +305,7 @@ export default function FiltersPanel({
       </div>
 
       {/* Session actions */}
-      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', borderTop: '1px solid var(--color-border)', paddingTop: '1.25rem', marginTop: 'auto' }}>
+      <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', borderTop: 'none', paddingTop: '1.25rem', marginTop: 'auto' }}>
         <h3 style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
           Session Actions
         </h3>

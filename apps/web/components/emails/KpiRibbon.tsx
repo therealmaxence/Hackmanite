@@ -23,28 +23,19 @@ export default function KpiRibbon({ stats }: KpiRibbonProps) {
         gap: '1rem',
         padding: '1rem clamp(0.75rem, 3vw, 1.5rem)',
         background: 'var(--bg-base)',
-        borderBottom: '1px solid var(--color-border)',
+        borderBottom: 'none',
       }}
     >
       {KPI_CONFIG.map((kpi) => (
         <div
           key={kpi.key}
+          className="signature-card"
           style={{
             padding: '0.875rem 1.125rem',
-            background: 'var(--color-surface)',
-            border: '1px solid var(--color-border)',
-            borderRadius: 'var(--radius)',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            transition: 'all 0.2s ease-in-out',
             cursor: 'default',
-          }}
-          onMouseEnter={(e) => {
-            e.currentTarget.style.borderColor = kpi.color;
-          }}
-          onMouseLeave={(e) => {
-            e.currentTarget.style.borderColor = 'var(--color-border)';
           }}
         >
           <div>

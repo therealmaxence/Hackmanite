@@ -47,19 +47,19 @@ export default function EmailDetailDrawer({ email, senderColors, rawEdges, rawEm
   });
 
   return (
-    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 420, zIndex: 60, background: 'var(--color-surface)', borderLeft: '1px solid var(--color-border)', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards' }}>
+    <div style={{ position: 'absolute', top: 0, right: 0, bottom: 0, width: 420, zIndex: 60, background: 'var(--color-surface)', borderLeft: 'none', display: 'flex', flexDirection: 'column', animation: 'slideIn 0.25s cubic-bezier(0.16,1,0.3,1) forwards' }}>
       <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
 
-      <div style={{ padding: '1.25rem', borderBottom: '1px solid var(--color-border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '0.7rem', background: 'rgba(123,47,190,0.15)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', padding: '2px 8px', color: 'var(--color-primary)', fontWeight: 500, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Email Node</span>
+      <div style={{ padding: '1.25rem', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+        <span style={{ fontSize: '0.7rem', background: 'color-mix(in srgb, var(--color-primary) 15%, var(--color-surface-raised))', border: 'none', borderRadius: 'var(--radius-sm)', padding: '2px 8px', color: 'var(--color-primary)', fontWeight: 500, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Email Node</span>
         <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1.125rem', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
       </div>
 
-      <div style={{ display: 'flex', borderBottom: '1px solid var(--color-border)', background: 'rgba(0,0,0,0.1)' }}>
+      <div style={{ display: 'flex', borderBottom: 'none', background: 'var(--color-surface-input)' }}>
         <button onClick={() => setActiveTab('content')} style={tabStyle('content')}>Email Content</button>
         <button onClick={() => setActiveTab('timeline')} style={tabStyle('timeline')}>
           Thread Flow
-          <span style={{ background: 'rgba(255,255,255,0.08)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '0.6875rem', color: 'var(--color-text)' }}>{threadEmails.length}</span>
+          <span style={{ background: 'var(--color-surface-raised)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '0.6875rem', color: 'var(--color-text)' }}>{threadEmails.length}</span>
         </button>
       </div>
 

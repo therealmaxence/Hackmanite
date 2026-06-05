@@ -18,7 +18,7 @@
   ],
   "extraResources": [
     {
-      "from": "../nlp-service/dist/dagex-nlp",
+      "from": "../nlp-service/dist/hackmanite-nlp",
       "to": "nlp-service"
     },
     {

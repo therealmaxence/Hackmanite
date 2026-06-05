@@ -1,8 +1,8 @@
-# DaGEx — DataLake Entity Graph Explorer
+# Hackmanite — DataLake Entity Graph Explorer
 
 > **Version 1.4.0** · Standalone Windows Desktop Application
 
-DaGEx is a desktop application for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions.
+Hackmanite is a desktop application for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions.
 
 ---
 
@@ -132,8 +132,8 @@ npm start
 
 > Use **[7-Zip](https://www.7-zip.org/)** to extract — Windows' built-in extractor can silently corrupt files in large ZIPs.
 
-1. Right-click `DaGEx-1.4.0-win.zip` → **7-Zip → Extract Here**
-2. Double-click **`DaGEx.exe`** inside the extracted folder
+1. Right-click `Hackmanite-1.4.0-win.zip` → **7-Zip → Extract Here**
+2. Double-click **`Hackmanite.exe`** inside the extracted folder
 3. Done
 
 Everything (Python runtime, spaCy models, Next.js server) is bundled inside the ZIP. No Python, Node.js, or Docker required.
@@ -151,21 +151,21 @@ npm run build
 
 # 2. Recompile the Python NLP service (only if Python code changed)
 cd ../nlp-service
-pyinstaller dagex-nlp.spec --noconfirm
+pyinstaller hackmanite-nlp.spec --noconfirm
 
 # 3. Package everything into a ZIP
 cd ../desktop
 npm run dist
 ```
 
-Output: `apps/desktop/dist/DaGEx-1.4.0-win.zip`
+Output: `apps/desktop/dist/Hackmanite-1.4.0-win.zip`
 
 ### Partial rebuilds
 
 | What changed | Steps needed |
 |---|---|
 | Frontend only (UI, pages) | `apps/web: npm run build` → `apps/desktop: npm run dist` |
-| Python NLP only (extraction, OCR, graph DB) | `apps/nlp-service: pyinstaller dagex-nlp.spec --noconfirm` → `apps/desktop: npm run dist` |
+| Python NLP only (extraction, OCR, graph DB) | `apps/nlp-service: pyinstaller hackmanite-nlp.spec --noconfirm` → `apps/desktop: npm run dist` |
 | Electron only (window, splash) | `apps/desktop: npm run dist` only |
 
 ---

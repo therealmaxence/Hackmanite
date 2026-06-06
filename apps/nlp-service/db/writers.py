@@ -1,365 +1,177 @@
+import logging
 from db.connection import get_write_conn, _write_lock
 
-def upsert_entity(entity_id: str, canonical: str, display_name: str,
-                  entity_type: str, metadata: str = "{}") -> None:
-    """
-    Insert entity node if it doesn't exist yet.
-    KuzuDB has no native MERGE/UPSERT for nodes, so we check existence first.
-    The write lock ensures no two threads race on the same entity.
-    """
+logger = logging.getLogger(__name__)
+
+# Cypher Queries
+MATCH_ENTITY = "MATCH (e:Entity {id: $id}) RETURN e.id LIMIT 1"
+CREATE_ENTITY = """
+    CREATE (:Entity {
+        id: $id,
+        canonical: $canonical,
+        display_name: $display_name,
+        type: $type,
+        metadata: $metadata
+    })
+"""
+MATCH_FILE_REF = "MATCH (f:FileRef {id: $id}) RETURN f.id LIMIT 1"
+CREATE_FILE_REF = "CREATE (:FileRef {id: $id})"
+DELETE_OCCURRENCE = """
+    MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
+    DELETE r
+"""
+CREATE_OCCURRENCE = """
+    MATCH (e:Entity {id: $eid}), (f:FileRef {id: $fid})
+    CREATE (e)-[:OCCURS_IN {count: $count, excerpts: $excerpts}]->(f)
+"""
+MATCH_CO_OCCURRENCE = """
+    MATCH (a:Entity {id: $sid})-[r:CO_OCCURS {file_id: $fid}]->(b:Entity {id: $tid})
+    RETURN r.weight LIMIT 1
+"""
+DELETE_CO_OCCURRENCE = """
+    MATCH (a:Entity {id: $sid})-[r:CO_OCCURS {file_id: $fid}]->(b:Entity {id: $tid})
+    DELETE r
+"""
+CREATE_CO_OCCURRENCE = """
+    MATCH (a:Entity {id: $sid}), (b:Entity {id: $tid})
+    CREATE (a)-[:CO_OCCURS {
+        weight: $weight,
+        distance: $distance,
+        snippet: $snippet,
+        source_offset: $source_offset,
+        target_offset: $target_offset,
+        file_id: $file_id
+    }]->(b)
+"""
+DELETE_ENTITY_CO_OCCURS_SRC = """
+    MATCH (a:Entity {id: $eid})-[r:CO_OCCURS]->(b:Entity)
+    WHERE r.file_id = $fid
+    DELETE r
+"""
+DELETE_ENTITY_CO_OCCURS_TGT = """
+    MATCH (a:Entity)-[r:CO_OCCURS]->(b:Entity {id: $eid})
+    WHERE r.file_id = $fid
+    DELETE r
+"""
+CHECK_ENTITY_HAS_OCCURRENCES = """
+    MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->()
+    RETURN r LIMIT 1
+"""
+DELETE_ALL_CO_OCCURS_SRC = """
+    MATCH (e:Entity {id: $eid})-[r:CO_OCCURS]->(b:Entity)
+    DELETE r
+"""
+DELETE_ALL_CO_OCCURS_TGT = """
+    MATCH (a:Entity)-[r:CO_OCCURS]->(e:Entity {id: $eid})
+    DELETE r
+"""
+DELETE_ENTITY_NODE = "MATCH (e:Entity {id: $eid}) DELETE e"
+DELETE_CO_OCCURS_BY_FILE = "MATCH (a:Entity)-[r:CO_OCCURS {file_id: $fid}]->(b:Entity) DELETE r"
+DELETE_OCCURRENCES_BY_FILE = "MATCH (e:Entity)-[r:OCCURS_IN]->(f:FileRef {id: $fid}) DELETE r"
+DELETE_FILE_REF_NODE = "MATCH (f:FileRef {id: $fid}) DELETE f"
+DELETE_ORPHAN_CO_OCCURS_SRC = "MATCH (e:Entity)-[r:CO_OCCURS]->(b:Entity) WHERE NOT (e)-[:OCCURS_IN]->() DELETE r"
+DELETE_ORPHAN_CO_OCCURS_TGT = "MATCH (a:Entity)-[r:CO_OCCURS]->(e:Entity) WHERE NOT (e)-[:OCCURS_IN]->() DELETE r"
+DELETE_ORPHAN_ENTITIES = "MATCH (e:Entity) WHERE NOT (e)-[:OCCURS_IN]->() DELETE e"
+
+# Helper Functions
+def _upsert_file_ref_conn(conn, file_id: str) -> None:
+    if not conn.execute(MATCH_FILE_REF, {"id": file_id}).has_next():
+        conn.execute(CREATE_FILE_REF, {"id": file_id})
+
+def _upsert_entity_conn(conn, entity_id: str, canonical: str, display_name: str, entity_type: str, metadata: str = "{}") -> None:
+    if not conn.execute(MATCH_ENTITY, {"id": entity_id}).has_next():
+        conn.execute(CREATE_ENTITY, {
+            "id": entity_id,
+            "canonical": canonical[:500],
+            "display_name": display_name[:500],
+            "type": entity_type,
+            "metadata": metadata
+        })
+
+def _upsert_occurrence_conn(conn, entity_id: str, file_id: str, count: int, excerpts_json: str = "[]") -> None:
+    conn.execute(DELETE_OCCURRENCE, {"eid": entity_id, "fid": file_id})
+    conn.execute(CREATE_OCCURRENCE, {"eid": entity_id, "fid": file_id, "count": count, "excerpts": excerpts_json})
+
+def _upsert_co_occurrence_conn(conn, source_id: str, target_id: str, weight: float, distance: int,
+                              snippet: str, source_offset: int, target_offset: int, file_id: str) -> None:
+    result = conn.execute(MATCH_CO_OCCURRENCE, {"sid": source_id, "tid": target_id, "fid": file_id})
+    if result.has_next():
+        if weight <= result.get_next()[0]:
+            return
+        conn.execute(DELETE_CO_OCCURRENCE, {"sid": source_id, "tid": target_id, "fid": file_id})
+
+    conn.execute(CREATE_CO_OCCURRENCE, {
+        "sid": source_id, "tid": target_id, "weight": weight, "distance": distance,
+        "snippet": snippet, "source_offset": source_offset, "target_offset": target_offset, "file_id": file_id
+    })
+
+# Public API Functions
+def upsert_entity(entity_id: str, canonical: str, display_name: str, entity_type: str, metadata: str = "{}") -> None:
     conn = get_write_conn()
     with _write_lock:
-        result = conn.execute(
-            "MATCH (e:Entity {id: $id}) RETURN e.id LIMIT 1",
-            {"id": entity_id}
-        )
-        if not result.has_next():
-            conn.execute(
-                """
-                CREATE (:Entity {
-                    id: $id,
-                    canonical: $canonical,
-                    display_name: $display_name,
-                    type: $type,
-                    metadata: $metadata
-                })
-                """,
-                {
-                    "id": entity_id,
-                    "canonical": canonical,
-                    "display_name": display_name,
-                    "type": entity_type,
-                    "metadata": metadata,
-                },
-            )
-
+        _upsert_entity_conn(conn, entity_id, canonical, display_name, entity_type, metadata)
 
 def upsert_file_ref(file_id: str) -> None:
-    """Ensure a FileRef node exists for this file."""
     conn = get_write_conn()
     with _write_lock:
-        result = conn.execute(
-            "MATCH (f:FileRef {id: $id}) RETURN f.id LIMIT 1",
-            {"id": file_id}
-        )
-        if not result.has_next():
-            conn.execute(
-                "CREATE (:FileRef {id: $id})",
-                {"id": file_id}
-            )
+        _upsert_file_ref_conn(conn, file_id)
 
-
-def upsert_occurrence(entity_id: str, file_id: str, count: int,
-                      excerpts_json: str = "[]") -> None:
-    """
-    Create or update the OCCURS_IN relationship between an entity and a file.
-    We delete-then-insert since KuzuDB relationships can't be updated in-place.
-    """
+def upsert_occurrence(entity_id: str, file_id: str, count: int, excerpts_json: str = "[]") -> None:
     conn = get_write_conn()
     with _write_lock:
-        conn.execute(
-            """
-            MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
-            DELETE r
-            """,
-            {"eid": entity_id, "fid": file_id},
-        )
-        conn.execute(
-            """
-            MATCH (e:Entity {id: $eid}), (f:FileRef {id: $fid})
-            CREATE (e)-[:OCCURS_IN {count: $count, excerpts: $excerpts}]->(f)
-            """,
-            {
-                "eid": entity_id,
-                "fid": file_id,
-                "count": count,
-                "excerpts": excerpts_json,
-            },
-        )
+        _upsert_occurrence_conn(conn, entity_id, file_id, count, excerpts_json)
 
-
-def upsert_co_occurrence(
-    source_id: str, target_id: str,
-    weight: float, distance: int,
-    snippet: str, source_offset: int, target_offset: int,
-    file_id: str,
-) -> None:
-    """
-    Create or update the CO_OCCURS edge between two entities.
-    """
+def upsert_co_occurrence(source_id: str, target_id: str, weight: float, distance: int,
+                         snippet: str, source_offset: int, target_offset: int, file_id: str) -> None:
     conn = get_write_conn()
     with _write_lock:
-        # Check if a higher-weight edge already exists for this pair+file
-        result = conn.execute(
-            """
-            MATCH (a:Entity {id: $sid})-[r:CO_OCCURS {file_id: $fid}]->(b:Entity {id: $tid})
-            RETURN r.weight LIMIT 1
-            """,
-            {"sid": source_id, "tid": target_id, "fid": file_id},
-        )
-        if result.has_next():
-            existing_weight = result.get_next()[0]
-            if weight <= existing_weight:
-                return   # keep the existing better edge
-            conn.execute(
-                """
-                MATCH (a:Entity {id: $sid})-[r:CO_OCCURS {file_id: $fid}]->(b:Entity {id: $tid})
-                DELETE r
-                """,
-                {"sid": source_id, "tid": target_id, "fid": file_id},
-            )
-
-        conn.execute(
-            """
-            MATCH (a:Entity {id: $sid}), (b:Entity {id: $tid})
-            CREATE (a)-[:CO_OCCURS {
-                weight: $weight,
-                distance: $distance,
-                snippet: $snippet,
-                source_offset: $source_offset,
-                target_offset: $target_offset,
-                file_id: $file_id
-            }]->(b)
-            """,
-            {
-                "sid": source_id,
-                "tid": target_id,
-                "weight": weight,
-                "distance": distance,
-                "snippet": snippet,
-                "source_offset": source_offset,
-                "target_offset": target_offset,
-                "file_id": file_id,
-            },
-        )
-
+        _upsert_co_occurrence_conn(conn, source_id, target_id, weight, distance, snippet, source_offset, target_offset, file_id)
 
 def delete_entity_occurrences(entity_id: str, file_ids: list[str]) -> None:
-    """
-    Delete OCCURS_IN and CO_OCCURS relationships for the given entity in specific files.
-    If the entity has no remaining OCCURS_IN relationships, delete the Entity node itself.
-    """
     conn = get_write_conn()
     with _write_lock:
-        # 1. Delete OCCURS_IN relationships for specified files
         for file_id in file_ids:
-            conn.execute(
-                """
-                MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
-                DELETE r
-                """,
-                {"eid": entity_id, "fid": file_id}
-            )
+            conn.execute(DELETE_OCCURRENCE, {"eid": entity_id, "fid": file_id})
+            conn.execute(DELETE_ENTITY_CO_OCCURS_SRC, {"eid": entity_id, "fid": file_id})
+            conn.execute(DELETE_ENTITY_CO_OCCURS_TGT, {"eid": entity_id, "fid": file_id})
 
-        # 2. Delete CO_OCCURS relationships involving this entity in the specified files.
-        for file_id in file_ids:
-            conn.execute(
-                """
-                MATCH (a:Entity {id: $eid})-[r:CO_OCCURS]->(b:Entity)
-                WHERE r.file_id = $fid
-                DELETE r
-                """,
-                {"eid": entity_id, "fid": file_id}
-            )
-            conn.execute(
-                """
-                MATCH (a:Entity)-[r:CO_OCCURS]->(b:Entity {id: $eid})
-                WHERE r.file_id = $fid
-                DELETE r
-                """,
-                {"eid": entity_id, "fid": file_id}
-            )
-
-        # 3. Clean up the Entity node if it has no remaining OCCURS_IN relationships.
-        result = conn.execute(
-            """
-            MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->()
-            RETURN r LIMIT 1
-            """,
-            {"eid": entity_id}
-        )
-        if not result.has_next():
-            # Delete remaining CO_OCCURS relationships before deleting the node
-            conn.execute(
-                """
-                MATCH (e:Entity {id: $eid})-[r:CO_OCCURS]->(b:Entity)
-                DELETE r
-                """,
-                {"eid": entity_id}
-            )
-            conn.execute(
-                """
-                MATCH (a:Entity)-[r:CO_OCCURS]->(e:Entity {id: $eid})
-                DELETE r
-                """,
-                {"eid": entity_id}
-            )
-            conn.execute(
-                """
-                MATCH (e:Entity {id: $eid})
-                DELETE e
-                """,
-                {"eid": entity_id}
-            )
-
+        if not conn.execute(CHECK_ENTITY_HAS_OCCURRENCES, {"eid": entity_id}).has_next():
+            conn.execute(DELETE_ALL_CO_OCCURS_SRC, {"eid": entity_id})
+            conn.execute(DELETE_ALL_CO_OCCURS_TGT, {"eid": entity_id})
+            conn.execute(DELETE_ENTITY_NODE, {"eid": entity_id})
 
 def delete_file_ref(file_id: str) -> None:
-    """Delete a FileRef node, its occurrences, and associated co-occurrence relationships in KuzuDB."""
     conn = get_write_conn()
     with _write_lock:
-        # 1. Delete CO_OCCURS relationships associated with this file
-        conn.execute(
-            """
-            MATCH (a:Entity)-[r:CO_OCCURS {file_id: $fid}]->(b:Entity)
-            DELETE r
-            """,
-            {"fid": file_id}
-        )
-
-        # 2. Delete OCCURS_IN relationships connected to this file
-        conn.execute(
-            """
-            MATCH (e:Entity)-[r:OCCURS_IN]->(f:FileRef {id: $fid})
-            DELETE r
-            """,
-            {"fid": file_id}
-        )
-
-        # 3. Delete the FileRef node
-        conn.execute(
-            """
-            MATCH (f:FileRef {id: $fid})
-            DELETE f
-            """,
-            {"fid": file_id}
-        )
-
-        # 4. Clean up any orphan Entity nodes with no remaining occurrences
-        conn.execute(
-            """
-            MATCH (e:Entity)-[r:CO_OCCURS]->(b:Entity)
-            WHERE NOT (e)-[:OCCURS_IN]->()
-            DELETE r
-            """
-        )
-        conn.execute(
-            """
-            MATCH (a:Entity)-[r:CO_OCCURS]->(e:Entity)
-            WHERE NOT (e)-[:OCCURS_IN]->()
-            DELETE r
-            """
-        )
-        # Then delete the Entity nodes
-        conn.execute(
-            """
-            MATCH (e:Entity)
-            WHERE NOT (e)-[:OCCURS_IN]->()
-            DELETE e
-            """
-        )
-
+        conn.execute(DELETE_CO_OCCURS_BY_FILE, {"fid": file_id})
+        conn.execute(DELETE_OCCURRENCES_BY_FILE, {"fid": file_id})
+        conn.execute(DELETE_FILE_REF_NODE, {"fid": file_id})
+        conn.execute(DELETE_ORPHAN_CO_OCCURS_SRC)
+        conn.execute(DELETE_ORPHAN_CO_OCCURS_TGT)
+        conn.execute(DELETE_ORPHAN_ENTITIES)
 
 def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> dict:
-    """
-    Bulk import file refs, entities, occurrences, and edges in a single transactional block.
-    This bypasses the catastrophic performance overhead of auto-committing after every single statement.
-    """
     conn = get_write_conn()
-    import logging
-    logger = logging.getLogger(__name__)
-    
     with _write_lock:
         conn.execute("BEGIN TRANSACTION")
         try:
-            # 1. Upsert file refs
             for file_id in file_ids:
-                result = conn.execute(
-                    "MATCH (f:FileRef {id: $id}) RETURN f.id LIMIT 1",
-                    {"id": file_id}
-                )
-                if not result.has_next():
-                    conn.execute(
-                        "CREATE (:FileRef {id: $id})",
-                        {"id": file_id}
-                    )
+                _upsert_file_ref_conn(conn, file_id)
 
-            # 2. Upsert entities and occurrences
             for node in nodes:
-                node_id = node.id
-                result = conn.execute(
-                    "MATCH (e:Entity {id: $id}) RETURN e.id LIMIT 1",
-                    {"id": node_id}
-                )
-                if not result.has_next():
-                    conn.execute(
-                        """
-                        CREATE (:Entity {
-                            id: $id,
-                            canonical: $canonical,
-                            display_name: $display_name,
-                            type: $type,
-                            metadata: $metadata
-                        })
-                        """,
-                        {
-                            "id": node_id,
-                            "canonical": node.canonical[:500],
-                            "display_name": node.display_name[:500],
-                            "type": node.type,
-                            "metadata": node.metadata or "{}",
-                        },
-                    )
-
+                _upsert_entity_conn(conn, node.id, node.canonical, node.display_name, node.type, node.metadata or "{}")
                 for occ in node.occurrences:
-                    conn.execute(
-                        """
-                        MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
-                        DELETE r
-                        """,
-                        {"eid": node_id, "fid": occ.file_id},
-                    )
-                    conn.execute(
-                        """
-                        MATCH (e:Entity {id: $eid}), (f:FileRef {id: $fid})
-                        CREATE (e)-[:OCCURS_IN {count: $count, excerpts: $excerpts}]->(f)
-                        """,
-                        {
-                            "eid": node_id,
-                            "fid": occ.file_id,
-                            "count": occ.count,
-                            "excerpts": occ.excerpts or "[]",
-                        },
-                    )
+                    _upsert_occurrence_conn(conn, node.id, occ.file_id, occ.count, occ.excerpts or "[]")
 
-            # 3. Upsert edges
             for edge in edges:
                 src_id, tgt_id = edge.source, edge.target
                 if src_id > tgt_id:
                     src_id, tgt_id = tgt_id, src_id
 
-                conn.execute(
-                    """
-                    MATCH (a:Entity {id: $sid}), (b:Entity {id: $tid})
-                    CREATE (a)-[:CO_OCCURS {
-                        weight: $weight,
-                        distance: $distance,
-                        snippet: $snippet,
-                        source_offset: $source_offset,
-                        target_offset: $target_offset,
-                        file_id: $file_id
-                    }]->(b)
-                    """,
-                    {
-                        "sid": src_id,
-                        "tid": tgt_id,
-                        "weight": edge.weight,
-                        "distance": edge.distance,
-                        "snippet": edge.snippet,
-                        "source_offset": edge.source_offset,
-                        "target_offset": edge.target_offset,
-                        "file_id": edge.file_id,
-                    },
-                )
+                conn.execute(CREATE_CO_OCCURRENCE, {
+                    "sid": src_id, "tid": tgt_id, "weight": edge.weight, "distance": edge.distance,
+                    "snippet": edge.snippet, "source_offset": edge.source_offset, "target_offset": edge.target_offset, "file_id": edge.file_id
+                })
 
             conn.execute("COMMIT")
             return {
@@ -374,4 +186,3 @@ def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> di
             except Exception as rb_exc:
                 logger.error("ROLLBACK failed: %s", rb_exc)
             raise exc
-

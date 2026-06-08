@@ -177,11 +177,17 @@ def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> di
     with _write_lock:
         conn.execute("BEGIN TRANSACTION")
         try:
+            inserted_files = set()
             for file_id in file_ids:
-                _upsert_file_ref_conn(conn, file_id)
+                if file_id not in inserted_files:
+                    _upsert_file_ref_conn(conn, file_id)
+                    inserted_files.add(file_id)
 
+            inserted_entities = set()
             for node in nodes:
-                _upsert_entity_conn(conn, node.id, node.canonical, node.display_name, node.type, node.metadata or "{}")
+                if node.id not in inserted_entities:
+                    _upsert_entity_conn(conn, node.id, node.canonical, node.display_name, node.type, node.metadata or "{}")
+                    inserted_entities.add(node.id)
                 for occ in node.occurrences:
                     _upsert_occurrence_conn(conn, node.id, occ.file_id, occ.count, occ.excerpts or "[]")
 

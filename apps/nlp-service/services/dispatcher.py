@@ -123,19 +123,23 @@ def write_to_kuzu(result: ExtractionResult, file_id: str) -> None:
 
         # Build a local canonical→id map so neighbourhood upserts can resolve IDs
         entity_id_map: dict[tuple[str, str], str] = {}
+        seen_entities = set()
 
         for entity in result.entities:
             canonical = entity.canonical[:500]
             eid = _entity_id(canonical, entity.type)
             entity_id_map[(canonical, entity.type)] = eid
 
-            kuzu_db.upsert_entity(
-                entity_id=eid,
-                canonical=canonical,
-                display_name=entity.display_name[:500],
-                entity_type=entity.type,
-                metadata=json.dumps(entity.metadata or {}),
-            )
+            if eid not in seen_entities:
+                kuzu_db.upsert_entity(
+                    entity_id=eid,
+                    canonical=canonical,
+                    display_name=entity.display_name[:500],
+                    entity_type=entity.type,
+                    metadata=json.dumps(entity.metadata or {}),
+                )
+                seen_entities.add(eid)
+
             kuzu_db.upsert_occurrence(
                 entity_id=eid,
                 file_id=file_id,

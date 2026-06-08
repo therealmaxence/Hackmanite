@@ -365,3 +365,16 @@ async def delete_file(file_id: str):
         logger.error("delete_file failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
 
+class DeleteFilesRequest(BaseModel):
+    file_ids: list[str]
+
+@router.post("/files/delete", response_model=dict)
+async def delete_files(req: DeleteFilesRequest):
+    """Delete all occurrences and relationships associated with multiple files in KuzuDB."""
+    try:
+        kuzu_db.delete_files_ref(req.file_ids)
+        return {"success": True}
+    except Exception as exc:
+        logger.error("delete_files failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+

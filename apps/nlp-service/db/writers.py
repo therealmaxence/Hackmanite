@@ -150,6 +150,28 @@ def delete_file_ref(file_id: str) -> None:
         conn.execute(DELETE_ORPHAN_CO_OCCURS_TGT)
         conn.execute(DELETE_ORPHAN_ENTITIES)
 
+def delete_files_ref(file_ids: list[str]) -> None:
+    if not file_ids:
+        return
+    conn = get_write_conn()
+    with _write_lock:
+        conn.execute("BEGIN TRANSACTION")
+        try:
+            for file_id in file_ids:
+                conn.execute(DELETE_CO_OCCURS_BY_FILE, {"fid": file_id})
+                conn.execute(DELETE_OCCURRENCES_BY_FILE, {"fid": file_id})
+                conn.execute(DELETE_FILE_REF_NODE, {"fid": file_id})
+            conn.execute(DELETE_ORPHAN_CO_OCCURS_SRC)
+            conn.execute(DELETE_ORPHAN_CO_OCCURS_TGT)
+            conn.execute(DELETE_ORPHAN_ENTITIES)
+            conn.execute("COMMIT")
+        except Exception as exc:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception as rb_exc:
+                logger.error("ROLLBACK failed: %s", rb_exc)
+            raise exc
+
 def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> dict:
     conn = get_write_conn()
     with _write_lock:

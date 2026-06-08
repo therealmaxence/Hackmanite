@@ -31,7 +31,7 @@ def get_db() -> kuzu.Database:
                 logger.warning("Invalid KUZU_BUFFER_POOL_SIZE: %s. Using 1GB default.", buffer_pool_size_str)
                 buffer_pool_size = 1024 * 1024 * 1024
         else:
-            buffer_pool_size = 1024 * 1024 * 1024
+            buffer_pool_size = 256 * 1024 * 1024
             
         _db = kuzu.Database(str(db_path), buffer_pool_size=buffer_pool_size)
         logger.info("KuzuDB opened at %s (buffer pool size: %d)", db_path, buffer_pool_size)

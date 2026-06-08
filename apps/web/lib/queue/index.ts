@@ -39,7 +39,7 @@ class UnifiedQueue {
 
   async getPending() {
     if (isRedisAvailable && bullQueue) {
-      const pending = await bullQueue.getJobs(["waiting", "paused", "delayed"]);
+      const pending = await bullQueue.getJobs(["waiting", "paused", "delayed", "prioritized"]);
       return pending.map(j => ({
         id: j.id!,
         data: j.data as ExtractionJobPayload,
@@ -61,7 +61,7 @@ export async function cancelSessionExtraction(sessionId: string): Promise<string
   const cancelledFileIds: string[] = [];
 
   if (isRedisAvailable && bullQueue) {
-    const waiting = await bullQueue.getJobs(["waiting", "paused", "delayed"]);
+    const waiting = await bullQueue.getJobs(["waiting", "paused", "delayed", "prioritized"]);
     const active = await bullQueue.getJobs(["active"]);
 
     const sessionPending = waiting.filter(j => j.data.sessionId === sessionId);
@@ -93,16 +93,13 @@ export async function cancelSessionExtraction(sessionId: string): Promise<string
     const sessionActive = active.filter(j => j.data.sessionId === sessionId);
 
     for (const job of sessionPending) {
-      job.status = "FAILED";
-      job.error = "Cancelled by user";
       if (job.data.fileId) cancelledFileIds.push(job.data.fileId);
+      memoryQueue.removeJob(job.id);
     }
 
     for (const job of sessionActive) {
-      memoryQueue.abortJob(job.id);
-      job.status = "FAILED";
-      job.error = "Cancelled by user";
       if (job.data.fileId) cancelledFileIds.push(job.data.fileId);
+      memoryQueue.removeJob(job.id);
     }
   }
 

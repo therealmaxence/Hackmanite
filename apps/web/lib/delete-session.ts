@@ -1,7 +1,10 @@
 import { prisma } from '@/lib/prisma';
 import { clearSessionGraphCache } from '@/lib/redis';
+import { cancelSessionExtraction } from '@/lib/queue';
 
 export async function deleteSession(sessionId: string): Promise<void> {
+  await cancelSessionExtraction(sessionId);
+
   const files = await prisma.file.findMany({
     where: { sessionId },
     select: { id: true },

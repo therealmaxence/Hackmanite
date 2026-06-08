@@ -53,6 +53,16 @@ export class MemoryQueue {
     }
   }
 
+  removeJob(id: string) {
+    this.jobs.delete(id);
+    this.activeJobs.delete(id);
+    const controller = this.activeControllers.get(id);
+    if (controller) {
+      controller.abort();
+      this.activeControllers.delete(id);
+    }
+  }
+
   private async processQueue() {
     if (this.isProcessing) return;
     this.isProcessing = true;

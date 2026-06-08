@@ -140,6 +140,19 @@ Everything (Python runtime, spaCy models, Next.js server) is bundled inside the 
 
 ---
 
+## Exporting to Obsidian
+
+You can export your session's entity graph to Obsidian to explore and search nodes locally:
+
+1. In the Graph view sidebar, click **Export Obsidian**.
+2. Customize your graph pruning preferences in the settings modal (top nodes limit, min occurrences, min connections, weight threshold, and entity categories) and click **Export**.
+3. Extract the downloaded `session-<id>-obsidian.zip` archive to a folder on your system (e.g., `My_Graph_Vault`).
+4. Open the **Obsidian** application.
+5. Select **Open folder as vault** and choose the extracted folder.
+6. Press **`Ctrl + G`** (or click the Graph icon in the left menu) to view your dynamic, interactive entity graph.
+
+---
+
 ## Building the Portable ZIP
 
 Run these commands in order after any code change:

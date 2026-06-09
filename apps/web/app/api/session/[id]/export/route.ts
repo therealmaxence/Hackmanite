@@ -13,40 +13,16 @@ export async function GET(
   const { id: sessionId } = await params;
 
   try {
-    // 1. Fetch all files in the session, including occurrences and related entities
     const files = await prisma.file.findMany({
       where: { sessionId },
-      include: {
-        occurrences: {
-          include: {
-            entity: true,
-          },
-        },
+      select: {
+        id: true,
+        originalName: true,
+        mimeType: true,
+        sizeBytes: true,
+        originalCreatedAt: true,
       },
     });
-
-    if (files.length === 0) {
-      const sRec = await prisma.session.findUnique({
-        where: { id: sessionId },
-        select: {
-          windowSize: true,
-          minConnections: true,
-          minOccurrences: true,
-          minEdgeWeight: true,
-        },
-      });
-
-      return NextResponse.json({
-        sessionId,
-        exportedAt: new Date().toISOString(),
-        windowSize: sRec?.windowSize ?? 400,
-        minConnections: sRec?.minConnections ?? 2,
-        minOccurrences: sRec?.minOccurrences ?? 2,
-        minEdgeWeight: sRec?.minEdgeWeight ?? 0.0,
-        nodes: [],
-        edges: [],
-      });
-    }
 
     const sessionRecord = await prisma.session.findUnique({
       where: { id: sessionId },
@@ -63,7 +39,22 @@ export async function GET(
     const minOccurrences = sessionRecord?.minOccurrences ?? 2;
     const minEdgeWeight = sessionRecord?.minEdgeWeight ?? 0.0;
 
-    // 2. Group occurrences by entity
+    if (files.length === 0) {
+      return NextResponse.json({
+        sessionId,
+        exportedAt: new Date().toISOString(),
+        windowSize,
+        minConnections,
+        minOccurrences,
+        minEdgeWeight,
+        nodes: [],
+        edges: [],
+      });
+    }
+
+    const filesMap = new Map(files.map((f) => [f.id, f]));
+    const fileIds = files.map((f) => f.id);
+
     const entityOccurrencesMap = new Map<
       string,
       {
@@ -80,9 +71,19 @@ export async function GET(
       }
     >();
 
-    for (const file of files) {
-      for (const occurrence of file.occurrences) {
+    const BATCH_SIZE = 100;
+    for (let i = 0; i < fileIds.length; i += BATCH_SIZE) {
+      const batchFileIds = fileIds.slice(i, i + BATCH_SIZE);
+      const occurrences = await prisma.occurrence.findMany({
+        where: { fileId: { in: batchFileIds } },
+        include: { entity: true },
+      });
+
+      for (const occurrence of occurrences) {
         const entity = occurrence.entity;
+        const file = filesMap.get(occurrence.fileId);
+        if (!entity || !file) continue;
+
         const cur = entityOccurrencesMap.get(entity.id) ?? {
           entity,
           occurrences: [],
@@ -111,32 +112,35 @@ export async function GET(
       occurrences: val.occurrences,
     }));
 
-    // 3. Fetch all neighborhoods for matched files
-    const fileIds = files.map((f) => f.id);
-    const neighborhoods = await prisma.entityNeighborhood.findMany({
-      where: { fileId: { in: fileIds } },
-      include: {
-        file: {
-          select: {
-            originalName: true,
+    const edges: any[] = [];
+    for (let i = 0; i < fileIds.length; i += BATCH_SIZE) {
+      const batchFileIds = fileIds.slice(i, i + BATCH_SIZE);
+      const neighborhoods = await prisma.entityNeighborhood.findMany({
+        where: { fileId: { in: batchFileIds } },
+        include: {
+          file: {
+            select: {
+              originalName: true,
+            },
           },
         },
-      },
-    });
+      });
 
-    const edges = neighborhoods.map((n) => ({
-      source: n.sourceEntityId,
-      target: n.targetEntityId,
-      weight: n.weight,
-      distance: n.distance,
-      snippet: n.snippet,
-      sourceOffset: n.sourceOffset,
-      targetOffset: n.targetOffset,
-      fileId: n.fileId,
-      fileName: n.file.originalName,
-    }));
+      for (const n of neighborhoods) {
+        edges.push({
+          source: n.sourceEntityId,
+          target: n.targetEntityId,
+          weight: n.weight,
+          distance: n.distance,
+          snippet: n.snippet,
+          sourceOffset: n.sourceOffset,
+          targetOffset: n.targetOffset,
+          fileId: n.fileId,
+          fileName: n.file.originalName,
+        });
+      }
+    }
 
-    // 4. Fetch all emails associated with this session's files
     const emails = await prisma.email.findMany({
       where: { fileId: { in: fileIds } },
       include: {
@@ -170,7 +174,7 @@ export async function GET(
       fileOriginalCreatedAt: e.file?.originalCreatedAt ? e.file.originalCreatedAt.toISOString() : null,
     }));
 
-    const payload = {
+    return NextResponse.json({
       sessionId,
       exportedAt: new Date().toISOString(),
       windowSize,
@@ -180,9 +184,7 @@ export async function GET(
       nodes,
       edges,
       emails: exportedEmails,
-    };
-
-    return NextResponse.json(payload);
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json(

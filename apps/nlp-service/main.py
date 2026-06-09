@@ -43,11 +43,7 @@ async def health():
 @app.on_event("startup")
 async def startup_event():
     logger.info("NLP service starting up")
-    db_path = Path(os.environ.get("KUZU_DB_PATH", "./kuzu_data/kuzu.db"))
-    if db_path.exists():
-        logger.info("KuzuDB already exists; skipping schema init", db_path=str(db_path))
-    else:
-        kuzu_db.init_schema()
+    kuzu_db.init_schema()
     logger.info("KuzuDB ready")
 
 

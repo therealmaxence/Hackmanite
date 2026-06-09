@@ -19,7 +19,9 @@ from db.writers import (
     upsert_co_occurrence,
     delete_entity_occurrences,
     delete_file_ref,
-    bulk_import_transaction
+    delete_files_ref,
+    bulk_import_transaction,
+    update_tfidf_properties
 )
 from db.readers import (
     get_node_count,

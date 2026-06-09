@@ -82,8 +82,25 @@ export async function GET(req: NextRequest) {
         }
       }
     }
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { hiddenNodeIds: true },
+    });
+    const hiddenNodeIds: string[] = JSON.parse(session?.hiddenNodeIds || '[]');
 
-    return NextResponse.json({ count: data.count ?? 0 });
+    let finalCount = data.count ?? 0;
+    if (hiddenNodeIds.length > 0 && fileIds.length > 0) {
+      const hiddenUniqueEntities = await prisma.occurrence.groupBy({
+        by: ['entityId'],
+        where: {
+          fileId: { in: fileIds },
+          entityId: { in: hiddenNodeIds },
+        },
+      });
+      finalCount = Math.max(0, finalCount - hiddenUniqueEntities.length);
+    }
+
+    return NextResponse.json({ count: finalCount });
   } catch (err: unknown) {
     console.error('Graph Count API Error:', err);
     const msg = err instanceof Error ? err.message : 'Unknown error';

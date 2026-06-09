@@ -20,7 +20,7 @@ interface Props {
 export default function GraphFilterSliders({ filters, sortedCommunities, onFilterChange, onDateChange }: Props) {
   return (
     <>
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
           <label htmlFor="graph-min-conn-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title="Minimum connections">Min connections</label>
           <input
@@ -65,6 +65,23 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
             onChange={(e) => {
               const val = e.target.value;
               onFilterChange('minEdgeWeight', val === '' ? 0 : Math.max(0, Math.min(1, parseFloat(val) || 0)));
+            }}
+            className="signature-input"
+            style={{ height: 40, padding: '0 0.5rem', width: '100%', minWidth: 0 }}
+          />
+        </div>
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+          <label htmlFor="graph-min-tfidf-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title="Minimum TF-IDF">Min TF-IDF</label>
+          <input
+            id="graph-min-tfidf-input"
+            type="number"
+            min="0"
+            step="0.1"
+            value={filters.minTfidf}
+            onChange={(e) => {
+              const val = e.target.value;
+              onFilterChange('minTfidf', val === '' ? 0 : Math.max(0, parseFloat(val) || 0));
             }}
             className="signature-input"
             style={{ height: 40, padding: '0 0.5rem', width: '100%', minWidth: 0 }}

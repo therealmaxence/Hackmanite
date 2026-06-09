@@ -15,6 +15,12 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
   const typeFilter = types.length > 0 ? types : undefined;
   const searchFilter = search ? { contains: search } : undefined;
 
+  const sessionRecord = await prisma.session.findUnique({
+    where: { id: sessionId },
+    select: { hiddenNodeIds: true },
+  });
+  const hiddenNodeIds: string[] = JSON.parse(sessionRecord?.hiddenNodeIds || '[]');
+
   const [fileStats, totalEntities, totalOccurrences] = await Promise.all([
     prisma.file.aggregate({
       where: { sessionId },
@@ -25,6 +31,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
     prisma.entity.count({
       where: {
         occurrences: { some: { file: { sessionId } } },
+        id: hiddenNodeIds.length > 0 ? { notIn: hiddenNodeIds } : undefined,
         type: typeFilter ? { in: typeFilter as any } : undefined,
         canonical: searchFilter,
       },
@@ -32,6 +39,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
     prisma.occurrence.aggregate({
       where: {
         file: { sessionId },
+        entityId: hiddenNodeIds.length > 0 ? { notIn: hiddenNodeIds } : undefined,
         entity: {
           type: typeFilter ? { in: typeFilter as any } : undefined,
           canonical: searchFilter,
@@ -43,6 +51,15 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
 
   const typeFilterSql = types.length > 0 ? Prisma.sql`AND e.type IN (${Prisma.join(types)})` : Prisma.empty;
   const searchFilterSql = search ? Prisma.sql`AND e.canonical LIKE ${`%%${search}%%`}` : Prisma.empty;
+  const hiddenNodeIdsSql = hiddenNodeIds.length > 0 
+    ? Prisma.sql`AND e.id NOT IN (${Prisma.join(hiddenNodeIds)})` 
+    : Prisma.empty;
+  const hiddenNodeIdsOccursSql = hiddenNodeIds.length > 0 
+    ? Prisma.sql`AND o.entityId NOT IN (${Prisma.join(hiddenNodeIds)})` 
+    : Prisma.empty;
+  const hiddenNodeIdsNeighborhoodSql = hiddenNodeIds.length > 0 
+    ? Prisma.sql`AND n.sourceEntityId NOT IN (${Prisma.join(hiddenNodeIds)}) AND n.targetEntityId NOT IN (${Prisma.join(hiddenNodeIds)})` 
+    : Prisma.empty;
 
   const [
     topEntitiesRaw,
@@ -63,6 +80,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       WHERE f.sessionId = ${sessionId}
       ${typeFilterSql}
       ${searchFilterSql}
+      ${hiddenNodeIdsSql}
       GROUP BY e.id, e.displayName, e.type
       ORDER BY count DESC
       LIMIT ${limit}
@@ -75,6 +93,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       WHERE f.sessionId = ${sessionId}
       ${typeFilterSql}
       ${searchFilterSql}
+      ${hiddenNodeIdsSql}
       GROUP BY e.type
     `,
     prisma.$queryRaw<any[]>`
@@ -92,6 +111,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
         FROM occurrences o
         JOIN files f ON f.id = o.fileId
         WHERE f.sessionId = ${sessionId}
+        ${hiddenNodeIdsOccursSql}
         GROUP BY entityId
       )
     `,
@@ -105,6 +125,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       JOIN entities e2 ON n.targetEntityId = e2.id
       JOIN files f ON n.fileId = f.id
       WHERE f.sessionId = ${sessionId} AND e1.type <= e2.type
+      ${hiddenNodeIdsNeighborhoodSql}
       GROUP BY typeA, typeB
       ORDER BY count DESC
       LIMIT 5

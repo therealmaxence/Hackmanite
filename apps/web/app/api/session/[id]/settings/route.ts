@@ -19,6 +19,7 @@ export async function GET(
         minConnections: true,
         minOccurrences: true,
         minEdgeWeight: true,
+        hiddenNodeIds: true,
       },
     });
 
@@ -47,7 +48,7 @@ export async function POST(
 
   try {
     const body = await req.json();
-    const { windowSize, minConnections, minOccurrences, minEdgeWeight } = body;
+    const { windowSize, minConnections, minOccurrences, minEdgeWeight, hiddenNodeIds } = body;
 
     const session = await prisma.session.update({
       where: { id: sessionId },
@@ -56,6 +57,7 @@ export async function POST(
         minConnections: typeof minConnections === 'number' ? minConnections : undefined,
         minOccurrences: typeof minOccurrences === 'number' ? minOccurrences : undefined,
         minEdgeWeight: typeof minEdgeWeight === 'number' ? minEdgeWeight : undefined,
+        hiddenNodeIds: typeof hiddenNodeIds === 'string' ? hiddenNodeIds : undefined,
       },
     });
 
@@ -70,6 +72,7 @@ export async function POST(
         minConnections: session.minConnections,
         minOccurrences: session.minOccurrences,
         minEdgeWeight: session.minEdgeWeight,
+        hiddenNodeIds: session.hiddenNodeIds,
       },
     });
   } catch (err: unknown) {

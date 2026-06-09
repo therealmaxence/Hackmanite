@@ -4,6 +4,8 @@ import { useState } from 'react';
 import Button from '@/components/ui/Button';
 import { UploadedFile } from '@/store/uploadStore';
 import ExportModal from '@/components/graph/ExportModal';
+import HiddenNodesModal from '@/components/graph/HiddenNodesModal';
+import { useSWRConfig } from 'swr';
 
 interface Props {
   sessionId: string | null;
@@ -15,8 +17,10 @@ interface Props {
 
 export default function GraphActions({ sessionId, onResetFilters, onResetGraph, onExplodeGraph, onImportSuccess }: Props) {
   const [exportModalType, setExportModalType] = useState<'json' | 'obsidian' | null>(null);
+  const [showHiddenNodesModal, setShowHiddenNodesModal] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
+  const { mutate } = useSWRConfig();
 
   const handleSave = () => {
     setExportModalType('json');
@@ -71,7 +75,10 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
         <Button id="save-session-export" variant="secondary" size="xs" onClick={handleSave} disabled={!sessionId}>Save JSON</Button>
         <Button id="import-session-json" variant="secondary" size="xs" onClick={handleImportClick} loading={isImporting}>Import JSON</Button>
       </div>
-      <Button id="save-session-obsidian" variant="secondary" size="xs" onClick={handleSaveObsidian} disabled={!sessionId} style={{ width: '100%' }}>Export Obsidian</Button>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+        <Button id="save-session-obsidian" variant="secondary" size="xs" onClick={handleSaveObsidian} disabled={!sessionId}>Export Obsidian</Button>
+        <Button id="show-hidden-nodes" variant="secondary" size="xs" onClick={() => setShowHiddenNodesModal(true)} disabled={!sessionId}>Hidden Nodes</Button>
+      </div>
       <input id="import-graph-file-input" type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
       {importError && <span style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: 4, display: 'block', textAlign: 'center' }}>{importError}</span>}
       <Button
@@ -101,6 +108,16 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
           sessionId={sessionId}
           exportType={exportModalType}
           onClose={() => setExportModalType(null)}
+        />
+      )}
+
+      {showHiddenNodesModal && sessionId && (
+        <HiddenNodesModal
+          sessionId={sessionId}
+          onClose={() => setShowHiddenNodesModal(false)}
+          onUnhideSuccess={() => {
+            mutate((key: unknown) => typeof key === 'string' && (key.includes('/api/graph/') || key.includes('/api/stats')));
+          }}
         />
       )}
     </div>

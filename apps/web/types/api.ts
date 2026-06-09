@@ -29,6 +29,7 @@ export interface NodesResponse {
     type: string;
     fileCount: number;
     totalOccurrences: number;
+    tfidf?: number;
   }>;
 }
 
@@ -80,6 +81,7 @@ export interface SessionExportResponse {
       mimeType: string;
       sizeBytes: number;
       count: number;
+      tfidf?: number;
       excerpts: any;
       originalCreatedAt: string | null;
     }>;

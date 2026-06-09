@@ -28,6 +28,7 @@ _SCHEMA_DDL = [
     CREATE REL TABLE IF NOT EXISTS OCCURS_IN(
         FROM Entity TO FileRef,
         count INT64,
+        tfidf DOUBLE,
         excerpts STRING
     )
     """,
@@ -52,4 +53,8 @@ def init_schema() -> None:
     with _write_lock:
         for ddl in _SCHEMA_DDL:
             conn.execute(ddl.strip())
+        try:
+            conn.execute("ALTER TABLE OCCURS_IN ADD tfidf DOUBLE DEFAULT 0.0")
+        except Exception:
+            pass
     logger.info("KuzuDB schema ready")

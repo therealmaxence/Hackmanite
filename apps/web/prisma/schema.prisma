@@ -19,6 +19,7 @@ model Session {
   minConnections Int      @default(2)
   minOccurrences Int      @default(2)
   minEdgeWeight  Float    @default(0.0)
+  hiddenNodeIds  String   @default("[]")
 
   @@map("sessions")
 }
@@ -74,6 +75,7 @@ model Occurrence {
   file       File    @relation(fields: [fileId], references: [id], onDelete: Cascade)
   count      Int     @default(1)
   excerpts   String?
+  tfidf      Float   @default(0.0)
   
 
   @@unique([fileId, entityId])

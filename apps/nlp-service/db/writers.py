@@ -214,3 +214,21 @@ def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> di
             except Exception as rb_exc:
                 logger.error("ROLLBACK failed: %s", rb_exc)
             raise exc
+
+
+def update_tfidf_properties(file_ids: list[str]) -> None:
+    if not file_ids:
+        return
+    num_files = len(file_ids)
+    conn = get_write_conn()
+    query = """
+        MATCH (e:Entity)-[r:OCCURS_IN]->(f:FileRef)
+        WHERE f.id IN $file_ids
+        WITH e, count(f.id) AS df
+        MATCH (e)-[r:OCCURS_IN]->(f:FileRef)
+        WHERE f.id IN $file_ids
+        SET r.tfidf = to_double(r.count) * (ln(to_double($num_files) / to_double(df)) + 1.0)
+    """
+    with _write_lock:
+        conn.execute(query, {"file_ids": file_ids, "num_files": num_files})
+

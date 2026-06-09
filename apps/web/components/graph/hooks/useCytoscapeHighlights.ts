@@ -53,6 +53,7 @@ export function useCytoscapeHighlights({
       const q = filters.searchQuery.toLowerCase();
       const minConn = filters.minConnections ?? 0;
       const minOcc = filters.minOccurrences ?? 2;
+      const minTfidf = filters.minTfidf ?? 0.0;
       const minEdgeWeight = filters.minEdgeWeight ?? 0;
       const hiddenComms = filters.hiddenCommunities ?? [];
 
@@ -62,6 +63,7 @@ export function useCytoscapeHighlights({
             if (selectedNodeIds.includes(n.id)) return true;
             if ((adjacency.get(n.id)?.size ?? 0) < minConn) return false;
             if (n.totalOccurrences < minOcc) return false;
+            if ((n.tfidf ?? n.totalOccurrences) < minTfidf) return false;
             if (filters.crossDocumentOnly && n.fileCount <= 1) return false;
             if (hiddenComms.includes(communityMap.get(n.id) || '')) return false;
             return true;
@@ -135,6 +137,7 @@ export function useCytoscapeHighlights({
     filters.searchQuery,
     filters.minConnections,
     filters.minOccurrences,
+    filters.minTfidf,
     filters.minEdgeWeight,
     filters.crossDocumentOnly,
     filters.hiddenCommunities,

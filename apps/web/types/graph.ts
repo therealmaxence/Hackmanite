@@ -6,6 +6,7 @@ export interface GraphFilters {
   fileIds: string[];
   minConnections: number;
   minOccurrences: number;
+  minTfidf: number;
   dateRange: { from: Date | null; to: Date | null };
   searchQuery: string;
   minEdgeWeight: number;

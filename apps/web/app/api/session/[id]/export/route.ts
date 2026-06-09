@@ -31,6 +31,7 @@ export async function GET(
         minConnections: true,
         minOccurrences: true,
         minEdgeWeight: true,
+        hiddenNodeIds: true,
       },
     });
 
@@ -65,6 +66,7 @@ export async function GET(
           mimeType: string;
           sizeBytes: number;
           count: number;
+          tfidf: number;
           excerpts: any;
           originalCreatedAt: string | null;
         }>;
@@ -94,6 +96,7 @@ export async function GET(
           mimeType: file.mimeType,
           sizeBytes: Number(file.sizeBytes),
           count: occurrence.count,
+          tfidf: occurrence.tfidf,
           excerpts: occurrence.excerpts,
           originalCreatedAt: file.originalCreatedAt
             ? file.originalCreatedAt.toISOString()
@@ -181,6 +184,7 @@ export async function GET(
       minConnections,
       minOccurrences,
       minEdgeWeight,
+      hiddenNodeIds: JSON.parse(sessionRecord?.hiddenNodeIds || '[]'),
       nodes,
       edges,
       emails: exportedEmails,

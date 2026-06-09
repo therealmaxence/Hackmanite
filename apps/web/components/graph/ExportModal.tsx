@@ -23,8 +23,10 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
   const [keepAllNodes, setKeepAllNodes] = useState(true);
   const [limitNodes, setLimitNodes] = useState(100);
   const [minOccurrences, setMinOccurrences] = useState(1);
+  const [minTfidf, setMinTfidf] = useState(0.0);
   const [minConnections, setMinConnections] = useState(0);
   const [minEdgeWeight, setMinEdgeWeight] = useState(0.0);
+  const [exportHiddenNodes, setExportHiddenNodes] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -77,10 +79,15 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
     setError(null);
 
     try {
+      const hiddenIdsSet = new Set<string>(rawData.hiddenNodeIds || []);
       let filteredNodes = (rawData.nodes || []).filter((node: any) => {
+        if (!exportHiddenNodes && hiddenIdsSet.has(node.id)) return false;
         if (!selectedTypes.has(node.type)) return false;
         const totalOccs = (node.occurrences || []).reduce((sum: number, o: any) => sum + o.count, 0);
-        return totalOccs >= minOccurrences;
+        if (totalOccs < minOccurrences) return false;
+        const totalTfidf = (node.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
+        if (totalTfidf < minTfidf) return false;
+        return true;
       });
 
       let filteredEdges = (rawData.edges || []).filter((edge: any) => edge.weight >= minEdgeWeight);
@@ -98,9 +105,9 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
 
       if (!keepAllNodes && limitNodes > 0) {
         filteredNodes.sort((a: any, b: any) => {
-          const aOccs = (a.occurrences || []).reduce((sum: number, o: any) => sum + o.count, 0);
-          const bOccs = (b.occurrences || []).reduce((sum: number, o: any) => sum + o.count, 0);
-          return bOccs - aOccs;
+          const aVal = (a.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
+          const bVal = (b.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
+          return bVal - aVal;
         });
         filteredNodes = filteredNodes.slice(0, limitNodes);
       }
@@ -231,15 +238,29 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                       className="signature-input"
                       style={{ width: 100, height: 36, padding: '0 10px' }}
                     />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>nodes (by occurrence)</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>nodes (by TF-IDF)</span>
                   </div>
                 )}
               </div>
 
+              {/* Export Hidden Nodes Toggle */}
+              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>Hidden Nodes Option</span>
+                <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--color-text)', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={exportHiddenNodes}
+                    onChange={(e) => setExportHiddenNodes(e.target.checked)}
+                    style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
+                  />
+                  Export hidden nodes
+                </label>
+              </div>
+
               {/* Sliders and Numerical Filters */}
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="modal-min-occ-input" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Min occurrences</label>
+                  <label htmlFor="modal-min-occ-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Min occs</label>
                   <input
                     id="modal-min-occ-input"
                     type="number"
@@ -247,12 +268,12 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                     value={minOccurrences}
                     onChange={(e) => setMinOccurrences(Math.max(1, parseInt(e.target.value) || 1))}
                     className="signature-input"
-                    style={{ height: 38, width: '100%' }}
+                    style={{ height: 38, width: '100%', padding: '0 8px' }}
                   />
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="modal-min-conn-input" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Min connections</label>
+                  <label htmlFor="modal-min-conn-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Min conns</label>
                   <input
                     id="modal-min-conn-input"
                     type="number"
@@ -260,7 +281,21 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                     value={minConnections}
                     onChange={(e) => setMinConnections(Math.max(0, parseInt(e.target.value) || 0))}
                     className="signature-input"
-                    style={{ height: 38, width: '100%' }}
+                    style={{ height: 38, width: '100%', padding: '0 8px' }}
+                  />
+                </div>
+
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
+                  <label htmlFor="modal-min-tfidf-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Min TF-IDF</label>
+                  <input
+                    id="modal-min-tfidf-input"
+                    type="number"
+                    min="0"
+                    step="0.1"
+                    value={minTfidf}
+                    onChange={(e) => setMinTfidf(Math.max(0.0, parseFloat(e.target.value) || 0.0))}
+                    className="signature-input"
+                    style={{ height: 38, width: '100%', padding: '0 8px' }}
                   />
                 </div>
               </div>

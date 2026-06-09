@@ -4,6 +4,7 @@ import { redis, RedisKeys, RedisTTL, clearSessionGraphCache } from "@/lib/redis"
 import { resolve } from "path";
 import { uuid5 } from "@/lib/uuid5";
 import { ExtractionJobPayload } from "./types";
+import { recomputeSessionTfidf } from "@/lib/api/tfidf";
 
 async function isSessionCancelled(sessionId: string): Promise<boolean> {
   return (await redis.get(RedisKeys.sessionCancellation(sessionId))) === "1";
@@ -300,6 +301,8 @@ export async function executeExtraction(jobId: string, data: ExtractionJobPayloa
     where: { id: fileId },
     data: { status: "DONE", processedAt: new Date() },
   });
+
+  await recomputeSessionTfidf(sessionId);
 
   await clearSessionGraphCache(sessionId);
 

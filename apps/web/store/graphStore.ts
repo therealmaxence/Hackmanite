@@ -41,6 +41,7 @@ const defaultFilters: GraphFilters = {
   fileIds: [],
   minConnections: 2,
   minOccurrences: 2,
+  minTfidf: 0.0,
   dateRange: { from: null, to: null },
   searchQuery: "",
   minEdgeWeight: 0.0,

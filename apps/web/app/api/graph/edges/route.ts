@@ -22,6 +22,15 @@ async function fetchEdges({
     throw new Error('sessionId or nodeIds required');
   }
 
+  let hiddenIds = new Set<string>();
+  if (sessionId) {
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { hiddenNodeIds: true },
+    });
+    hiddenIds = new Set<string>(JSON.parse(session?.hiddenNodeIds || '[]'));
+  }
+
   let ids: string[];
 
   if (nodeIds) {
@@ -74,6 +83,9 @@ async function fetchEdges({
     ids = (nodesData.nodes ?? []).map((n: { id: string }) => n.id);
   }
 
+  // Filter out hidden IDs
+  ids = ids.filter((id) => !hiddenIds.has(id));
+
   if (ids.length < 2) {
     return { edges: [] };
   }
@@ -89,13 +101,15 @@ async function fetchEdges({
   }
 
   const data = await upstream.json();
-  const edges = (data.edges ?? []).map(
-    (e: { source: string; target: string; weight: number; distance: number }) => ({
-      source: e.source,
-      target: e.target,
-      weight: e.weight,
-    })
-  );
+  const edges = (data.edges ?? [])
+    .filter((e: { source: string; target: string }) => !hiddenIds.has(e.source) && !hiddenIds.has(e.target))
+    .map(
+      (e: { source: string; target: string; weight: number; distance: number }) => ({
+        source: e.source,
+        target: e.target,
+        weight: e.weight,
+      })
+    );
 
   if (!nodeIds && sessionId) {
     const cacheKey = `${RedisKeys.sessionGraph(sessionId)}:edges:d=${from || 'any'}:${to || 'any'}`;

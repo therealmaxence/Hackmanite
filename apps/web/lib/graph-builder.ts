@@ -9,6 +9,7 @@ export interface GraphNode {
   type: EntityType | "FILE";
   fileCount: number;
   totalOccurrences: number;
+  tfidf?: number;
   color: string;
 }
 
@@ -26,6 +27,7 @@ export interface CytoscapeNodeData {
   color: string;
   fileCount: number;
   totalOccurrences: number;
+  tfidf?: number;
   bgImage?: string;
 }
 
@@ -67,6 +69,7 @@ export function buildCytoscapeElements(
         color: n.color || ENTITY_COLORS[n.type],
         fileCount: n.fileCount,
         totalOccurrences: n.totalOccurrences,
+        tfidf: n.tfidf ?? n.totalOccurrences,
         ...(bgImage ? { bgImage } : {}),
       },
     };
@@ -97,8 +100,8 @@ export const cytoscapeStylesheet = [
       "text-margin-y": 6,
       "text-outline-color": "#0e0e10",
       "text-outline-width": 2,
-      width: "mapData(totalOccurrences, 1, 50, 22, 64)",
-      height: "mapData(totalOccurrences, 1, 50, 22, 64)",
+      width: "mapData(tfidf, 1, 50, 22, 64)",
+      height: "mapData(tfidf, 1, 50, 22, 64)",
       "border-width": 2,
       "border-color": "data(color)",
       "border-opacity": 0.5,

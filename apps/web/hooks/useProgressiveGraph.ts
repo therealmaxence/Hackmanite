@@ -137,12 +137,13 @@ export function useProgressiveGraph(): ProgressiveGraphState {
       const newNodes: GraphNode[] = (data.nodes ?? [])
         .filter((n: any) => n.label && n.label.trim() !== '' && n.type && n.type.trim() !== '')
         .map(
-          (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; color: string }) => ({
+          (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; tfidf?: number; color: string }) => ({
             id: n.id,
             label: n.label,
             type: n.type,
             fileCount: n.fileCount,
             totalOccurrences: n.totalOccurrences,
+            tfidf: n.tfidf,
             color: ENTITY_COLORS[n.type] || '#6b7280',
           })
         );
@@ -255,7 +256,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         const res = await fetch('/api/graph/neighbors', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nodeId, loadedIds }),
+          body: JSON.stringify({ nodeId, loadedIds, sessionId: sessionIdRef.current }),
         });
         if (!res.ok) return;
         const data = await res.json();
@@ -263,12 +264,13 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         const newNodes: GraphNode[] = (data.nodes ?? [])
           .filter((n: any) => n.label && n.label.trim() !== '' && n.type && n.type.trim() !== '')
           .map(
-            (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; color: string }) => ({
+            (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; tfidf?: number; color: string }) => ({
               id: n.id,
               label: n.label,
               type: n.type,
               fileCount: n.fileCount,
               totalOccurrences: n.totalOccurrences,
+              tfidf: n.tfidf,
               color: ENTITY_COLORS[n.type] || '#6b7280',
             })
           );

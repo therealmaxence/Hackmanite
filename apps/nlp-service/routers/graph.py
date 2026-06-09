@@ -28,6 +28,7 @@ class NodeOut(BaseModel):
     type: str
     total_count: int
     file_count: int
+    tfidf: float
 
 
 class NodeDetailsOut(BaseModel):
@@ -37,6 +38,7 @@ class NodeDetailsOut(BaseModel):
     type: str
     total_count: int
     file_count: int
+    tfidf: float
 
 
 class EdgeOut(BaseModel):
@@ -178,6 +180,21 @@ async def node_count_post(req: NodeCountPostRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+class RecomputeTfidfRequest(BaseModel):
+    file_ids: list[str]
+
+
+@router.post("/recompute-tfidf", response_model=dict)
+async def recompute_tfidf(req: RecomputeTfidfRequest):
+    """Recompute TF-IDF values for the given files in KuzuDB."""
+    try:
+        kuzu_db.update_tfidf_properties(req.file_ids)
+        return {"success": True}
+    except Exception as exc:
+        logger.error("recompute_tfidf failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+
 @router.get("/nodes", response_model=NodesResponse)
 async def get_nodes(
     file_ids: str = Query(..., description="Comma-separated file IDs"),
@@ -206,6 +223,7 @@ async def get_nodes(
                 type=r["type"],
                 total_count=r["total_count"],
                 file_count=r["file_count"],
+                tfidf=r.get("tfidf", 0.0),
             )
             for r in rows
         ]
@@ -239,6 +257,7 @@ async def get_nodes_post(req: NodesPostRequest):
                 type=r["type"],
                 total_count=r["total_count"],
                 file_count=r["file_count"],
+                tfidf=r.get("tfidf", 0.0),
             )
             for r in rows
         ]

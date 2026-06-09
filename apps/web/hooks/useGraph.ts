@@ -44,12 +44,13 @@ export function useGraph() {
   }, [isLoading, setLoading]);
 
   const nodes: GraphNode[] = (nodeData?.nodes ?? []).map(
-    (n: { id: string; label: string; type: EntityType | "FILE"; fileCount: number; totalOccurrences: number }) => ({
+    (n: { id: string; label: string; type: EntityType | "FILE"; fileCount: number; totalOccurrences: number; tfidf?: number }) => ({
       id: n.id,
       label: n.label,
       type: n.type,
       fileCount: n.fileCount,
       totalOccurrences: n.totalOccurrences,
+      tfidf: n.tfidf,
       color: ENTITY_COLORS[n.type] || '#6b7280',
     })
   );

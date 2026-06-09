@@ -109,22 +109,41 @@ export async function GET(req: NextRequest) {
       }
     }
 
+    const session = await prisma.session.findUnique({
+      where: { id: sessionId },
+      select: { hiddenNodeIds: true },
+    });
+    const hiddenNodeIds = new Set<string>(JSON.parse(session?.hiddenNodeIds || '[]'));
+
     const nodes = (data.nodes ?? [])
-      .filter((n: any) => n.display_name && n.display_name.trim() !== '' && n.type && n.type.trim() !== '')
+      .filter((n: any) => n.display_name && n.display_name.trim() !== '' && n.type && n.type.trim() !== '' && !hiddenNodeIds.has(n.id))
       .map(
-        (n: { id: string; display_name: string; type: string; total_count: number; file_count: number }) => ({
+        (n: { id: string; display_name: string; type: string; total_count: number; file_count: number; tfidf?: number }) => ({
           id: n.id,
           label: n.display_name,
           type: n.type as EntityType,
           fileCount: n.file_count,
           totalOccurrences: n.total_count,
+          tfidf: n.tfidf ?? 0.0,
           color: ENTITY_COLORS[n.type as EntityType] || '#6b7280',
         })
       );
 
+    let hiddenCount = 0;
+    if (hiddenNodeIds.size > 0 && fileIds.length > 0) {
+      const hiddenUniqueEntities = await prisma.occurrence.groupBy({
+        by: ['entityId'],
+        where: {
+          fileId: { in: fileIds },
+          entityId: { in: Array.from(hiddenNodeIds) },
+        },
+      });
+      hiddenCount = hiddenUniqueEntities.length;
+    }
+
     const response = {
       nodes,
-      total: data.total ?? nodes.length,
+      total: Math.max(0, (data.total ?? nodes.length) - hiddenCount),
       offset,
       has_more: data.has_more ?? false,
     };

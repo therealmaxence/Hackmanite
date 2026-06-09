@@ -113,6 +113,16 @@ export async function syncSessionToKuzu(sessionId: string): Promise<void> {
         }
       }
     }
+
+    try {
+      await fetch(`${NLP_URL}/graph/recompute-tfidf`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ file_ids: fileIds }),
+      });
+    } catch (err) {
+      console.error('Failed to run TF-IDF recomputation after sync:', err);
+    }
   })();
 
   activeSyncs.set(sessionId, promise);

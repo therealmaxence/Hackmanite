@@ -20,8 +20,8 @@ def get_node_count(file_ids: list[str]) -> int:
 def get_top_nodes(file_ids: list[str], limit: int = 50, offset: int = 0,
                   type_filter: list[str] | None = None) -> list[dict]:
     """
-    Return the top `limit` entities (by total occurrence count across file_ids),
-    ordered descending. Supports optional entity type filter.
+    Return the top `limit` entities (ordered by TF-IDF descending).
+    Supports optional entity type filter.
     """
     if not file_ids:
         return []
@@ -36,8 +36,9 @@ def get_top_nodes(file_ids: list[str], limit: int = 50, offset: int = 0,
             e.display_name AS display_name,
             e.type        AS type,
             sum(r.count)  AS total_count,
-            count(f.id)   AS file_count
-        ORDER BY total_count DESC
+            count(f.id)   AS file_count,
+            sum(r.tfidf)  AS total_tfidf
+        ORDER BY total_tfidf DESC, total_count DESC
         SKIP $offset
         LIMIT $limit
     """
@@ -55,6 +56,7 @@ def get_top_nodes(file_ids: list[str], limit: int = 50, offset: int = 0,
             "type": row[2],
             "total_count": int(row[3]),
             "file_count": int(row[4]),
+            "tfidf": float(row[5]) if row[5] is not None else 0.0,
         })
     return rows
 
@@ -136,6 +138,7 @@ def get_neighbors(node_id: str, loaded_ids: list[str] | None = None) -> tuple[li
             "type": row[2],
             "total_count": 1,
             "file_count": 1,
+            "tfidf": 1.0,
         })
 
     all_relevant = [node_id] + neighbor_ids
@@ -163,7 +166,8 @@ def get_node_by_id(node_id: str) -> dict | None:
             e.display_name AS display_name,
             e.type        AS type,
             sum(r.count)  AS total_count,
-            count(f.id)   AS file_count
+            count(f.id)   AS file_count,
+            sum(r.tfidf)  AS tfidf
         """,
         {"id": node_id},
     )
@@ -178,6 +182,7 @@ def get_node_by_id(node_id: str) -> dict | None:
             "type": row[3],
             "total_count": int(row[4]) if row[4] is not None else 0,
             "file_count": int(row[5]) if row[5] is not None else 0,
+            "tfidf": float(row[6]) if row[6] is not None else 0.0,
         }
     return None
 

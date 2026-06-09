@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { redis, RedisKeys, clearSessionGraphCache } from '@/lib/redis';
 import { ErrorCodes } from '@/types/api';
+import { recomputeSessionTfidf } from '@/lib/api/tfidf';
 
 export const runtime = 'nodejs';
 
@@ -89,6 +90,9 @@ export async function DELETE(
     } catch (err) {
       console.error('Failed to contact Python service for KuzuDB file delete:', err);
     }
+
+    // Recompute TF-IDF for the session
+    await recomputeSessionTfidf(file.sessionId);
 
     // Clear cache
     await clearSessionGraphCache(file.sessionId);

@@ -107,6 +107,7 @@ export default function NodePanel() {
             <EntityNodePanel
               data={data}
               totalOccurrences={selectedNode?.totalOccurrences ?? data.files?.reduce((acc: number, f: { count: number }) => acc + f.count, 0) ?? 0}
+              tfidf={selectedNode?.tfidf}
               sessionId={sessionId!}
               onSelectNode={selectNode}
               onDelete={handleDeleteEntity}

@@ -40,12 +40,13 @@ interface Props {
     coOccurringEntities?: CoEntity[];
   };
   totalOccurrences: number;
+  tfidf?: number;
   sessionId: string;
   onSelectNode: (id: string) => void;
   onDelete: () => void;
 }
 
-export default function EntityNodePanel({ data, totalOccurrences, sessionId, onSelectNode, onDelete }: Props) {
+export default function EntityNodePanel({ data, totalOccurrences, tfidf, sessionId, onSelectNode, onDelete }: Props) {
   const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
 
   return (
@@ -56,6 +57,9 @@ export default function EntityNodePanel({ data, totalOccurrences, sessionId, onS
           <InfoRow label="Canonical Name"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{data.canonical}</span></InfoRow>
           <InfoRow label="Entity Type"><Badge entityType={data.type} size="sm">{data.type}</Badge></InfoRow>
           <InfoRow label="Total Occurrences"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{totalOccurrences}</span></InfoRow>
+          {tfidf !== undefined && (
+            <InfoRow label="TF-IDF Importance"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--color-primary)' }}>{tfidf.toFixed(4)}</span></InfoRow>
+          )}
           <InfoRow label="Unique Files"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{data.files?.length || 0}</span></InfoRow>
         </div>
 

@@ -15,7 +15,7 @@ interface EntityDistributionChartProps {
 export default function EntityDistributionChart({ data }: EntityDistributionChartProps) {
   return (
     <div
-      className="lg:col-span-2 signature-card flex flex-col"
+      className="signature-card flex flex-col"
       style={{
         padding: '2.5rem',
         gap: '2.5rem',

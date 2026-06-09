@@ -277,10 +277,10 @@ export default function StatsClient() {
                 </div>
               )}
 
-              <div className="grid grid-cols-1 lg:grid-cols-3 gap-12" style={{ gap: '2.5rem', width: '100%' }}>
-                {/* Distribution Chart (Rendered Immediately) */}
-                <EntityDistributionChart data={generalData.entityTypeDistribution} />
+              {/* Distribution Chart (Rendered Immediately) */}
+              <EntityDistributionChart data={generalData.entityTypeDistribution} />
 
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-12" style={{ gap: '2.5rem', width: '100%' }}>
                 {/* Top Entities (Rendered Immediately) */}
                 <TopEntitiesLeaderboard
                   topEntities={generalData.topEntities}

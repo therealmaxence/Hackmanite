@@ -15,6 +15,7 @@ import StatsKPIGrid from '@/components/stats/StatsKPIGrid';
 import NetworkTopologyKPIs from '@/components/stats/NetworkTopologyKPIs';
 import EntityDistributionChart from '@/components/stats/EntityDistributionChart';
 import TopEntitiesLeaderboard from '@/components/stats/TopEntitiesLeaderboard';
+import TopEntitiesByTfidfLeaderboard from '@/components/stats/TopEntitiesByTfidfLeaderboard';
 import BridgeEntitiesTable from '@/components/stats/BridgeEntitiesTable';
 import FileTypeGrid from '@/components/stats/FileTypeGrid';
 import { KPICard } from '@/components/stats/KPICard';
@@ -37,6 +38,11 @@ interface StatsData {
     label: string;
     type: string;
     count: number;
+  }>;
+  topEntitiesByTfidf: Array<{
+    label: string;
+    type: string;
+    tfidf: number;
   }>;
   entityTypeDistribution: Array<{
     type: string;
@@ -92,6 +98,7 @@ export default function StatsClient() {
   const { sessionId } = useUploadStore();
   const { filters, setFilter } = useGraphStore();
   const [displayLimit, setDisplayLimit] = useState(10);
+  const [tfidfDisplayLimit, setTfidfDisplayLimit] = useState(10);
   const [showLegend, setShowLegend] = useState(true);
 
   useEffect(() => {
@@ -279,6 +286,13 @@ export default function StatsClient() {
                   topEntities={generalData.topEntities}
                   displayLimit={displayLimit}
                   setDisplayLimit={setDisplayLimit}
+                />
+
+                {/* Top Entities by TF-IDF (Rendered Immediately) */}
+                <TopEntitiesByTfidfLeaderboard
+                  topEntities={generalData.topEntitiesByTfidf}
+                  displayLimit={tfidfDisplayLimit}
+                  setDisplayLimit={setTfidfDisplayLimit}
                 />
               </div>
 

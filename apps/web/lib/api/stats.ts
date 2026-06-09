@@ -63,6 +63,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
 
   const [
     topEntitiesRaw,
+    topEntitiesByTfidfRaw,
     typeDistributionRaw,
     fileTypeDistributionRaw,
     connectionStats,
@@ -83,6 +84,19 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       ${hiddenNodeIdsSql}
       GROUP BY e.id, e.displayName, e.type
       ORDER BY count DESC
+      LIMIT ${limit}
+    `,
+    prisma.$queryRaw<any[]>`
+      SELECT e.displayName as label, e.type, SUM(o.tfidf) as tfidf
+      FROM entities e
+      JOIN occurrences o ON o.entityId = e.id
+      JOIN files f ON f.id = o.fileId
+      WHERE f.sessionId = ${sessionId}
+      ${typeFilterSql}
+      ${searchFilterSql}
+      ${hiddenNodeIdsSql}
+      GROUP BY e.id, e.displayName, e.type
+      ORDER BY tfidf DESC
       LIMIT ${limit}
     `,
     prisma.$queryRaw<any[]>`
@@ -181,6 +195,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       totalOccurrences: totalOccurrences._sum.count || 0,
     },
     topEntities: topEntitiesRaw.map((e) => ({ ...e, count: Number(e.count) })),
+    topEntitiesByTfidf: topEntitiesByTfidfRaw.map((e) => ({ ...e, tfidf: Number(e.tfidf || 0) })),
     entityTypeDistribution: typeDistributionRaw.map((e) => ({ ...e, count: Number(e.count) })),
     fileTypeDistribution: fileTypeDistributionRaw.map((e) => ({
       ...e,

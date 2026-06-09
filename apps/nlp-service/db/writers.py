@@ -224,9 +224,8 @@ def update_tfidf_properties(file_ids: list[str]) -> None:
     query = """
         MATCH (e:Entity)-[r:OCCURS_IN]->(f:FileRef)
         WHERE f.id IN $file_ids
-        WITH e, count(f.id) AS df
-        MATCH (e)-[r:OCCURS_IN]->(f:FileRef)
-        WHERE f.id IN $file_ids
+        WITH e, collect(r) AS rels, count(f.id) AS df
+        UNWIND rels AS r
         SET r.tfidf = to_double(r.count) * (ln(to_double($num_files) / to_double(df)) + 1.0)
     """
     with _write_lock:

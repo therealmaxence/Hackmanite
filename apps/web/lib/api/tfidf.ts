@@ -40,6 +40,7 @@ export async function recomputeSessionTfidf(sessionId: string): Promise<void> {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ file_ids: fileIds }),
+      signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) {
       console.error(`KuzuDB TF-IDF recomputation failed, status: ${res.status}`);

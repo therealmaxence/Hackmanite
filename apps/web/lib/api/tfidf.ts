@@ -15,13 +15,24 @@ export async function recomputeSessionTfidf(sessionId: string): Promise<void> {
 
   const occurrences = await prisma.occurrence.findMany({
     where: { fileId: { in: fileIds } },
-    select: { id: true, entityId: true, count: true },
+    select: { id: true, entityId: true, fileId: true, count: true },
   });
 
   const entityDfMap = new Map<string, number>();
   for (const occ of occurrences) {
     entityDfMap.set(occ.entityId, (entityDfMap.get(occ.entityId) || 0) + 1);
   }
+
+  const updates = occurrences.map((occ) => {
+    const df = entityDfMap.get(occ.entityId) || 1;
+    const idf = Math.log(N / df) + 1.0;
+    const tfidf = occ.count * idf;
+    return {
+      entity_id: occ.entityId,
+      file_id: occ.fileId,
+      tfidf,
+    };
+  });
 
   await prisma.$transaction(
     occurrences.map((occ) => {
@@ -39,7 +50,7 @@ export async function recomputeSessionTfidf(sessionId: string): Promise<void> {
     const res = await fetch(`${NLP_URL}/graph/recompute-tfidf`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file_ids: fileIds }),
+      body: JSON.stringify({ updates }),
       signal: AbortSignal.timeout(10000),
     });
     if (!res.ok) {

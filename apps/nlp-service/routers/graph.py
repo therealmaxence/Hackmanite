@@ -180,15 +180,25 @@ async def node_count_post(req: NodeCountPostRequest):
         raise HTTPException(status_code=500, detail=str(exc))
 
 
+class OccurrenceTfidfUpdate(BaseModel):
+    entity_id: str
+    file_id: str
+    tfidf: float
+
+
 class RecomputeTfidfRequest(BaseModel):
-    file_ids: list[str]
+    updates: list[OccurrenceTfidfUpdate]
 
 
 @router.post("/recompute-tfidf", response_model=dict)
 async def recompute_tfidf(req: RecomputeTfidfRequest):
-    """Recompute TF-IDF values for the given files in KuzuDB."""
+    """Update TF-IDF values for occurrences in KuzuDB."""
     try:
-        kuzu_db.update_tfidf_properties(req.file_ids)
+        updates_list = [
+            {"entity_id": u.entity_id, "file_id": u.file_id, "tfidf": u.tfidf}
+            for u in req.updates
+        ]
+        kuzu_db.update_tfidf_properties(updates_list)
         return {"success": True}
     except Exception as exc:
         logger.error("recompute_tfidf failed: %s", exc, exc_info=True)

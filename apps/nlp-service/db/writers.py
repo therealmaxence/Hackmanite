@@ -216,18 +216,24 @@ def bulk_import_transaction(file_ids: list[str], nodes: list, edges: list) -> di
             raise exc
 
 
-def update_tfidf_properties(file_ids: list[str]) -> None:
-    if not file_ids:
+def update_tfidf_properties(updates: list[dict]) -> None:
+    if not updates:
         return
-    num_files = len(file_ids)
     conn = get_write_conn()
     query = """
-        MATCH (e:Entity)-[r:OCCURS_IN]->(f:FileRef)
-        WHERE f.id IN $file_ids
-        WITH e, collect(r) AS rels, count(f.id) AS df
-        UNWIND rels AS r
-        SET r.tfidf = to_double(r.count) * (ln(to_double($num_files) / to_double(df)) + 1.0)
+        MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
+        SET r.tfidf = $tfidf
     """
     with _write_lock:
-        conn.execute(query, {"file_ids": file_ids, "num_files": num_files})
+        conn.execute("BEGIN TRANSACTION")
+        try:
+            for u in updates:
+                conn.execute(query, {"eid": u["entity_id"], "fid": u["file_id"], "tfidf": u["tfidf"]})
+            conn.execute("COMMIT")
+        except Exception as exc:
+            try:
+                conn.execute("ROLLBACK")
+            except Exception:
+                pass
+            raise exc
 

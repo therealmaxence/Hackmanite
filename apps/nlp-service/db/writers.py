@@ -221,19 +221,13 @@ def update_tfidf_properties(updates: list[dict]) -> None:
         return
     conn = get_write_conn()
     query = """
-        MATCH (e:Entity {id: $eid})-[r:OCCURS_IN]->(f:FileRef {id: $fid})
-        SET r.tfidf = $tfidf
+        UNWIND $updates AS u
+        MATCH (e:Entity {id: u.entity_id})-[r:OCCURS_IN]->(f:FileRef {id: u.file_id})
+        SET r.tfidf = u.tfidf
     """
     with _write_lock:
-        conn.execute("BEGIN TRANSACTION")
         try:
-            for u in updates:
-                conn.execute(query, {"eid": u["entity_id"], "fid": u["file_id"], "tfidf": u["tfidf"]})
-            conn.execute("COMMIT")
+            conn.execute(query, {"updates": updates})
         except Exception as exc:
-            try:
-                conn.execute("ROLLBACK")
-            except Exception:
-                pass
             raise exc
 

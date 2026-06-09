@@ -15,22 +15,35 @@ _ADDRESS_ABBREVIATIONS: dict[str, str] = {
     r"\bst\b": "street",
 }
 
+CAMEL_EXCEPTIONS = re.compile(
+    r"^(mc|mac|de|di|le|la|von|van|der|al|el|o')[A-Z]", re.IGNORECASE
+)
+
+PROGRAMMING_KEYWORDS = {
+    "let", "const", "var", "function", "import", "class", "return",
+    "null", "undefined", "true", "false", "content", "value", "object",
+    "array", "string", "number", "boolean", "if", "else", "while",
+    "switch", "case", "continue", "default", "try", "catch", "throw",
+    "this", "super", "extends", "implements", "interface", "package",
+    "static", "yield", "async", "await"
+}
+
 def is_valid_entity(text: str, entity_type: EntityType) -> bool:
     if entity_type in (EntityType.PERSON, EntityType.ORGANIZATION):
-        if len(text) < 2:
+        if not (2 <= len(text) <= 100):
             return False
+        # Forbiden characters
         if any(c in text for c in '=+(){}[]/\\;<>*!|%?^$@#"'):
             return False
-        if "." in text and re.search(r"\.[a-zA-Z]", text):
+        if re.search(r"\.[a-zA-Z]{2,}", text):
             return False
         if re.search(r"^\d|\d$", text):
             return False
         if re.search(r"[a-z]+[A-Z]", text):
-            if not re.match(r"^(mc|mac)[A-Z]", text, re.IGNORECASE):
+            if not CAMEL_EXCEPTIONS.match(text):
                 return False
-        keywords = {"let", "const", "var", "function", "import", "class", "return", "null", "undefined", "true", "false"}
-        words = set(text.lower().split())
-        if words.intersection(keywords):
+        words = text.lower().split()
+        if len(words) == 1 and words[0] in PROGRAMMING_KEYWORDS:
             return False
     return True
 

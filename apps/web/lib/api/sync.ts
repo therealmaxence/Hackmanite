@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { recomputeSessionTfidf } from './tfidf';
 
 const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 const activeSyncs = new Map<string, Promise<void>>();
@@ -115,11 +116,7 @@ export async function syncSessionToKuzu(sessionId: string): Promise<void> {
     }
 
     try {
-      await fetch(`${NLP_URL}/graph/recompute-tfidf`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ file_ids: fileIds }),
-      });
+      await recomputeSessionTfidf(sessionId);
     } catch (err) {
       console.error('Failed to run TF-IDF recomputation after sync:', err);
     }

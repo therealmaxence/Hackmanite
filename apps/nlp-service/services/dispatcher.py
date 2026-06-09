@@ -109,7 +109,8 @@ def _entity_id(canonical: str, entity_type: str) -> str:
     Using UUID5 (SHA-1 namespace hash) guarantees the same ID across runs,
     which lets us upsert without first querying for existing rows.
     """
-    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{entity_type}:{canonical}"))
+    type_str = entity_type.value if hasattr(entity_type, "value") else str(entity_type)
+    return str(uuid.uuid5(uuid.NAMESPACE_DNS, f"{type_str}:{canonical}"))
 
 
 def write_to_kuzu(result: ExtractionResult, file_id: str) -> None:

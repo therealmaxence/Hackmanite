@@ -34,17 +34,20 @@ export async function recomputeSessionTfidf(sessionId: string): Promise<void> {
     };
   });
 
-  await prisma.$transaction(
-    occurrences.map((occ) => {
+  await prisma.$transaction(async (tx) => {
+    for (const occ of occurrences) {
       const df = entityDfMap.get(occ.entityId) || 1;
       const idf = Math.log(N / df) + 1.0;
       const tfidf = occ.count * idf;
-      return prisma.occurrence.update({
+      await tx.occurrence.update({
         where: { id: occ.id },
         data: { tfidf },
       });
-    })
-  );
+    }
+  }, {
+    maxWait: 15000,
+    timeout: 30000,
+  });
 
   try {
     const res = await fetch(`${NLP_URL}/graph/recompute-tfidf`, {

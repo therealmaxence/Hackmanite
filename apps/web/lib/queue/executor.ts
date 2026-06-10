@@ -253,6 +253,7 @@ export async function saveExtractionToDatabase(fileId: string, result: any): Pro
       }
     }
   }, {
+    maxWait: 30000,
     timeout: 60000,
   });
 

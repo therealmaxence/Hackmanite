@@ -332,6 +332,7 @@ export async function importSessionData(body: ImportInput) {
       emailsRestoredCount,
     };
   }, {
+    maxWait: 60000,
     timeout: 1800000,
   });
 }

@@ -11,20 +11,39 @@ const statusProgress: Record<string, number> = {
 };
 
 export default function StatusBar() {
-  const { files, doneCount, pendingCount, failedCount } = useUploadStore();
+  const { files, doneCount, pendingCount, failedCount, isUploading } = useUploadStore();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
     setMounted(true);
   }, []);
 
+  const getActiveBatchFiles = () => {
+    const active = files.filter(f => f.status === 'PENDING' || f.status === 'PROCESSING');
+    if (active.length === 0) {
+      return [];
+    }
+    const oldestActive = active.reduce((oldest, current) => {
+      const oldestTime = oldest.addedAt || 0;
+      const currentTime = current.addedAt || 0;
+      return currentTime < oldestTime ? current : oldest;
+    }, active[0]);
+
+    const oldestTimestamp = oldestActive.addedAt || 0;
+    return files.filter(f => (f.addedAt || 0) >= oldestTimestamp - 1000);
+  };
+
   const getAverageProgress = () => {
-    if (files.length === 0) return 0;
-    const total = files.reduce((acc, f) => acc + (statusProgress[f.status] || 0), 0);
-    return Math.round(total / files.length);
+    const batchFiles = getActiveBatchFiles();
+    if (batchFiles.length === 0) {
+      return isUploading ? 5 : 0;
+    }
+    const total = batchFiles.reduce((acc, f) => acc + (statusProgress[f.status] || 0), 0);
+    return Math.round(total / batchFiles.length);
   };
 
   const avgProgress = getAverageProgress();
+  const showProgressBar = mounted && (pendingCount() > 0 || isUploading);
 
   return (
     <footer
@@ -60,14 +79,20 @@ export default function StatusBar() {
       <span>
         <span style={{ color: 'var(--success)' }}>{mounted ? doneCount() : 0}</span> done
       </span>
-      {mounted && pendingCount() > 0 && (
+      {mounted && (pendingCount() > 0 || isUploading) && (
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span>
-            <span style={{ color: 'var(--accent)' }}>{pendingCount()}</span> processing
+            {pendingCount() > 0 ? (
+              <>
+                <span style={{ color: 'var(--accent)' }}>{pendingCount()}</span> processing
+              </>
+            ) : (
+              <span style={{ color: 'var(--accent)' }}>uploading...</span>
+            )}
           </span>
         </span>
       )}
-      {mounted && pendingCount() > 0 && (
+      {showProgressBar && (
         <div
           style={{
             display: 'flex',

@@ -151,19 +151,22 @@ export async function retryFile(fileId: string): Promise<void> {
     throw new Error(`File not found: ${fileId}`);
   }
 
-  await prisma.$transaction([
-    prisma.occurrence.deleteMany({ where: { fileId } }),
-    prisma.entityNeighborhood.deleteMany({ where: { fileId } }),
-    prisma.email.deleteMany({ where: { fileId } }),
-    prisma.file.update({
+  await prisma.$transaction(async (tx) => {
+    await tx.occurrence.deleteMany({ where: { fileId } });
+    await tx.entityNeighborhood.deleteMany({ where: { fileId } });
+    await tx.email.deleteMany({ where: { fileId } });
+    await tx.file.update({
       where: { id: fileId },
       data: {
         status: "PENDING",
         errorMessage: null,
         processedAt: null,
       },
-    }),
-  ]);
+    });
+  }, {
+    maxWait: 15000,
+    timeout: 30000,
+  });
 
   try {
     const nlpUrl = process.env.NLP_SERVICE_URL || "http://localhost:8000";
@@ -222,15 +225,18 @@ export async function resumeStuckJobs(sessionId: string): Promise<number> {
   for (const file of stuckFiles) {
     if (!queuedFileIds.has(file.id)) {
       if (file.status === "PROCESSING") {
-        await prisma.$transaction([
-          prisma.occurrence.deleteMany({ where: { fileId: file.id } }),
-          prisma.entityNeighborhood.deleteMany({ where: { fileId: file.id } }),
-          prisma.email.deleteMany({ where: { fileId: file.id } }),
-          prisma.file.update({
+        await prisma.$transaction(async (tx) => {
+          await tx.occurrence.deleteMany({ where: { fileId: file.id } });
+          await tx.entityNeighborhood.deleteMany({ where: { fileId: file.id } });
+          await tx.email.deleteMany({ where: { fileId: file.id } });
+          await tx.file.update({
             where: { id: file.id },
             data: { status: "PENDING", errorMessage: null, processedAt: null },
-          }),
-        ]);
+          });
+        }, {
+          maxWait: 15000,
+          timeout: 30000,
+        });
 
         try {
           const nlpUrl = process.env.NLP_SERVICE_URL || "http://localhost:8000";

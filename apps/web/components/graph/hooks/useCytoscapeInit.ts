@@ -105,6 +105,17 @@ export function useCytoscapeInit({
     };
     instance.on('zoom', handleZoom);
 
+    instance.on('mouseover', 'node', (e) => {
+      const node = e.target;
+      if (node.hasClass('hide-label')) {
+        node.addClass('show-hover-label');
+      }
+    });
+
+    instance.on('mouseout', 'node', (e) => {
+      e.target.removeClass('show-hover-label');
+    });
+
     return () => {
       instance.off('zoom', handleZoom);
       instance.destroy();

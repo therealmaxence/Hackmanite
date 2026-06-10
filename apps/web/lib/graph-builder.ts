@@ -130,6 +130,13 @@ export const cytoscapeStylesheet = [
     },
   },
   {
+    selector: "node.show-hover-label",
+    style: {
+      label: "data(label)",
+      "text-outline-width": 2,
+    },
+  },
+  {
     selector: "node:selected",
     style: {
       "border-width": 3,

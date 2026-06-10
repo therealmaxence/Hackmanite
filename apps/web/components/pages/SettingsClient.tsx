@@ -296,10 +296,10 @@ export default function SettingsClient() {
                       label="TF-IDF Importance"
                       value={minTfidf}
                       min={0.0}
-                      max={50.0}
-                      step={0.5}
+                      max={100000.0}
+                      isLog={true}
                       onChange={setMinTfidf}
-                      description="Minimum TF-IDF score to visualize node."
+                      description="Minimum TF-IDF score to visualize node (logarithmic scale)."
                     />
                   </div>
                 </div>

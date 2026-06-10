@@ -11,6 +11,7 @@ interface CustomSliderProps {
   label: string;
   unit?: string;
   description?: string;
+  isLog?: boolean;
 }
 
 export default function CustomSlider({
@@ -22,28 +23,68 @@ export default function CustomSlider({
   label,
   unit = '',
   description,
+  isLog = false,
 }: CustomSliderProps) {
+  // Mapping value to position and vice-versa if isLog is true
+  const valToPos = (val: number) => {
+    if (val <= 0) return 0;
+    const logVal = Math.log10(Math.max(val, 0.1));
+    return (logVal + 1) * 20; // Maps [-1, 5] to [0, 120]
+  };
+
+  const posToVal = (pos: number) => {
+    if (pos <= 0) return 0;
+    const logVal = pos / 20 - 1;
+    const raw = Math.pow(10, logVal);
+    if (raw >= 10000) return Math.round(raw / 1000) * 1000;
+    if (raw >= 1000) return Math.round(raw / 100) * 100;
+    if (raw >= 100) return Math.round(raw / 10) * 10;
+    if (raw >= 10) return Math.round(raw);
+    return Math.round(raw * 10) / 10;
+  };
+
   // Convert value to percentage [0, 100]
-  const pct = ((value - min) / (max - min)) * 100;
+  const currentPos = isLog ? valToPos(value) : value;
+  const currentMin = isLog ? 0 : min;
+  const currentMax = isLog ? 120 : max;
+  const pct = ((currentPos - currentMin) / (currentMax - currentMin)) * 100;
 
   const handleSliderChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const newVal = parseFloat(e.target.value);
-    onChange(newVal);
+    const rawVal = parseFloat(e.target.value);
+    if (isLog) {
+      onChange(posToVal(rawVal));
+    } else {
+      onChange(rawVal);
+    }
   };
 
   const decrement = () => {
-    let newVal = value - step;
-    if (newVal >= min) {
-      const decimals = (step.toString().split('.')[1] || '').length;
-      onChange(parseFloat(newVal.toFixed(decimals)));
+    if (isLog) {
+      const currentPos = valToPos(value);
+      if (currentPos > 0) {
+        onChange(posToVal(currentPos - 1));
+      }
+    } else {
+      let newVal = value - step;
+      if (newVal >= min) {
+        const decimals = (step.toString().split('.')[1] || '').length;
+        onChange(parseFloat(newVal.toFixed(decimals)));
+      }
     }
   };
 
   const increment = () => {
-    let newVal = value + step;
-    if (newVal <= max) {
-      const decimals = (step.toString().split('.')[1] || '').length;
-      onChange(parseFloat(newVal.toFixed(decimals)));
+    if (isLog) {
+      const currentPos = valToPos(value);
+      if (currentPos < 120) {
+        onChange(posToVal(currentPos + 1));
+      }
+    } else {
+      let newVal = value + step;
+      if (newVal <= max) {
+        const decimals = (step.toString().split('.')[1] || '').length;
+        onChange(parseFloat(newVal.toFixed(decimals)));
+      }
     }
   };
 
@@ -117,7 +158,7 @@ export default function CustomSlider({
             textShadow: '0 0 8px rgba(236, 72, 153, 0.2)',
           }}
         >
-          {value}
+          {value.toLocaleString()}
           {unit && <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '2px' }}>{unit}</span>}
         </span>
       </div>
@@ -151,10 +192,10 @@ export default function CustomSlider({
         {/* Custom Range Slider */}
         <input
           type="range"
-          min={min}
-          max={max}
-          step={step}
-          value={value}
+          min={isLog ? 0 : min}
+          max={isLog ? 120 : max}
+          step={isLog ? 1 : step}
+          value={isLog ? valToPos(value) : value}
           onChange={handleSliderChange}
           className="range-slider-input"
           style={{

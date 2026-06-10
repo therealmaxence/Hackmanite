@@ -7,7 +7,9 @@ const SAMPLE_TEXT =
   "The research group focused on zero-trust architectures for large-scale enterprise deployments. " +
   "Over the following weeks, the team ran simulations across multiple server regions. " +
   "Subsequently, Bob Jones, a principal architect at Microsoft, joined the project to align cross-platform standards. " +
-  "Finally, Charlie Brown at Amazon certified the system compliance, completing the multi-cloud secure framework.";
+  "Finally, Charlie Brown at Amazon certified the system compliance, completing the multi-cloud secure framework. " +
+  "Developers from all three organizations validated the end-to-end telemetry and logging layers. " +
+  "This unified telemetry ensures that anomalous access patterns are detected and mitigated within milliseconds, establishing a new benchmark for federated identity environments.";
 
 interface WindowSizeSelectorProps {
   windowSize: number;
@@ -18,6 +20,18 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
   const highlightedText = useMemo(() => SAMPLE_TEXT.slice(0, windowSize), [windowSize]);
   const dimmedText = useMemo(() => SAMPLE_TEXT.slice(windowSize), [windowSize]);
 
+  const pct = ((windowSize - 50) / (600 - 50)) * 100;
+
+  const decrement = () => {
+    const nextVal = windowSize - 10;
+    if (nextVal >= 50) setWindowSize(nextVal);
+  };
+
+  const increment = () => {
+    const nextVal = windowSize + 10;
+    if (nextVal <= 600) setWindowSize(nextVal);
+  };
+
   return (
     <div
       className="window-size-config signature-card"
@@ -25,21 +39,55 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
         marginBottom: '2rem',
         display: 'flex',
         flexDirection: 'column',
-        gap: '1rem',
-        background: 'var(--color-surface-raised)',
-        border: 'none',
-        borderRadius: 'var(--radius)',
-        padding: '1.5rem',
-        boxShadow: '0 8px 32px 0 rgba(0, 0, 0, 0.37)',
+        gap: '1.25rem',
+        background: 'rgba(255, 255, 255, 0.02)',
+        border: '1px solid rgba(255, 255, 255, 0.04)',
+        borderRadius: '12px',
+        padding: '2rem',
+        boxShadow: '0 4px 24px rgba(0, 0, 0, 0.15)',
+        position: 'relative',
       }}
     >
+      <style jsx global>{`
+        .range-slider-input::-webkit-slider-thumb {
+          -webkit-appearance: none;
+          appearance: none;
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #e2e8f0; /* Light grey thumb */
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 8px rgba(236, 72, 153, 0.5); /* pink glow */
+          cursor: pointer;
+          transition: transform 0.1s ease, box-shadow 0.15s ease;
+        }
+        .range-slider-input::-webkit-slider-thumb:hover {
+          transform: scale(1.2);
+          box-shadow: 0 0 12px rgba(236, 72, 153, 0.8), 0 0 0 4px rgba(236, 72, 153, 0.15);
+        }
+        .range-slider-input::-moz-range-thumb {
+          width: 14px;
+          height: 14px;
+          border-radius: 50%;
+          background: #e2e8f0; /* Light grey thumb */
+          border: 2px solid #ffffff;
+          box-shadow: 0 0 8px rgba(236, 72, 153, 0.5); /* pink glow */
+          cursor: pointer;
+          transition: transform 0.1s ease, box-shadow 0.15s ease;
+        }
+        .range-slider-input::-moz-range-thumb:hover {
+          transform: scale(1.2);
+          box-shadow: 0 0 12px rgba(236, 72, 153, 0.8), 0 0 0 4px rgba(236, 72, 153, 0.15);
+        }
+      `}</style>
+
       {/* Slider Header */}
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
-          <span style={{ fontSize: '0.85rem', fontWeight: 600, color: 'var(--text-primary)' }}>
+          <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
             Co-occurrence Window Size
           </span>
-          <span style={{ fontSize: '0.72rem', color: 'var(--color-text-muted)' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
             NLP entity pairing proximity threshold
           </span>
         </div>
@@ -48,39 +96,93 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
             fontFamily: 'var(--font-mono)',
             fontSize: '1rem',
             fontWeight: 700,
-            color: 'var(--color-primary)',
-            textShadow: '0 0 10px rgba(123, 47, 190, 0.5)',
+            color: '#ec4899',
+            textShadow: '0 0 10px rgba(236, 72, 153, 0.2)',
           }}
         >
           {windowSize} chars
         </span>
       </div>
 
-      {/* Slider Input */}
-      <input
-        id="window-size-slider"
-        type="range"
-        min="50"
-        max="600"
-        step="10"
-        value={windowSize}
-        onChange={(e) => setWindowSize(parseInt(e.target.value, 10))}
-        style={{
-          accentColor: 'var(--color-primary)',
-          cursor: 'pointer',
-          width: '100%',
-          height: '6px',
-          borderRadius: 'var(--radius-sm)',
-        }}
-      />
+      {/* Slider Input with Steppers */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+        {/* Decrement Button */}
+        <button
+          onClick={decrement}
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'var(--color-text-muted)',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+        >
+          -
+        </button>
 
+        {/* Custom Range Slider */}
+        <input
+          id="window-size-slider"
+          type="range"
+          min="50"
+          max="600"
+          step="10"
+          value={windowSize}
+          onChange={(e) => setWindowSize(parseInt(e.target.value, 10))}
+          className="range-slider-input"
+          style={{
+            flex: 1,
+            WebkitAppearance: 'none',
+            appearance: 'none',
+            height: '6px',
+            borderRadius: '3px',
+            outline: 'none',
+            background: `linear-gradient(to right, #8b5cf6 0%, #ec4899 ${pct}%, rgba(255, 255, 255, 0.1) ${pct}%)`,
+            cursor: 'pointer',
+            transition: 'background 0.05s ease',
+          }}
+        />
 
+        {/* Increment Button */}
+        <button
+          onClick={increment}
+          style={{
+            background: 'rgba(255,255,255,0.03)',
+            border: '1px solid rgba(255,255,255,0.08)',
+            color: 'var(--color-text-muted)',
+            width: '28px',
+            height: '28px',
+            borderRadius: '6px',
+            cursor: 'pointer',
+            fontSize: '0.9rem',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            flexShrink: 0,
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; e.currentTarget.style.background = 'rgba(255,255,255,0.03)'; }}
+        >
+          +
+        </button>
+      </div>
 
       {/* Dynamic Snippet Visual Previewer */}
       <div
         style={{
-          background: 'var(--color-bg)',
-          border: 'none',
+          background: '#09030b',
+          border: '1px solid rgba(255, 255, 255, 0.04)',
           borderRadius: 'var(--radius)',
           padding: '1rem',
           marginTop: '0.5rem',
@@ -95,8 +197,8 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
             right: 0,
             fontSize: '0.55rem',
             textTransform: 'uppercase',
-            color: 'var(--color-primary)',
-            background: 'var(--color-surface-hover)',
+            color: '#ec4899',
+            background: 'rgba(236, 72, 153, 0.1)',
             padding: '2px 6px',
             borderRadius: '0 0 0 var(--radius-sm)',
             fontWeight: 600,
@@ -109,9 +211,9 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
         <p style={{ lineHeight: 1.6, fontSize: '0.78rem', letterSpacing: '0.01em', margin: 0, color: 'var(--color-text-muted)' }}>
           <span
             style={{
-              background: 'var(--color-surface)',
+              background: 'rgba(255, 255, 255, 0.02)',
               color: 'var(--color-text)',
-              borderBottom: '2px solid var(--color-primary)',
+              borderBottom: '2px solid #ec4899',
               transition: 'all 0.12s ease',
               borderRadius: 'var(--radius-sm) var(--radius-sm) 0 0',
               padding: '1px 0',

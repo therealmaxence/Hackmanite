@@ -36,7 +36,7 @@ services:
       REDIS_URL: redis://redis:6379
       UPLOAD_DIR: /app/uploads
       KUZU_DB_PATH: /app/kuzu_data/kuzu.db
-      KUZU_BUFFER_POOL_SIZE: ${KUZU_BUFFER_POOL_SIZE:-268435456}
+      KUZU_BUFFER_POOL_SIZE: ${KUZU_BUFFER_POOL_SIZE:-}
       LOG_LEVEL: info
     volumes:
       - ./data/uploads:/app/uploads:ro

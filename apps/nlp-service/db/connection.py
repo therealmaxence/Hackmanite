@@ -24,17 +24,18 @@ def get_db() -> kuzu.Database:
         db_path.parent.mkdir(parents=True, exist_ok=True)
         
         buffer_pool_size_str = os.environ.get("KUZU_BUFFER_POOL_SIZE")
-        if buffer_pool_size_str:
+        if buffer_pool_size_str and buffer_pool_size_str.strip() not in ("", "0", "default"):
             try:
                 buffer_pool_size = int(buffer_pool_size_str)
+                _db = kuzu.Database(str(db_path), buffer_pool_size=buffer_pool_size)
+                logger.info("KuzuDB opened at %s (buffer pool size: %d bytes)", db_path, buffer_pool_size)
             except ValueError:
-                logger.warning("Invalid KUZU_BUFFER_POOL_SIZE: %s. Using 1GB default.", buffer_pool_size_str)
-                buffer_pool_size = 1024 * 1024 * 1024
+                logger.warning("Invalid KUZU_BUFFER_POOL_SIZE: %s. Using Kùzu default.", buffer_pool_size_str)
+                _db = kuzu.Database(str(db_path))
+                logger.info("KuzuDB opened at %s (Kùzu default buffer pool size)", db_path)
         else:
-            buffer_pool_size = 256 * 1024 * 1024
-            
-        _db = kuzu.Database(str(db_path), buffer_pool_size=buffer_pool_size)
-        logger.info("KuzuDB opened at %s (buffer pool size: %d)", db_path, buffer_pool_size)
+            _db = kuzu.Database(str(db_path))
+            logger.info("KuzuDB opened at %s (Kùzu default buffer pool size)", db_path)
     return _db
 
 

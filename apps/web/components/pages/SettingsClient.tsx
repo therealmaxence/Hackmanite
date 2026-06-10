@@ -5,12 +5,14 @@ import Header from '@/components/layout/Header';
 import { useUploadStore } from '@/store/uploadStore';
 import WindowSizeSelector from '@/components/upload/WindowSizeSelector';
 import Button from '@/components/ui/Button';
+import RotaryKnob from '@/components/ui/RotaryKnob';
 
 interface SessionSettings {
   windowSize: number;
   minConnections: number;
   minOccurrences: number;
   minEdgeWeight: number;
+  minTfidf: number;
 }
 
 export default function SettingsClient() {
@@ -27,6 +29,7 @@ export default function SettingsClient() {
   const [minConnections, setMinConnections] = useState(2);
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [minEdgeWeight, setMinEdgeWeight] = useState(0.0);
+  const [minTfidf, setMinTfidf] = useState(0.0);
 
   // Fetch all saved sessions
   const fetchSessions = useCallback(async () => {
@@ -67,12 +70,14 @@ export default function SettingsClient() {
           setMinConnections(data.minConnections ?? 2);
           setMinOccurrences(data.minOccurrences ?? 2);
           setMinEdgeWeight(data.minEdgeWeight ?? 0.0);
+          setMinTfidf(data.minTfidf ?? 0.0);
         } else {
           // Defaults if no local settings are found
           setWindowSize(400);
           setMinConnections(2);
           setMinOccurrences(2);
           setMinEdgeWeight(0.0);
+          setMinTfidf(0.0);
         }
       } else {
         const res = await fetch(`/api/session/${sid}/settings`);
@@ -82,6 +87,7 @@ export default function SettingsClient() {
           setMinConnections(data.minConnections ?? 2);
           setMinOccurrences(data.minOccurrences ?? 2);
           setMinEdgeWeight(data.minEdgeWeight ?? 0.0);
+          setMinTfidf(data.minTfidf ?? 0.0);
         }
       }
     } catch (err) {
@@ -104,7 +110,7 @@ export default function SettingsClient() {
     setSaveStatus(null);
     try {
       if (selectedSessionId === 'default') {
-        const settings = { windowSize, minConnections, minOccurrences, minEdgeWeight };
+        const settings = { windowSize, minConnections, minOccurrences, minEdgeWeight, minTfidf };
         localStorage.setItem('entitygraph_default_settings', JSON.stringify(settings));
         setSaveStatus({ type: 'success', message: 'Global default settings saved successfully! Future sessions will inherit these values.' });
       } else {
@@ -116,6 +122,7 @@ export default function SettingsClient() {
             minConnections,
             minOccurrences,
             minEdgeWeight,
+            minTfidf,
           }),
         });
 
@@ -223,85 +230,78 @@ export default function SettingsClient() {
                 <WindowSizeSelector windowSize={windowSize} setWindowSize={setWindowSize} />
               </div>
 
-              {/* Part 2: Graph Render Defaults */}
+              {/* Part 2: Graph Render Defaults (Tactile Dials Rack Console) */}
               <div>  
                 <div
                   style={{
                     background: 'var(--color-surface)',
                     border: '1px solid var(--color-border)',
                     borderRadius: 'var(--radius)',
-                    padding: '1.75rem',
+                    padding: '2rem',
                     display: 'flex',
                     flexDirection: 'column',
-                    gap: '1.5rem',
+                    gap: '2rem',
                   }}
                 >
-                  {/* Min Connections Slider */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                      <span style={{ fontWeight: 500, color: 'var(--color-text)' }}>Minimum Connections</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)', fontWeight: 600 }}>
-                        {minConnections} edges
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="10"
-                      step="1"
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                    <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                      Extraction Console Tuning
+                    </h3>
+                    <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                      Drag dials up/down or use your scroll wheel to adjust graph filters.
+                    </p>
+                  </div>
+
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '1.5rem',
+                      width: '100%',
+                    }}
+                  >
+                    <RotaryKnob
+                      label="Minimum Connections"
                       value={minConnections}
-                      onChange={(e) => setMinConnections(parseInt(e.target.value, 10))}
-                      style={{ accentColor: 'var(--color-primary)', cursor: 'pointer', height: '5px' }}
+                      min={1}
+                      max={10}
+                      step={1}
+                      onChange={setMinConnections}
+                      unit=" edges"
+                      description="Minimum connections for an entity node to appear."
                     />
-                    <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-                      Sets the default minimum number of edges for an entity node to appear in the graph.
-                    </span>
-                  </div>
 
-                  {/* Min Occurrences Slider */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                      <span style={{ fontWeight: 500, color: 'var(--color-text)' }}>Minimum Occurrences</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)', fontWeight: 600 }}>
-                        {minOccurrences} counts
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="1"
-                      max="20"
-                      step="1"
+                    <RotaryKnob
+                      label="Minimum Occurrences"
                       value={minOccurrences}
-                      onChange={(e) => setMinOccurrences(parseInt(e.target.value, 10))}
-                      style={{ accentColor: 'var(--color-primary)', cursor: 'pointer', height: '5px' }}
+                      min={1}
+                      max={20}
+                      step={1}
+                      onChange={setMinOccurrences}
+                      unit=" counts"
+                      description="Minimum frequency of occurrence across files."
                     />
-                    <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-                      Sets the default minimum frequency of occurrence across files for a node to render.
-                    </span>
-                  </div>
 
-                  {/* Min Edge Weight Slider */}
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.8125rem' }}>
-                      <span style={{ fontWeight: 500, color: 'var(--color-text)' }}>Minimum Co-occurrence Strength (Weight)</span>
-                      <span style={{ fontFamily: 'var(--font-mono)', color: 'var(--color-primary)', fontWeight: 600 }}>
-                        {minEdgeWeight.toFixed(2)}
-                      </span>
-                    </div>
-                    <input
-                      type="range"
-                      min="0.0"
-                      max="1.0"
-                      step="0.05"
+                    <RotaryKnob
+                      label="Co-occurrence Strength"
                       value={minEdgeWeight}
-                      onChange={(e) => setMinEdgeWeight(parseFloat(e.target.value))}
-                      style={{ accentColor: 'var(--color-primary)', cursor: 'pointer', height: '5px' }}
+                      min={0.0}
+                      max={1.0}
+                      step={0.05}
+                      onChange={setMinEdgeWeight}
+                      description="Minimum connection strength (edge weight)."
                     />
-                    <span style={{ fontSize: '0.68rem', color: 'var(--color-text-muted)', lineHeight: 1.4 }}>
-                      Sets the default minimum co-occurrence weight for rendering connections.
-                    </span>
-                  </div>
 
+                    <RotaryKnob
+                      label="TF-IDF Importance"
+                      value={minTfidf}
+                      min={0.0}
+                      max={50.0}
+                      step={0.5}
+                      onChange={setMinTfidf}
+                      description="Minimum TF-IDF score to visualize node."
+                    />
+                  </div>
                 </div>
               </div>
 

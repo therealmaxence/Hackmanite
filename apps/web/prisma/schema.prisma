@@ -19,6 +19,7 @@ model Session {
   minConnections Int      @default(2)
   minOccurrences Int      @default(2)
   minEdgeWeight  Float    @default(0.0)
+  minTfidf       Float    @default(0.0)
   hiddenNodeIds  String   @default("[]")
 
   @@map("sessions")

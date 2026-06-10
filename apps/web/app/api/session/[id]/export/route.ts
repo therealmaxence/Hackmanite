@@ -31,6 +31,7 @@ export async function GET(
         minConnections: true,
         minOccurrences: true,
         minEdgeWeight: true,
+        minTfidf: true,
         hiddenNodeIds: true,
       },
     });
@@ -39,6 +40,7 @@ export async function GET(
     const minConnections = sessionRecord?.minConnections ?? 2;
     const minOccurrences = sessionRecord?.minOccurrences ?? 2;
     const minEdgeWeight = sessionRecord?.minEdgeWeight ?? 0.0;
+    const minTfidf = sessionRecord?.minTfidf ?? 0.0;
 
     if (files.length === 0) {
       return NextResponse.json({
@@ -184,6 +186,7 @@ export async function GET(
       minConnections,
       minOccurrences,
       minEdgeWeight,
+      minTfidf,
       hiddenNodeIds: JSON.parse(sessionRecord?.hiddenNodeIds || '[]'),
       nodes,
       edges,

@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { useUploadStore } from '@/store/uploadStore';
 import WindowSizeSelector from '@/components/upload/WindowSizeSelector';
 import Button from '@/components/ui/Button';
-import RotaryKnob from '@/components/ui/RotaryKnob';
+import CustomSlider from '@/components/ui/CustomSlider';
 
 interface SessionSettings {
   windowSize: number;
@@ -230,7 +230,7 @@ export default function SettingsClient() {
                 <WindowSizeSelector windowSize={windowSize} setWindowSize={setWindowSize} />
               </div>
 
-              {/* Part 2: Graph Render Defaults (Tactile Dials Rack Console) */}
+              {/* Part 2: Graph Render Defaults (Tuning Console) */}
               <div>  
                 <div
                   style={{
@@ -248,19 +248,19 @@ export default function SettingsClient() {
                       Extraction Console Tuning
                     </h3>
                     <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                      Drag dials up/down or use your scroll wheel to adjust graph filters.
+                      Fine-tune graph filters and connection thresholds using the controls below.
                     </p>
                   </div>
 
                   <div
                     style={{
                       display: 'grid',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
                       gap: '1.5rem',
                       width: '100%',
                     }}
                   >
-                    <RotaryKnob
+                    <CustomSlider
                       label="Minimum Connections"
                       value={minConnections}
                       min={1}
@@ -271,7 +271,7 @@ export default function SettingsClient() {
                       description="Minimum connections for an entity node to appear."
                     />
 
-                    <RotaryKnob
+                    <CustomSlider
                       label="Minimum Occurrences"
                       value={minOccurrences}
                       min={1}
@@ -282,7 +282,7 @@ export default function SettingsClient() {
                       description="Minimum frequency of occurrence across files."
                     />
 
-                    <RotaryKnob
+                    <CustomSlider
                       label="Co-occurrence Strength"
                       value={minEdgeWeight}
                       min={0.0}
@@ -292,7 +292,7 @@ export default function SettingsClient() {
                       description="Minimum connection strength (edge weight)."
                     />
 
-                    <RotaryKnob
+                    <CustomSlider
                       label="TF-IDF Importance"
                       value={minTfidf}
                       min={0.0}

@@ -3,6 +3,13 @@
 import { useState, useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
 
+const statusProgress: Record<string, number> = {
+  PENDING: 5,
+  PROCESSING: 60,
+  DONE: 100,
+  FAILED: 100,
+};
+
 export default function StatusBar() {
   const { files, doneCount, pendingCount, failedCount } = useUploadStore();
   const [mounted, setMounted] = useState(false);
@@ -10,6 +17,14 @@ export default function StatusBar() {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  const getAverageProgress = () => {
+    if (files.length === 0) return 0;
+    const total = files.reduce((acc, f) => acc + (statusProgress[f.status] || 0), 0);
+    return Math.round(total / files.length);
+  };
+
+  const avgProgress = getAverageProgress();
 
   return (
     <footer
@@ -27,6 +42,18 @@ export default function StatusBar() {
         color: 'var(--text-muted)',
       }}
     >
+      <style jsx>{`
+        .global-progress-bar-fill {
+          background: linear-gradient(90deg, #8b5cf6, #ec4899, #8b5cf6);
+          background-size: 200% 100%;
+          animation: globalShimmer 1.5s infinite linear;
+        }
+        @keyframes globalShimmer {
+          0% { background-position: 100% 0; }
+          100% { background-position: -100% 0; }
+        }
+      `}</style>
+
       <span>
         <span style={{ color: 'var(--text-secondary)' }}>{mounted ? files.length : 0}</span> files
       </span>
@@ -34,9 +61,45 @@ export default function StatusBar() {
         <span style={{ color: 'var(--success)' }}>{mounted ? doneCount() : 0}</span> done
       </span>
       {mounted && pendingCount() > 0 && (
-        <span>
-          <span style={{ color: 'var(--accent)' }}>{pendingCount()}</span> processing
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+          <span>
+            <span style={{ color: 'var(--accent)' }}>{pendingCount()}</span> processing
+          </span>
         </span>
+      )}
+      {mounted && pendingCount() > 0 && (
+        <div
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.75rem',
+            width: '140px',
+            marginLeft: '-1rem',
+          }}
+        >
+          <div
+            style={{
+              height: '5px',
+              flex: 1,
+              background: 'rgba(255, 255, 255, 0.08)',
+              borderRadius: '2.5px',
+              overflow: 'hidden',
+            }}
+          >
+            <div
+              className="global-progress-bar-fill"
+              style={{
+                height: '100%',
+                width: `${avgProgress}%`,
+                borderRadius: '2.5px',
+                transition: 'width 400ms ease',
+              }}
+            />
+          </div>
+          <span style={{ color: 'var(--text-secondary)', minWidth: '32px', textAlign: 'left' }}>
+            {avgProgress}%
+          </span>
+        </div>
       )}
       {mounted && failedCount() > 0 && (
         <span>

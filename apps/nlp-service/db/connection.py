@@ -23,6 +23,7 @@ def get_db() -> kuzu.Database:
         db_path = Path(_DB_PATH)
         db_path.parent.mkdir(parents=True, exist_ok=True)
         
+        # If KUZU_BUFFER_POOL_SIZE is set and valid, else use default
         buffer_pool_size_str = os.environ.get("KUZU_BUFFER_POOL_SIZE")
         if buffer_pool_size_str and buffer_pool_size_str.strip() not in ("", "0", "default"):
             try:

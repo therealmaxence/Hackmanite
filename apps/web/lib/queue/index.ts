@@ -151,6 +151,8 @@ export async function retryFile(fileId: string): Promise<void> {
     throw new Error(`File not found: ${fileId}`);
   }
 
+  await redis.del(RedisKeys.sessionCancellation(file.sessionId));
+
   await prisma.$transaction(async (tx) => {
     await tx.occurrence.deleteMany({ where: { fileId } });
     await tx.entityNeighborhood.deleteMany({ where: { fileId } });
@@ -200,6 +202,8 @@ export async function retryFile(fileId: string): Promise<void> {
 }
 
 export async function resumeStuckJobs(sessionId: string): Promise<number> {
+  await redis.del(RedisKeys.sessionCancellation(sessionId));
+
   const stuckFiles = await prisma.file.findMany({
     where: {
       sessionId,

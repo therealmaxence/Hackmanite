@@ -4,6 +4,7 @@ import { randomUUID } from 'crypto';
 import { prisma } from '@/lib/prisma';
 import { extractionQueue } from '@/lib/queue';
 import { logger } from '@/lib/logger';
+import { redis, RedisKeys } from '@/lib/redis';
 
 export const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
 export const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB || 100) * 1024 * 1024;
@@ -88,6 +89,8 @@ export async function createFileRecordAndEnqueue(
   originalCreatedAt: Date | null,
   windowSize: number
 ) {
+  await redis.del(RedisKeys.sessionCancellation(sessionId));
+
   const fileRecord = await prisma.file.create({
     data: {
       sessionId,

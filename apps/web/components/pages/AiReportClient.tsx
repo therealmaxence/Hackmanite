@@ -6,6 +6,7 @@ import { useUploadStore } from '@/store/uploadStore';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import MarkdownReport from '@/components/ai/MarkdownReport';
+import CustomSlider from '@/components/ui/CustomSlider';
 
 export default function AiReportClient() {
   const { sessionId } = useUploadStore();
@@ -309,53 +310,35 @@ export default function AiReportClient() {
                     </div>
                   </div>
 
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex justify-between text-[11px] font-mono text-white/40">
-                      <span className="font-medium">Top Entities Limit</span>
-                      <span className="text-white/80 font-bold">{topEntitiesLimit}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="10"
-                      max="100"
-                      step="5"
-                      value={topEntitiesLimit}
-                      onChange={(e) => handleSaveTopEntitiesLimit(Number(e.target.value))}
-                      className="accent-primary cursor-pointer w-full bg-surface-input rounded-lg appearance-none h-1"
-                    />
-                  </div>
+                  <CustomSlider
+                    label="Top Entities Limit"
+                    value={topEntitiesLimit}
+                    min={10}
+                    max={100}
+                    step={5}
+                    onChange={handleSaveTopEntitiesLimit}
+                    unit=" nodes"
+                  />
 
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex justify-between text-[11px] font-mono text-white/40">
-                      <span className="font-medium">Top TF-IDF (Salient) Limit</span>
-                      <span className="text-white/80 font-bold">{topTfidfLimit}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="10"
-                      max="100"
-                      step="5"
-                      value={topTfidfLimit}
-                      onChange={(e) => handleSaveTopTfidfLimit(Number(e.target.value))}
-                      className="accent-primary cursor-pointer w-full bg-surface-input rounded-lg appearance-none h-1"
-                    />
-                  </div>
+                  <CustomSlider
+                    label="Top TF-IDF (Salient) Limit"
+                    value={topTfidfLimit}
+                    min={10}
+                    max={100}
+                    step={5}
+                    onChange={handleSaveTopTfidfLimit}
+                    unit=" nodes"
+                  />
 
-                  <div className="flex flex-col gap-2.5">
-                    <div className="flex justify-between text-[11px] font-mono text-white/40">
-                      <span className="font-medium">Central Bridges Limit</span>
-                      <span className="text-white/80 font-bold">{bridgesLimit}</span>
-                    </div>
-                    <input
-                      type="range"
-                      min="5"
-                      max="30"
-                      step="1"
-                      value={bridgesLimit}
-                      onChange={(e) => handleSaveBridgesLimit(Number(e.target.value))}
-                      className="accent-primary cursor-pointer w-full bg-surface-input rounded-lg appearance-none h-1"
-                    />
-                  </div>
+                  <CustomSlider
+                    label="Central Bridges Limit"
+                    value={bridgesLimit}
+                    min={5}
+                    max={30}
+                    step={1}
+                    onChange={handleSaveBridgesLimit}
+                    unit=" nodes"
+                  />
 
                   <div className="flex flex-col gap-2.5">
                     <label className="text-[11px] text-white/40 font-mono font-medium">Custom Directives</label>

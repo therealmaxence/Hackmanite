@@ -388,7 +388,10 @@ export default function AiReportClient() {
               </div>
 
               {/* Report display panel */}
-              <div className="lg:col-span-2 flex flex-col print-report" style={{ gap: '1.5rem', height: '100%' }}>
+              <div 
+                className="lg:col-span-2 flex flex-col print-report" 
+                style={{ gap: '1.5rem', height: '100%', minHeight: 0 }}
+              >
                 {isGenerating && (
                   <div className="signature-card h-[400px] flex flex-col items-center justify-center gap-4 border border-dashed border-white/5">
                     <Spinner size={28} color="var(--color-primary-hover)" />
@@ -412,13 +415,13 @@ export default function AiReportClient() {
 
                 {!isGenerating && report && (
                   <div
-                    className="signature-card bg-surface-raised border border-white/5 rounded-lg shadow-2xl print-report flex flex-col flex-grow"
-                    style={{ padding: '2.5rem', height: '100%' }}
+                    className="signature-card bg-surface-raised border border-white/5 rounded-lg shadow-2xl print-report flex flex-col"
+                    style={{ padding: '2.5rem', height: '100%', minHeight: 0 }}
                   >
                     {/* Top action header */}
                     <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-6 no-print flex-shrink-0">
                       <span className="text-xs font-mono uppercase text-white/50 font-semibold tracking-wider">Briefing Analysis</span>
-                      <div className="flex gap-2" style={{ transform: 'translateY(-5px)' }}>
+                      <div className="flex gap-2" style={{ transform: 'translateY(-6px)' }}>
                         <Button variant="secondary" size="xs" onClick={copyToClipboard}>
                           {copied ? 'Copied!' : 'Copy'}
                         </Button>
@@ -432,7 +435,7 @@ export default function AiReportClient() {
                     </div>
 
                     {/* Scrollable markdown content */}
-                    <div className="overflow-y-auto custom-scrollbar flex-1 pr-2">
+                    <div className="overflow-y-auto custom-scrollbar flex-1 pr-2" style={{ minHeight: 0 }}>
                       <MarkdownReport report={report} />
                     </div>
                   </div>

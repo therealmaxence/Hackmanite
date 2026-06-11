@@ -191,7 +191,7 @@ h3 { font-size: 1rem;    font-weight: 500; }
 .signature-card {
   background: var(--color-surface-raised);
   border-radius: var(--radius);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.04);
   padding: 20px 24px;
   position: relative;
   overflow: hidden;
@@ -201,7 +201,7 @@ h3 { font-size: 1rem;    font-weight: 500; }
 .signature-card:hover {
   background: var(--color-surface-hover);
   background-image: var(--noise-bg);
-  border: none;
+  border-color: rgba(255, 255, 255, 0.08);
   box-shadow: var(--glow-trace);
 }
 
@@ -214,7 +214,7 @@ h3 { font-size: 1rem;    font-weight: 500; }
 
 .signature-input {
   background: var(--color-surface-input);
-  border: none;
+  border: 1px solid rgba(255, 255, 255, 0.05);
   border-radius: var(--radius-sm);
   color: var(--color-text);
   padding: 9px 14px;
@@ -225,7 +225,7 @@ h3 { font-size: 1rem;    font-weight: 500; }
 
 .signature-input:focus {
   background: var(--color-surface-hover);
-  border: none;
+  border-color: var(--color-primary);
   box-shadow: var(--glow-trace);
   outline: none;
 }

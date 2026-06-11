@@ -10,6 +10,7 @@ const NAV_ITEMS = [
   { href: '/graph', label: 'Graph', id: 'nav-graph' },
   { href: '/emails', label: 'Emails', id: 'nav-emails' },
   { href: '/stats', label: 'Stats', id: 'nav-stats' },
+  { href: '/ai-report', label: 'AI Report', id: 'nav-ai-report' },
   { href: '/session', label: 'Session', id: 'nav-session' },
   { href: '/settings', label: 'Settings', id: 'nav-settings' },
 ];

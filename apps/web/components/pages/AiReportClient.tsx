@@ -5,6 +5,7 @@ import Header from '@/components/layout/Header';
 import { useUploadStore } from '@/store/uploadStore';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
+import MarkdownReport from '@/components/ai/MarkdownReport';
 
 export default function AiReportClient() {
   const { sessionId } = useUploadStore();
@@ -14,6 +15,12 @@ export default function AiReportClient() {
   const [focusType, setFocusType] = useState('general');
   const [customInstructions, setCustomInstructions] = useState('');
   const [language, setLanguage] = useState('en');
+  const [topEntitiesLimit, setTopEntitiesLimit] = useState(30);
+  const [topTfidfLimit, setTopTfidfLimit] = useState(30);
+  const [bridgesLimit, setBridgesLimit] = useState(10);
+  const [estimatedTokens, setEstimatedTokens] = useState(0);
+  const [promptPreview, setPromptPreview] = useState('');
+  const [showPreview, setShowPreview] = useState(false);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
@@ -25,10 +32,49 @@ export default function AiReportClient() {
     const savedKey = localStorage.getItem('entitygraph_mistral_api_key');
     const savedModel = localStorage.getItem('entitygraph_mistral_model');
     const savedLang = localStorage.getItem('entitygraph_mistral_language');
+    const savedTopEnts = localStorage.getItem('entitygraph_mistral_top_entities_limit');
+    const savedTopTfidf = localStorage.getItem('entitygraph_mistral_top_tfidf_limit');
+    const savedBridges = localStorage.getItem('entitygraph_mistral_bridges_limit');
     if (savedKey) setApiKey(savedKey);
     if (savedModel) setModel(savedModel);
     if (savedLang) setLanguage(savedLang);
+    if (savedTopEnts) setTopEntitiesLimit(Number(savedTopEnts));
+    if (savedTopTfidf) setTopTfidfLimit(Number(savedTopTfidf));
+    if (savedBridges) setBridgesLimit(Number(savedBridges));
   }, []);
+
+  useEffect(() => {
+    if (!sessionId) return;
+    const delayDebounceFn = setTimeout(async () => {
+      try {
+        const res = await fetch('/api/ai/report', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            sessionId,
+            focusType,
+            apiKey: 'dummy_key',
+            model,
+            customInstructions,
+            language,
+            topEntitiesLimit,
+            topTfidfLimit,
+            bridgesLimit,
+            previewOnly: true,
+          }),
+        });
+        if (res.ok) {
+          const data = await res.json();
+          setPromptPreview(data.prompt);
+          setEstimatedTokens(data.estimatedTokens);
+        }
+      } catch (err) {
+        console.error('Failed to fetch prompt preview:', err);
+      }
+    }, 250);
+
+    return () => clearTimeout(delayDebounceFn);
+  }, [sessionId, focusType, model, customInstructions, language, topEntitiesLimit, topTfidfLimit, bridgesLimit]);
 
   const handleSaveKey = (key: string) => {
     setApiKey(key);
@@ -43,6 +89,21 @@ export default function AiReportClient() {
   const handleSaveLanguage = (lang: string) => {
     setLanguage(lang);
     localStorage.setItem('entitygraph_mistral_language', lang);
+  };
+
+  const handleSaveTopEntitiesLimit = (val: number) => {
+    setTopEntitiesLimit(val);
+    localStorage.setItem('entitygraph_mistral_top_entities_limit', String(val));
+  };
+
+  const handleSaveTopTfidfLimit = (val: number) => {
+    setTopTfidfLimit(val);
+    localStorage.setItem('entitygraph_mistral_top_tfidf_limit', String(val));
+  };
+
+  const handleSaveBridgesLimit = (val: number) => {
+    setBridgesLimit(val);
+    localStorage.setItem('entitygraph_mistral_bridges_limit', String(val));
   };
 
   const generateReport = async () => {
@@ -66,6 +127,9 @@ export default function AiReportClient() {
           model,
           customInstructions,
           language,
+          topEntitiesLimit,
+          topTfidfLimit,
+          bridgesLimit,
         }),
       });
 
@@ -102,31 +166,7 @@ export default function AiReportClient() {
     URL.revokeObjectURL(url);
   };
 
-  const parseMarkdown = (text: string) => {
-    const parseBold = (str: string) => {
-      const parts = str.split('**');
-      return parts.map((part, i) => i % 2 === 1 ? <strong key={i} className="text-white font-bold">{part}</strong> : part);
-    };
 
-    return text.split('\n').map((line, idx) => {
-      if (line.startsWith('# ')) {
-        return <h1 key={idx} className="text-2xl font-display font-semibold text-white mt-6 mb-3 border-b border-white/5 pb-2">{line.slice(2)}</h1>;
-      }
-      if (line.startsWith('## ')) {
-        return <h2 key={idx} className="text-xl font-display font-semibold text-white/90 mt-5 mb-2">{line.slice(3)}</h2>;
-      }
-      if (line.startsWith('### ')) {
-        return <h3 key={idx} className="text-lg font-display font-semibold text-white/80 mt-4 mb-1">{line.slice(4)}</h3>;
-      }
-      if (line.startsWith('- ') || line.startsWith('* ')) {
-        return <li key={idx} className="ml-5 list-disc text-white/70 mb-1.5 leading-relaxed text-sm">{parseBold(line.slice(2))}</li>;
-      }
-      if (line.trim() === '') {
-        return <div key={idx} className="h-2" />;
-      }
-      return <p key={idx} className="text-white/70 mb-2.5 leading-relaxed text-sm">{parseBold(line)}</p>;
-    });
-  };
 
   return (
     <div className="min-h-screen bg-base flex flex-col">
@@ -270,6 +310,54 @@ export default function AiReportClient() {
                   </div>
 
                   <div className="flex flex-col gap-2.5">
+                    <div className="flex justify-between text-[11px] font-mono text-white/40">
+                      <span className="font-medium">Top Entities Limit</span>
+                      <span className="text-white/80 font-bold">{topEntitiesLimit}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="5"
+                      value={topEntitiesLimit}
+                      onChange={(e) => handleSaveTopEntitiesLimit(Number(e.target.value))}
+                      className="accent-primary cursor-pointer w-full bg-surface-input rounded-lg appearance-none h-1"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex justify-between text-[11px] font-mono text-white/40">
+                      <span className="font-medium">Top TF-IDF (Salient) Limit</span>
+                      <span className="text-white/80 font-bold">{topTfidfLimit}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="10"
+                      max="100"
+                      step="5"
+                      value={topTfidfLimit}
+                      onChange={(e) => handleSaveTopTfidfLimit(Number(e.target.value))}
+                      className="accent-primary cursor-pointer w-full bg-surface-input rounded-lg appearance-none h-1"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2.5">
+                    <div className="flex justify-between text-[11px] font-mono text-white/40">
+                      <span className="font-medium">Central Bridges Limit</span>
+                      <span className="text-white/80 font-bold">{bridgesLimit}</span>
+                    </div>
+                    <input
+                      type="range"
+                      min="5"
+                      max="30"
+                      step="1"
+                      value={bridgesLimit}
+                      onChange={(e) => handleSaveBridgesLimit(Number(e.target.value))}
+                      className="accent-primary cursor-pointer w-full bg-surface-input rounded-lg appearance-none h-1"
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2.5">
                     <label className="text-[11px] text-white/40 font-mono font-medium">Custom Directives</label>
                     <textarea
                       value={customInstructions}
@@ -290,6 +378,29 @@ export default function AiReportClient() {
                   >
                     Run AI Analysis
                   </Button>
+
+                  <div className="flex justify-between items-center text-[10px] font-mono text-white/30 px-1 mt-2">
+                    <span>Estimated Input Cost:</span>
+                    <span className="text-white/60 font-semibold">~{estimatedTokens} tokens</span>
+                  </div>
+
+                  <div className="flex flex-col gap-2.5 border-t border-white/5 pt-4 mt-2">
+                    <button
+                      type="button"
+                      onClick={() => setShowPreview(!showPreview)}
+                      className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors flex justify-between items-center cursor-pointer"
+                      style={{ background: 'none', border: 'none', padding: 0, outline: 'none' }}
+                    >
+                      <span>{showPreview ? 'Hide Prompt Preview' : 'Show Prompt Preview'}</span>
+                      <span>{showPreview ? '▲' : '▼'}</span>
+                    </button>
+                    
+                    {showPreview && (
+                      <pre className="signature-input font-mono text-[9px] text-white/50 bg-surface-input p-3 rounded overflow-x-auto max-h-48 max-w-full whitespace-pre-wrap select-all leading-relaxed" style={{ width: '100%' }}>
+                        {promptPreview || 'Generating preview...'}
+                      </pre>
+                    )}
+                  </div>
                 </div>
               </div>
 
@@ -335,7 +446,7 @@ export default function AiReportClient() {
                       style={{ padding: '2.5rem' }}
                     >
                       <div className="prose max-w-none text-white/80">
-                        {parseMarkdown(report)}
+                        <MarkdownReport report={report} />
                       </div>
                     </div>
                   </div>

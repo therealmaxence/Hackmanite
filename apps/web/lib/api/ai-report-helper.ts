@@ -60,7 +60,7 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
       WHERE f.sessionId = ${sessionId}
       GROUP BY e.id, e.displayName, e.type
       ORDER BY count DESC
-      LIMIT 50
+      LIMIT 100
     `,
     prisma.$queryRaw<any[]>`
       SELECT e.displayName as label, e.type, SUM(o.tfidf) as tfidf
@@ -70,7 +70,7 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
       WHERE f.sessionId = ${sessionId}
       GROUP BY e.id, e.displayName, e.type
       ORDER BY tfidf DESC
-      LIMIT 50
+      LIMIT 100
     `,
     prisma.$queryRaw<any[]>`
       SELECT e1.type as typeA, e2.type as typeB, COUNT(*) as count
@@ -90,7 +90,7 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
       WHERE f.sessionId = ${sessionId}
       GROUP BY o.entityId
       ORDER BY SUM(o.count) DESC
-      LIMIT 100
+      LIMIT 250
     `,
   ]);
 
@@ -173,7 +173,7 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
 
     const sortedBridges = Array.from(centralityScores.entries())
       .sort((a, b) => b[1] - a[1])
-      .slice(0, 10);
+      .slice(0, 30);
 
     const bridgeDetails = await prisma.entity.findMany({
       where: { id: { in: sortedBridges.map(([id]) => id) } },

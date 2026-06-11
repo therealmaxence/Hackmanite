@@ -5,6 +5,7 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import { downloadJsonData } from '@/lib/sessionExport';
 import { generateAndDownloadObsidianZip } from '@/lib/obsidianExport';
+import { filterGraphExportData } from '@/lib/export-filter';
 
 interface ExportModalProps {
   sessionId: string;
@@ -79,56 +80,16 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
     setError(null);
 
     try {
-      const hiddenIdsSet = new Set<string>(rawData.hiddenNodeIds || []);
-      let filteredNodes = (rawData.nodes || []).filter((node: any) => {
-        if (!exportHiddenNodes && hiddenIdsSet.has(node.id)) return false;
-        if (!selectedTypes.has(node.type)) return false;
-        const totalOccs = (node.occurrences || []).reduce((sum: number, o: any) => sum + o.count, 0);
-        if (totalOccs < minOccurrences) return false;
-        const totalTfidf = (node.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
-        if (totalTfidf < minTfidf) return false;
-        return true;
+      const filteredPayload = filterGraphExportData(rawData, {
+        selectedTypes,
+        keepAllNodes,
+        limitNodes,
+        minOccurrences,
+        minTfidf,
+        minConnections,
+        minEdgeWeight,
+        exportHiddenNodes,
       });
-
-      let filteredEdges = (rawData.edges || []).filter((edge: any) => edge.weight >= minEdgeWeight);
-
-      const connectionCounts = new Map<string, number>();
-      for (const edge of filteredEdges) {
-        connectionCounts.set(edge.source, (connectionCounts.get(edge.source) || 0) + 1);
-        connectionCounts.set(edge.target, (connectionCounts.get(edge.target) || 0) + 1);
-      }
-
-      filteredNodes = filteredNodes.filter((node: any) => {
-        const conns = connectionCounts.get(node.id) || 0;
-        return conns >= minConnections;
-      });
-
-      if (!keepAllNodes && limitNodes > 0) {
-        filteredNodes.sort((a: any, b: any) => {
-          const aVal = (a.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
-          const bVal = (b.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
-          return bVal - aVal;
-        });
-        filteredNodes = filteredNodes.slice(0, limitNodes);
-      }
-
-      const keptNodeIds = new Set(filteredNodes.map((n: any) => n.id));
-      filteredEdges = filteredEdges.filter((edge: any) => keptNodeIds.has(edge.source) && keptNodeIds.has(edge.target));
-
-      const keptFileIds = new Set<string>();
-      for (const node of filteredNodes) {
-        for (const occ of node.occurrences || []) {
-          keptFileIds.add(occ.fileId);
-        }
-      }
-      const filteredEmails = (rawData.emails || []).filter((email: any) => email.fileId && keptFileIds.has(email.fileId));
-
-      const filteredPayload = {
-        ...rawData,
-        nodes: filteredNodes,
-        edges: filteredEdges,
-        emails: filteredEmails,
-      };
 
       if (exportType === 'json') {
         downloadJsonData(filteredPayload, sessionId);

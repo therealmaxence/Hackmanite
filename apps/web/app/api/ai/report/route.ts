@@ -6,13 +6,36 @@ export const runtime = 'nodejs';
 
 export async function POST(req: NextRequest) {
   try {
-    const { sessionId, focusType, apiKey, model, customInstructions, language } = await req.json();
+    const {
+      sessionId,
+      focusType,
+      apiKey,
+      model,
+      customInstructions,
+      language,
+      topEntitiesLimit = 30,
+      topTfidfLimit = 30,
+      bridgesLimit = 10,
+      previewOnly = false,
+    } = await req.json();
 
     if (!sessionId) {
       return NextResponse.json(
         { error: 'sessionId is required', code: ErrorCodes.VALIDATION_ERROR },
         { status: 400 }
       );
+    }
+
+    const data = await getAiReportData(sessionId);
+    const prompt = buildPrompt(data, focusType, customInstructions, language, topEntitiesLimit, topTfidfLimit, bridgesLimit);
+
+    if (previewOnly) {
+      const estimatedTokens = Math.ceil(prompt.length / 4);
+      return NextResponse.json({
+        prompt,
+        charCount: prompt.length,
+        estimatedTokens,
+      });
     }
 
     const resolvedApiKey = apiKey || process.env.MISTRAL_API_KEY;
@@ -22,9 +45,6 @@ export async function POST(req: NextRequest) {
         { status: 400 }
       );
     }
-
-    const data = await getAiReportData(sessionId);
-    const prompt = buildPrompt(data, focusType, customInstructions, language);
 
     const mistralModel = model || 'mistral-large-latest';
     const systemPrompt = language === 'fr'
@@ -76,7 +96,15 @@ export async function POST(req: NextRequest) {
   }
 }
 
-function buildPrompt(data: any, focusType: string, customInstructions?: string, language: string = 'en'): string {
+function buildPrompt(
+  data: any,
+  focusType: string,
+  customInstructions?: string,
+  language: string = 'en',
+  topEntitiesLimit: number = 30,
+  topTfidfLimit: number = 30,
+  bridgesLimit: number = 10
+): string {
   const isFrench = language === 'fr';
 
   const generalText = `
@@ -90,17 +118,17 @@ function buildPrompt(data: any, focusType: string, customInstructions?: string, 
   const entityTypesText = data.entityTypes.map((et: any) => `- ${et.type}: ${et.count}`).join('\n');
   
   const topEntitiesText = data.topEntities
-    .slice(0, 30)
+    .slice(0, topEntitiesLimit)
     .map((te: any) => `- ${te.label} (${te.type}): count ${te.count}`)
     .join('\n');
 
   const topTfidfText = data.topTfidfEntities
-    .slice(0, 30)
+    .slice(0, topTfidfLimit)
     .map((te: any) => `- ${te.label} (${te.type}): TF-IDF ${te.tfidf.toFixed(2)}`)
     .join('\n');
 
   const bridgesText = data.bridges.length > 0
-    ? data.bridges.map((b: any) => `- ${b.label} (${b.type}): Centrality Score ${b.score.toFixed(4)}`).join('\n')
+    ? data.bridges.slice(0, bridgesLimit).map((b: any) => `- ${b.label} (${b.type}): Centrality Score ${b.score.toFixed(4)}`).join('\n')
     : 'No significant bridge entities detected.';
 
   const cooccurText = data.cooccurrences.map((co: any) => `- ${co.typeA} <=> ${co.typeB}: count ${co.count}`).join('\n');

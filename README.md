@@ -14,6 +14,7 @@ Hackmanite is a desktop application for extracting, exploring, and visualizing *
 - **Interactive entity graph** — progressive visualization of up to 50,000 nodes, loaded in batches
 - **Session management** — save, reload, and switch between multiple named sessions (SQLite-backed)
 - **Entity dashboard** — browse, filter, and manage all extracted entities
+- **AI Intelligence Report** — generate structured analytical briefings on session data using Mistral AI models
 - **Standalone desktop app** — no Docker, no Python, no Node.js required on end-user machines
 
 ---
@@ -88,6 +89,7 @@ MAX_FILE_SIZE_MB=500
 UPLOAD_DIR="./uploads"
 NODE_ENV="development"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
+MISTRAL_API_KEY="your_optional_global_mistral_api_key"
 ```
 
 Optional — override the KuzuDB data directory (default: `./kuzu_data` next to `main.py`):
@@ -150,6 +152,23 @@ You can export your session's entity graph to Obsidian to explore and search nod
 4. Open the **Obsidian** application.
 5. Select **Open folder as vault** and choose the extracted folder.
 6. Press **`Ctrl + G`** (or click the Graph icon in the left menu) to view your dynamic, interactive entity graph.
+
+---
+
+## AI Intelligence Report (Mistral AI)
+
+You can generate executive intelligence briefings based on your session's entity graph and document contents using Mistral AI:
+
+1. Navigate to the **AI Report** page from the header bar.
+2. Enter your **Mistral API Key** (saved securely client-side in `localStorage`) or define it globally in your `.env` configuration.
+3. Select your **Model** (e.g., `Mistral Large` or `Mistral Small`) and select your **Analysis Scope**:
+   - *Executive Summary*: General intelligence analysis of the entire dataset.
+   - *Threat Actor Focus*: Focuses on threat actors, targets, emails, organizations, and IP infrastructure.
+   - *Network Clusters*: Focuses on graph co-occurrences, bridges, and cluster linkages.
+   - *Temporal Timeline*: Focuses on chronologies, Peak Activity hours, and operational sequences.
+4. Tune extraction limits using the custom sliders (Top Entities count, Salient TF-IDF Entities, and Central Bridge Nodes) and add optional analyst directives.
+5. Click **Run AI Analysis** to generate the report.
+6. Use the briefing panel header to **Copy** the report, **Download MD** (save as Markdown file), or **Print PDF** (compiled with a custom printer-friendly stylesheet).
 
 ---
 

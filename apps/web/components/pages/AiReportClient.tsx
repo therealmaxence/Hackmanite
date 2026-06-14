@@ -22,6 +22,8 @@ export default function AiReportClient() {
   const [estimatedTokens, setEstimatedTokens] = useState(0);
   const [promptPreview, setPromptPreview] = useState('');
   const [showPreview, setShowPreview] = useState(false);
+  const [showApiSetup, setShowApiSetup] = useState(false);
+  const [showAnalysisScope, setShowAnalysisScope] = useState(false);
   
   const [isGenerating, setIsGenerating] = useState(false);
   const [statusMsg, setStatusMsg] = useState('');
@@ -200,73 +202,100 @@ export default function AiReportClient() {
               <p className="text-sm font-mono text-white/30 uppercase tracking-wider">No Active Session Selected</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
+            <div className="flex flex-col gap-12">
               
-              {/* Settings sidebar */}
+              {/* Settings panel */}
               <div
                 className="flex flex-col no-print"
                 style={{ gap: '2.5rem' }}
               >
-                <div
-                  className="signature-card flex flex-col"
-                  style={{
-                    padding: '2.5rem',
-                    gap: '2rem',
-                  }}
-                >
-                  <h3 className="text-sm font-mono uppercase text-white/50 border-b border-white/5 pb-3 font-semibold tracking-wider">Mistral API Setup</h3>
-                  
-                  <div className="flex flex-col gap-2.5">
-                    <label className="text-[11px] text-white/40 font-mono font-medium">API Key</label>
-                    <div className="relative">
-                      <input
-                        type={showKey ? 'text' : 'password'}
-                        value={apiKey}
-                        onChange={(e) => handleSaveKey(e.target.value)}
-                        placeholder="Mistral API Key..."
-                        className="signature-input w-full font-mono text-xs"
-                        style={{ padding: '0.75rem 1.25rem', paddingRight: '4.5rem' }}
-                      />
-                      <button
-                        type="button"
-                        onClick={() => setShowKey(!showKey)}
-                        className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 text-xs font-mono transition-colors"
-                      >
-                        {showKey ? 'Hide' : 'Show'}
-                      </button>
-                    </div>
-                  </div>
+                <div className="signature-card flex flex-col" style={{ padding: '0' }}>
+                  {/* Collapsible header */}
+                  <button
+                    type="button"
+                    onClick={() => setShowApiSetup(!showApiSetup)}
+                    className="flex justify-between items-center w-full cursor-pointer hover:bg-white/5 transition-colors"
+                    style={{ padding: '1.5rem 2rem', background: 'none', border: 'none', outline: 'none' }}
+                  >
+                    <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">Mistral API Setup</h3>
+                    <svg
+                      className="w-4 h-4 text-white/40 transition-transform duration-300"
+                      style={{ transform: showApiSetup ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
 
-                  <div className="flex flex-col gap-2.5">
-                    <label className="text-[11px] text-white/40 font-mono font-medium">Model</label>
-                    <div className="relative">
-                      <select
-                        value={model}
-                        onChange={(e) => handleSaveModel(e.target.value)}
-                        className="signature-input w-full appearance-none text-xs cursor-pointer bg-surface-input text-white border-none"
-                        style={{ padding: '0.75rem 1.25rem', paddingRight: '2.5rem' }}
-                      >
-                        <option value="mistral-large-latest">Mistral Large (High quality)</option>
-                        <option value="mistral-small-latest">Mistral Small (Fast)</option>
-                        <option value="open-mixtral-8x22b">Mixtral 8x22B (Balanced)</option>
-                      </select>
-                      <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m6 9 6 6 6-6" />
-                        </svg>
+                  {/* Collapsible body */}
+                  {showApiSetup && (
+                    <div className="flex flex-col border-t border-white/5" style={{ padding: '1.5rem 2rem 2rem', gap: '2rem' }}>
+                      <div className="flex flex-col gap-2.5">
+                        <label className="text-[11px] text-white/40 font-mono font-medium">API Key</label>
+                        <div className="relative">
+                          <input
+                            type={showKey ? 'text' : 'password'}
+                            value={apiKey}
+                            onChange={(e) => handleSaveKey(e.target.value)}
+                            placeholder="Mistral API Key..."
+                            className="signature-input w-full font-mono text-xs"
+                            style={{ padding: '0.75rem 1.25rem', paddingRight: '4.5rem' }}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => setShowKey(!showKey)}
+                            className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 text-xs font-mono transition-colors"
+                          >
+                            {showKey ? 'Hide' : 'Show'}
+                          </button>
+                        </div>
+                      </div>
+
+                      <div className="flex flex-col gap-2.5">
+                        <label className="text-[11px] text-white/40 font-mono font-medium">Model</label>
+                        <div className="relative">
+                          <select
+                            value={model}
+                            onChange={(e) => handleSaveModel(e.target.value)}
+                            className="signature-input w-full appearance-none text-xs cursor-pointer bg-surface-input text-white border-none"
+                            style={{ padding: '0.75rem 1.25rem', paddingRight: '2.5rem' }}
+                          >
+                            <option value="mistral-large-latest">Mistral Large (High quality)</option>
+                            <option value="mistral-small-latest">Mistral Small (Fast)</option>
+                            <option value="open-mixtral-8x22b">Mixtral 8x22B (Balanced)</option>
+                          </select>
+                          <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
+                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m6 9 6 6 6-6" />
+                            </svg>
+                          </div>
+                        </div>
                       </div>
                     </div>
-                  </div>
+                  )}
                 </div>
 
-                <div
-                  className="signature-card flex flex-col"
-                  style={{
-                    padding: '2.5rem',
-                    gap: '2rem',
-                  }}
-                >
-                  <h3 className="text-sm font-mono uppercase text-white/50 border-b border-white/5 pb-3 font-semibold tracking-wider">Analysis Scope</h3>
+                <div className="signature-card flex flex-col" style={{ padding: '0' }}>
+                  {/* Collapsible header */}
+                  <button
+                    type="button"
+                    onClick={() => setShowAnalysisScope(!showAnalysisScope)}
+                    className="flex justify-between items-center w-full cursor-pointer hover:bg-white/5 transition-colors"
+                    style={{ padding: '1.5rem 2rem', background: 'none', border: 'none', outline: 'none' }}
+                  >
+                    <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">Analysis Scope</h3>
+                    <svg
+                      className="w-4 h-4 text-white/40 transition-transform duration-300"
+                      style={{ transform: showAnalysisScope ? 'rotate(180deg)' : 'rotate(0deg)' }}
+                      fill="none" stroke="currentColor" viewBox="0 0 24 24"
+                    >
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m6 9 6 6 6-6" />
+                    </svg>
+                  </button>
+
+                  {/* Collapsible body */}
+                  {showAnalysisScope && (
+                    <div className="flex flex-col border-t border-white/5" style={{ padding: '1.5rem 2rem 2rem', gap: '2rem' }}>
                   
                   <div className="flex flex-col gap-2.5">
                     <label className="text-[11px] text-white/40 font-mono font-medium">Focus Mode</label>
@@ -384,13 +413,15 @@ export default function AiReportClient() {
                       </pre>
                     )}
                   </div>
+                    </div>
+                  )}
                 </div>
               </div>
 
               {/* Report display panel */}
               <div 
-                className="lg:col-span-2 flex flex-col print-report" 
-                style={{ gap: '1.5rem', height: '100%', minHeight: 0 }}
+                className="flex flex-col print-report" 
+                style={{ gap: '1.5rem' }}
               >
                 {isGenerating && (
                   <div className="signature-card h-[400px] flex flex-col items-center justify-center gap-4 border border-dashed border-white/5">
@@ -416,7 +447,7 @@ export default function AiReportClient() {
                 {!isGenerating && report && (
                   <div
                     className="signature-card bg-surface-raised border border-white/5 rounded-lg shadow-2xl print-report flex flex-col"
-                    style={{ padding: '2.5rem', height: '100%', minHeight: 0 }}
+                    style={{ padding: '2.5rem' }}
                   >
                     {/* Top action header */}
                     <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-6 no-print flex-shrink-0">
@@ -434,8 +465,8 @@ export default function AiReportClient() {
                       </div>
                     </div>
 
-                    {/* Scrollable markdown content */}
-                    <div className="overflow-y-auto custom-scrollbar flex-1 pr-2" style={{ minHeight: 0 }}>
+                    {/* Markdown content */}
+                    <div className="overflow-y-auto custom-scrollbar pr-2">
                       <MarkdownReport report={report} />
                     </div>
                   </div>

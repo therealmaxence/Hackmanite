@@ -5,6 +5,7 @@ import { useSWRConfig } from 'swr';
 import { useGraphStore } from '@/store/graphStore';
 import { useUploadStore } from '@/store/uploadStore';
 import { computeGraphCommunities } from '@/lib/graphCommunities';
+import { useTranslation } from '@/lib/i18n';
 import GraphSearch from './GraphSearch';
 import GraphFilterSliders from './GraphFilterSliders';
 import GraphActions from './GraphActions';
@@ -13,6 +14,7 @@ export default function GraphControls() {
   const { setFilter, filters, resetFilters, clearGraph, nodes, edges, triggerRefresh, triggerLayout } = useGraphStore();
   const { sessionId, resetSession, setSessionId, addFiles } = useUploadStore();
   const { mutate } = useSWRConfig();
+  const { t } = useTranslation();
   const [localSearch, setLocalSearch] = useState('');
 
   useEffect(() => { setLocalSearch(filters.searchQuery); }, [filters.searchQuery]);
@@ -23,8 +25,8 @@ export default function GraphControls() {
     for (const label of communityMap.values()) counts.set(label, (counts.get(label) ?? 0) + 1);
     return Array.from(counts.entries())
       .sort((a, b) => b[1] - a[1])
-      .map(([id, count], i) => ({ id, name: `Community ${i + 1}`, count }));
-  }, [communityMap]);
+      .map(([id, count], i) => ({ id, name: t('graph.controls.community_name', { num: i + 1 }), count }));
+  }, [communityMap, t]);
 
   const handleSearch = (val: string) => { setLocalSearch(val); setFilter('searchQuery', val); };
 
@@ -33,7 +35,7 @@ export default function GraphControls() {
   };
 
   const handleResetGraph = async () => {
-    if (!confirm('Permanently delete all graph data and files in this session?')) return;
+    if (!confirm(t('graph.controls.confirm_reset_graph'))) return;
     try {
       if (sessionId) await fetch(`/api/session/${sessionId}`, { method: 'DELETE' });
       clearGraph();
@@ -46,8 +48,7 @@ export default function GraphControls() {
   return (
     <div className="graph-controls signature-panel" style={{ width: 360, maxWidth: '100%', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 1.25rem', gap: '1.25rem', overflowY: 'auto' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-        <span style={{ fontFamily: 'var(--font-display)', fontSize: '0.75rem', letterSpacing: '0.04em', color: 'var(--color-text-muted)', fontWeight: 500 }}>Graph filters</span>
-        <span style={{ fontSize: '0.92rem', color: 'var(--color-text)', fontWeight: 600 }}>Explore neighborhoods by hop depth</span>
+        <span style={{ fontSize: '0.92rem', color: 'var(--color-text)', fontWeight: 600 }}>{t('graph.controls.title')}</span>
       </div>
 
       <GraphSearch value={localSearch} onChange={handleSearch} />

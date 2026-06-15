@@ -1,4 +1,5 @@
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
+import { useTranslation } from '@/lib/i18n';
 
 interface CooccurrencePair {
   typeA: string;
@@ -11,6 +12,7 @@ interface CooccurrencePairsProps {
 }
 
 export default function CooccurrencePairs({ cooccurrences }: CooccurrencePairsProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="signature-card flex flex-col justify-between"
@@ -20,13 +22,13 @@ export default function CooccurrencePairs({ cooccurrences }: CooccurrencePairsPr
       }}
     >
       <h3 className="text-sm font-semibold text-white/70">
-        Top Cross-Category Connections
+        {t('stats.cross_cat.title')}
       </h3>
 
       {cooccurrences.length === 0 ? (
         <div className="h-[200px] flex items-center justify-center">
           <p className="text-xs font-mono text-white/30 uppercase tracking-widest">
-            No connections identified
+            {t('stats.cross_cat.no_data')}
           </p>
         </div>
       ) : (
@@ -48,7 +50,7 @@ export default function CooccurrencePairs({ cooccurrences }: CooccurrencePairsPr
                         style={{ background: ENTITY_COLORS[pair.typeA as EntityType] || '#6b7280' }}
                       />
                       <span className="text-[10px] tracking-wider text-white/60 font-mono">
-                        {pair.typeA}
+                        {t('entity.' + pair.typeA)}
                       </span>
                     </div>
                     <span className="text-white/20 font-mono text-xs">⟷</span>
@@ -58,14 +60,14 @@ export default function CooccurrencePairs({ cooccurrences }: CooccurrencePairsPr
                         style={{ background: ENTITY_COLORS[pair.typeB as EntityType] || '#6b7280' }}
                       />
                       <span className="text-[10px] tracking-wider text-white/60 font-mono">
-                        {pair.typeB}
+                        {t('entity.' + pair.typeB)}
                       </span>
                     </div>
                   </div>
                 </div>
                 <div className="text-right shrink-0">
                   <span className="font-mono text-xs text-white/70">
-                    {pair.count} links
+                    {t('stats.cross_cat.links', { count: pair.count })}
                   </span>
                 </div>
               </div>

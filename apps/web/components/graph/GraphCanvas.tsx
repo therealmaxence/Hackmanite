@@ -7,6 +7,7 @@ import coseBilkent from 'cytoscape-cose-bilkent';
 import { useGraphStore } from '@/store/graphStore';
 import { useUploadStore } from '@/store/uploadStore';
 import { useSWRConfig } from 'swr';
+import { useTranslation } from '@/lib/i18n';
 import { GraphNode, GraphEdge } from '@/lib/graph-builder';
 import { computeGraphCommunities } from '@/lib/graphCommunities';
 
@@ -15,6 +16,7 @@ import { useCytoscapeElements } from './hooks/useCytoscapeElements';
 import { useCytoscapeLayout } from './hooks/useCytoscapeLayout';
 import { useCytoscapeSelection } from './hooks/useCytoscapeSelection';
 import { useCytoscapeHighlights } from './hooks/useCytoscapeHighlights';
+import GraphSelectionTip from './GraphSelectionTip';
 
 if (typeof window !== 'undefined') {
   cytoscape.use(coseBilkent);
@@ -28,6 +30,7 @@ interface GraphCanvasProps {
 
 export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
+  const { t } = useTranslation();
   const [contextMenu, setContextMenu] = useState<{
     visible: boolean;
     x: number;
@@ -56,6 +59,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
 
   const [isFullscreen, setIsFullscreen] = useState(false);
   const wrapperRef = useRef<HTMLDivElement>(null);
+
 
   const toggleFullscreen = () => {
     if (!wrapperRef.current) return;
@@ -149,8 +153,8 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   const handleDeleteNode = async (id: string, type: string, label: string) => {
     const isFile = type === 'FILE';
     const confirmMessage = isFile
-      ? `Permanently remove file "${label}" and all its extracted entities from this session's graph?`
-      : `Remove "${label}" from this session's graph?`;
+      ? t('graph.panel.confirm_delete_file', { name: label })
+      : t('graph.panel.confirm_delete_entity', { name: label });
 
     if (!confirm(confirmMessage)) return;
 
@@ -238,7 +242,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
       />
       <button
         onClick={toggleFullscreen}
-        title={isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+        title={isFullscreen ? t('graph.canvas.exit_fullscreen') : t('graph.canvas.fullscreen')}
         style={{
           position: 'absolute',
           top: '1rem',
@@ -270,6 +274,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
           </svg>
         )}
       </button>
+      <GraphSelectionTip />
       {contextMenu && contextMenu.visible && (
         <div
           style={{
@@ -313,7 +318,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
               <rect x="9" y="9" width="13" height="13" rx="2" ry="2" />
               <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1" />
             </svg>
-            Copy Name
+            {t('graph.canvas.copy_name')}
           </button>
           <button
             onClick={() => handleHideNode(contextMenu.nodeId, contextMenu.nodeLabel)}
@@ -339,7 +344,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
               <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
               <line x1="1" y1="1" x2="23" y2="23" />
             </svg>
-            Hide Node
+            {t('graph.canvas.hide_node')}
           </button>
           <button
             onClick={() => handleDeleteNode(contextMenu.nodeId, contextMenu.nodeType, contextMenu.nodeLabel)}
@@ -367,7 +372,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
               <line x1="10" y1="11" x2="10" y2="17" />
               <line x1="14" y1="11" x2="14" y2="17" />
             </svg>
-            Delete Node
+            {t('graph.canvas.delete_node')}
           </button>
         </div>
       )}

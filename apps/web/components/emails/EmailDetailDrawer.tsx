@@ -5,6 +5,7 @@ import { EmailNodeData } from './types';
 import { findThreadRoot, collectThreadMessageIds } from './utils';
 import EmailContentTab from './EmailContentTab';
 import EmailThreadTimeline from './EmailThreadTimeline';
+import { useTranslation } from '@/lib/i18n';
 
 interface Props {
   email: EmailNodeData;
@@ -21,6 +22,7 @@ interface Props {
 
 export default function EmailDetailDrawer({ email, senderColors, rawEdges, rawEmails, onSelectEmail, focusedThreadRootId, onClose, onFocusThread, onResetFocus, onDelete }: Props) {
   const [activeTab, setActiveTab] = useState<'content' | 'timeline'>('content');
+  const { t } = useTranslation();
 
   const fromColor = senderColors[email.from.toLowerCase()] || 'var(--color-text)';
   const threadRootId = findThreadRoot(email.messageId, rawEdges);
@@ -51,14 +53,14 @@ export default function EmailDetailDrawer({ email, senderColors, rawEdges, rawEm
       <style>{`@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }`}</style>
 
       <div style={{ padding: '1.25rem', borderBottom: 'none', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-        <span style={{ fontSize: '0.7rem', background: 'color-mix(in srgb, var(--color-primary) 15%, var(--color-surface-raised))', border: 'none', borderRadius: 'var(--radius-sm)', padding: '2px 8px', color: 'var(--color-primary)', fontWeight: 500, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>Email Node</span>
+        <span style={{ fontSize: '0.7rem', background: 'color-mix(in srgb, var(--color-primary) 15%, var(--color-surface-raised))', border: 'none', borderRadius: 'var(--radius-sm)', padding: '2px 8px', color: 'var(--color-primary)', fontWeight: 500, textTransform: 'uppercase', fontFamily: 'var(--font-mono)' }}>{t('emails.drawer.node_title')}</span>
         <button onClick={onClose} style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', fontSize: '1.125rem', padding: 4, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>✕</button>
       </div>
 
       <div style={{ display: 'flex', borderBottom: 'none', background: 'var(--color-surface-input)' }}>
-        <button onClick={() => setActiveTab('content')} style={tabStyle('content')}>Email Content</button>
+        <button onClick={() => setActiveTab('content')} style={tabStyle('content')}>{t('emails.drawer.tab_content')}</button>
         <button onClick={() => setActiveTab('timeline')} style={tabStyle('timeline')}>
-          Thread Flow
+          {t('emails.drawer.tab_timeline')}
           <span style={{ background: 'var(--color-surface-raised)', padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontSize: '0.6875rem', color: 'var(--color-text)' }}>{threadEmails.length}</span>
         </button>
       </div>

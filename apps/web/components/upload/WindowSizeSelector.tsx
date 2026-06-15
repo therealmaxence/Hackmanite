@@ -1,6 +1,7 @@
 'use client';
 
 import { useMemo } from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 const SAMPLE_TEXT =
   "Alice Smith, a lead developer at Google, initiated a collaboration on security protocols. " +
@@ -17,6 +18,7 @@ interface WindowSizeSelectorProps {
 }
 
 export default function WindowSizeSelector({ windowSize, setWindowSize }: WindowSizeSelectorProps) {
+  const { t } = useTranslation();
   const highlightedText = useMemo(() => SAMPLE_TEXT.slice(0, windowSize), [windowSize]);
   const dimmedText = useMemo(() => SAMPLE_TEXT.slice(windowSize), [windowSize]);
 
@@ -85,10 +87,10 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: '2px' }}>
           <span style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
-            Co-occurrence Window Size
+            {t('window.title')}
           </span>
           <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-            NLP entity pairing proximity threshold
+            {t('window.subtitle')}
           </span>
         </div>
         <span
@@ -100,7 +102,7 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
             textShadow: '0 0 10px rgba(236, 72, 153, 0.2)',
           }}
         >
-          {windowSize} chars
+          {t('window.chars', { count: windowSize })}
         </span>
       </div>
 
@@ -205,7 +207,7 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
             letterSpacing: '0.05em',
           }}
         >
-          Live NLP Preview
+          {t('window.preview')}
         </div>
         
         <p style={{ lineHeight: 1.6, fontSize: '0.78rem', letterSpacing: '0.01em', margin: 0, color: 'var(--color-text-muted)' }}>
@@ -234,7 +236,7 @@ export default function WindowSizeSelector({ windowSize, setWindowSize }: Window
       </div>
 
       <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', lineHeight: 1.45 }}>
-        Entities falling inside the highlighted window are linked in the graph. Increase the size to connect distant entities.
+        {t('window.note')}
       </span>
     </div>
   );

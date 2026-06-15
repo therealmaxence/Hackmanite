@@ -4,6 +4,7 @@ import {
 } from 'recharts';
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
 import { CustomTooltip } from './KPICard';
+import { useTranslation } from '@/lib/i18n';
 
 interface EntityDistributionChartProps {
   data: Array<{
@@ -13,6 +14,11 @@ interface EntityDistributionChartProps {
 }
 
 export default function EntityDistributionChart({ data }: EntityDistributionChartProps) {
+  const { t } = useTranslation();
+  const chartData = data.map((item) => ({
+    ...item,
+    localizedType: t('entity.' + item.type),
+  }));
   return (
     <div
       className="signature-card flex flex-col"
@@ -22,16 +28,16 @@ export default function EntityDistributionChart({ data }: EntityDistributionChar
       }}
     >
       <h3 className="text-sm font-semibold text-white/70">
-        Category distribution
+        {t('stats.distribution.title')}
       </h3>
       <div className="h-[340px]">
         <ResponsiveContainer width="100%" height="100%">
           <BarChart
-            data={data}
+            data={chartData}
             margin={{ top: 20, right: 24, left: 24, bottom: 36 }}
           >
             <XAxis
-              dataKey="type"
+              dataKey="localizedType"
               axisLine={false}
               tickLine={false}
               tick={{ fill: 'rgba(255,255,255,0.35)', fontSize: 10, fontFamily: 'var(--font-mono)' }}

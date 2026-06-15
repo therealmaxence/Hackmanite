@@ -1,13 +1,14 @@
 'use client';
 
 import { EmailNodeData } from './types';
+import { useTranslation } from '@/lib/i18n';
 
 const FWD_RE = /^((fwd|fw|tr|forward)(\[\d+\])?:\s*)+/i;
 
 function getBadge(messageId: string, threadRootId: string, subject: string) {
-  if (messageId === threadRootId) return { text: 'Thread Root', bg: 'color-mix(in srgb, var(--color-primary) 15%, var(--color-surface-raised))', color: 'var(--color-primary)' };
-  if (FWD_RE.test(subject)) return { text: 'Forward', bg: 'color-mix(in srgb, #EC4899 15%, var(--color-surface-raised))', color: '#EC4899' };
-  return { text: 'Reply', bg: 'color-mix(in srgb, #4C9EF0 15%, var(--color-surface-raised))', color: '#4C9EF0' };
+  if (messageId === threadRootId) return { textKey: 'emails.timeline.root', bg: 'color-mix(in srgb, var(--color-primary) 15%, var(--color-surface-raised))', color: 'var(--color-primary)' };
+  if (FWD_RE.test(subject)) return { textKey: 'emails.timeline.forward', bg: 'color-mix(in srgb, #EC4899 15%, var(--color-surface-raised))', color: '#EC4899' };
+  return { textKey: 'emails.timeline.reply', bg: 'color-mix(in srgb, #4C9EF0 15%, var(--color-surface-raised))', color: '#4C9EF0' };
 }
 
 function formatSenderDisplay(from: string) {
@@ -26,6 +27,7 @@ interface ItemProps {
 }
 
 function TimelineItem({ item, isActive, isFirst, isLast, threadRootId, senderColors, onSelect }: ItemProps) {
+  const { t } = useTranslation();
   const msgId = item.messageId as string;
   const from = (item.from as string) || '';
   const fromColor = senderColors[from.toLowerCase()] || 'var(--color-text)';
@@ -34,7 +36,7 @@ function TimelineItem({ item, isActive, isFirst, isLast, threadRootId, senderCol
   const bodySnippet = bodyText.length > 90 ? bodyText.slice(0, 87) + '...' : bodyText;
   const dateStr = item.date
     ? new Date(item.date as string).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-    : 'No Date';
+    : t('emails.timeline.no_date');
 
   return (
     <div style={{ display: 'flex', gap: '0.875rem', position: 'relative' }}>
@@ -62,7 +64,7 @@ function TimelineItem({ item, isActive, isFirst, isLast, threadRootId, senderCol
         <div style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text)', lineHeight: 1.2 }}>{item.subject as string}</div>
 
         <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginTop: 2 }}>
-          <span style={{ fontSize: '0.625rem', background: badge.bg, color: badge.color, padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 500 }}>{badge.text}</span>
+          <span style={{ fontSize: '0.625rem', background: badge.bg, color: badge.color, padding: '1px 6px', borderRadius: 'var(--radius-sm)', fontWeight: 500 }}>{t(badge.textKey)}</span>
           {(item.attachments as unknown[])?.length > 0 && (
             <span style={{ fontSize: '0.625rem', background: 'var(--color-surface-input)', color: 'var(--color-text)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>
               {(item.attachments as unknown[]).length}

@@ -6,6 +6,7 @@ import { UploadedFile } from '@/store/uploadStore';
 import ExportModal from '@/components/graph/ExportModal';
 import HiddenNodesModal from '@/components/graph/HiddenNodesModal';
 import { useSWRConfig } from 'swr';
+import { useTranslation } from '@/lib/i18n';
 
 interface Props {
   sessionId: string | null;
@@ -16,6 +17,7 @@ interface Props {
 }
 
 export default function GraphActions({ sessionId, onResetFilters, onResetGraph, onExplodeGraph, onImportSuccess }: Props) {
+  const { t } = useTranslation();
   const [exportModalType, setExportModalType] = useState<'json' | 'obsidian' | null>(null);
   const [showHiddenNodesModal, setShowHiddenNodesModal] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
@@ -43,10 +45,10 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
     try {
       let parsed: { nodes?: unknown; edges?: unknown; windowSize?: unknown };
       try { parsed = JSON.parse(await file.text()); }
-      catch { throw new Error('Invalid JSON format. Please upload a valid JSON file.'); }
+      catch { throw new Error(t('graph.controls.err_invalid_json')); }
 
       if (!parsed.nodes || !parsed.edges) {
-        throw new Error('Invalid graph structure. The JSON must contain "nodes" and "edges" arrays.');
+        throw new Error(t('graph.controls.err_invalid_structure'));
       }
 
       const res = await fetch('/api/session/import', {
@@ -56,13 +58,13 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error((err as { error?: string }).error || 'Failed to import JSON graph.');
+        throw new Error((err as { error?: string }).error || t('graph.controls.err_import_failed'));
       }
       const data = await res.json();
       onImportSuccess(data.sessionId ?? null, data.files ?? []);
     } catch (err: unknown) {
       console.error('Import failed', err);
-      setImportError(err instanceof Error ? err.message : 'An unknown error occurred during import.');
+      setImportError(err instanceof Error ? err.message : t('graph.controls.err_unknown_import'));
     } finally {
       setIsImporting(false);
       e.target.value = '';
@@ -72,12 +74,12 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
   return (
     <div className="graph-actions" style={{ display: 'flex', flexDirection: 'column', gap: 10, marginTop: 6 }}>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <Button id="save-session-export" variant="secondary" size="xs" onClick={handleSave} disabled={!sessionId}>Save JSON</Button>
-        <Button id="import-session-json" variant="secondary" size="xs" onClick={handleImportClick} loading={isImporting}>Import JSON</Button>
+        <Button id="save-session-export" variant="secondary" size="xs" onClick={handleSave} disabled={!sessionId}>{t('graph.controls.btn_save_json')}</Button>
+        <Button id="import-session-json" variant="secondary" size="xs" onClick={handleImportClick} loading={isImporting}>{t('graph.controls.btn_import_json')}</Button>
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-        <Button id="save-session-obsidian" variant="secondary" size="xs" onClick={handleSaveObsidian} disabled={!sessionId}>Export Obsidian</Button>
-        <Button id="show-hidden-nodes" variant="secondary" size="xs" onClick={() => setShowHiddenNodesModal(true)} disabled={!sessionId}>Hidden Nodes</Button>
+        <Button id="save-session-obsidian" variant="secondary" size="xs" onClick={handleSaveObsidian} disabled={!sessionId}>{t('graph.controls.btn_export_obsidian')}</Button>
+        <Button id="show-hidden-nodes" variant="secondary" size="xs" onClick={() => setShowHiddenNodesModal(true)} disabled={!sessionId}>{t('graph.controls.btn_hidden_nodes')}</Button>
       </div>
       <input id="import-graph-file-input" type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
       {importError && <span style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: 4, display: 'block', textAlign: 'center' }}>{importError}</span>}
@@ -98,10 +100,10 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
         }
         style={{ width: '100%', marginTop: 4 }}
       >
-        Explode Graph
+        {t('graph.controls.btn_explode_graph')}
       </Button>
-      <Button id="reset-graph-filters" variant="ghost" size="xs" onClick={onResetFilters}>Reset View</Button>
-      <Button id="reset-graph-data" variant="ghost" size="xs" onClick={onResetGraph} style={{ color: 'var(--error)' }}>Reset Graph</Button>
+      <Button id="reset-graph-filters" variant="ghost" size="xs" onClick={onResetFilters}>{t('graph.controls.btn_reset_view')}</Button>
+      <Button id="reset-graph-data" variant="ghost" size="xs" onClick={onResetGraph} style={{ color: 'var(--error)' }}>{t('graph.controls.btn_reset_graph')}</Button>
 
       {exportModalType && sessionId && (
         <ExportModal

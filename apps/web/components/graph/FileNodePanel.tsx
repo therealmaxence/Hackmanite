@@ -3,6 +3,7 @@
 import Badge from '@/components/ui/Badge';
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
 import { formatBytes } from './SnippetCard';
+import { useTranslation } from '@/lib/i18n';
 
 interface Props {
   data: {
@@ -19,16 +20,17 @@ interface Props {
 }
 
 export default function FileNodePanel({ data, fileId, onSelectNode, onDelete }: Props) {
+  const { t } = useTranslation();
   return (
     <>
       <section style={{ marginBottom: '2.5rem' }}>
-        <SectionLabel>File Information</SectionLabel>
+        <SectionLabel>{t('graph.panel.file_info')}</SectionLabel>
         <div style={{ background: 'var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          <InfoRow label="Name">{data.originalName}</InfoRow>
-          <InfoRow label="Type"><span style={{ fontFamily: 'var(--font-mono)' }}>{data.mimeType}</span></InfoRow>
-          <InfoRow label="Size"><span style={{ fontFamily: 'var(--font-mono)' }}>{formatBytes(data.sizeBytes)}</span></InfoRow>
-          <InfoRow label="Uploaded">{new Date(data.uploadedAt).toLocaleString()}</InfoRow>
-          {data.processedAt && <InfoRow label="Processed">{new Date(data.processedAt).toLocaleString()}</InfoRow>}
+          <InfoRow label={t('graph.panel.file_name')}>{data.originalName}</InfoRow>
+          <InfoRow label={t('graph.panel.file_type')}><span style={{ fontFamily: 'var(--font-mono)' }}>{data.mimeType}</span></InfoRow>
+          <InfoRow label={t('graph.panel.file_size')}><span style={{ fontFamily: 'var(--font-mono)' }}>{formatBytes(data.sizeBytes)}</span></InfoRow>
+          <InfoRow label={t('graph.panel.file_uploaded')}>{new Date(data.uploadedAt).toLocaleString()}</InfoRow>
+          {data.processedAt && <InfoRow label={t('graph.panel.file_processed')}>{new Date(data.processedAt).toLocaleString()}</InfoRow>}
         </div>
         <div style={{ marginTop: '1rem' }}>
           <a
@@ -44,13 +46,13 @@ export default function FileNodePanel({ data, fileId, onSelectNode, onDelete }: 
               <polyline points="15 3 21 3 21 9" />
               <line x1="10" y1="14" x2="21" y2="3" />
             </svg>
-            Open File
+            {t('graph.panel.open_file')}
           </a>
         </div>
       </section>
 
       <section style={{ marginBottom: '2.5rem' }}>
-        <SectionLabel>Extracted Entities ({data.entities?.length || 0})</SectionLabel>
+        <SectionLabel>{t('graph.panel.extracted_entities', { count: data.entities?.length || 0 })}</SectionLabel>
         {data.entities?.length ? (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
             {data.entities.map((ent) => (
@@ -69,12 +71,12 @@ export default function FileNodePanel({ data, fileId, onSelectNode, onDelete }: 
             ))}
           </div>
         ) : (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>No entities extracted from this file.</p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', fontStyle: 'italic' }}>{t('graph.panel.no_entities_extracted')}</p>
         )}
       </section>
 
       <section style={{ marginTop: '3.5rem', paddingTop: '1.5rem' }}>
-        <DangerButton onClick={onDelete}>Delete File from Graph</DangerButton>
+        <DangerButton onClick={onDelete}>{t('graph.panel.delete_file')}</DangerButton>
       </section>
     </>
   );

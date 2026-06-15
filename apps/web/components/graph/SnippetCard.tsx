@@ -1,6 +1,7 @@
 'use client';
 
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
+import { useTranslation } from '@/lib/i18n';
 
 function formatBytes(bytes: number) {
   if (!bytes) return '0 Bytes';
@@ -42,6 +43,7 @@ interface SnippetCardProps {
 }
 
 export default function SnippetCard({ snippet, index, entityDisplayName, entityType, entityId, onSelectRelated }: SnippetCardProps) {
+  const { t } = useTranslation();
   const isCooccurrence = snippet.relatedEntityId !== entityId;
   
   const primaryTypeUpper = (entityType || '').toUpperCase() as EntityType | 'FILE';
@@ -57,10 +59,10 @@ export default function SnippetCard({ snippet, index, entityDisplayName, entityT
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', padding: '1rem', borderRadius: 'var(--radius)', border: '1px solid var(--color-border)', background: 'var(--color-surface)' }}>
       <div style={{ display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: '0.5rem', fontSize: '0.7rem' }}>
-        <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>Excerpt #{index + 1} (offset {snippet.offset})</span>
+        <span style={{ color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.panel.excerpt', { index: index + 1, offset: snippet.offset })}</span>
         {isCooccurrence && (
           <span style={{ color: 'var(--color-text-muted)' }}>
-            Co-occurs with:{' '}
+            {t('graph.panel.co_occurs_with')}{' '}
             <strong
               onClick={(e) => { e.stopPropagation(); onSelectRelated(snippet.relatedEntityId); }}
               style={{ color: 'var(--color-text)', cursor: 'pointer', textDecoration: 'underline', transition: 'all var(--transition-fast)' }}

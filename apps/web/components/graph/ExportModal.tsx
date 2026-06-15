@@ -6,6 +6,7 @@ import Spinner from '@/components/ui/Spinner';
 import { downloadJsonData } from '@/lib/sessionExport';
 import { generateAndDownloadObsidianZip } from '@/lib/obsidianExport';
 import { filterGraphExportData } from '@/lib/export-filter';
+import { useTranslation } from '@/lib/i18n';
 
 interface ExportModalProps {
   sessionId: string;
@@ -14,6 +15,7 @@ interface ExportModalProps {
 }
 
 export default function ExportModal({ sessionId, exportType, onClose }: ExportModalProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -140,10 +142,11 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)' }}>
-            Export Graph Settings
+            {t('graph.export.title')}
           </h2>
           <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-            Format: {exportType === 'json' ? 'JSON Data Structure' : 'Obsidian Vault (ZIP)'}
+            {t('graph.export.format_prefix')}{' '}
+            {exportType === 'json' ? t('graph.export.format_json') : t('graph.export.format_obsidian')}
           </span>
         </div>
 
@@ -153,21 +156,21 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
             <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12, padding: 40 }}>
               <Spinner size={24} />
               <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                Loading session graph data...
+                {t('graph.export.loading')}
               </span>
             </div>
           ) : error ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, color: 'var(--color-error)' }}>
               <span style={{ fontSize: '0.875rem' }}>⚠ {error}</span>
               <Button size="sm" onClick={onClose} variant="ghost" style={{ alignSelf: 'center' }}>
-                Close
+                {t('graph.export.btn_cancel')}
               </Button>
             </div>
           ) : (
             <>
               {/* Node Pruning (Top N Nodes) */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>Node Pruning</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>{t('graph.export.node_pruning')}</span>
                 <div style={{ display: 'flex', gap: 16 }}>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--color-text)', cursor: 'pointer' }}>
                     <input
@@ -176,7 +179,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                       onChange={() => setKeepAllNodes(true)}
                       style={{ accentColor: 'var(--color-primary)' }}
                     />
-                    Keep All
+                    {t('graph.export.keep_all')}
                   </label>
                   <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--color-text)', cursor: 'pointer' }}>
                     <input
@@ -185,12 +188,12 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                       onChange={() => setKeepAllNodes(false)}
                       style={{ accentColor: 'var(--color-primary)' }}
                     />
-                    Limit to Top Nodes
+                    {t('graph.export.limit_top')}
                   </label>
                 </div>
                 {!keepAllNodes && (
                   <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 4 }}>
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>Keep Top</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>{t('graph.export.keep_top_prefix')}</span>
                     <input
                       type="number"
                       min="1"
@@ -199,14 +202,14 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                       className="signature-input"
                       style={{ width: 100, height: 36, padding: '0 10px' }}
                     />
-                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>nodes (by TF-IDF)</span>
+                    <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>{t('graph.export.keep_top_suffix')}</span>
                   </div>
                 )}
               </div>
 
               {/* Export Hidden Nodes Toggle */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>Hidden Nodes Option</span>
+                <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>{t('graph.export.hidden_nodes_option')}</span>
                 <label style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.82rem', color: 'var(--color-text)', cursor: 'pointer', userSelect: 'none' }}>
                   <input
                     type="checkbox"
@@ -214,14 +217,14 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                     onChange={(e) => setExportHiddenNodes(e.target.checked)}
                     style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
                   />
-                  Export hidden nodes
+                  {t('graph.export.hidden_nodes_checkbox')}
                 </label>
               </div>
 
               {/* Sliders and Numerical Filters */}
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="modal-min-occ-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Min occs</label>
+                  <label htmlFor="modal-min-occ-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('graph.export.min_occs')}</label>
                   <input
                     id="modal-min-occ-input"
                     type="number"
@@ -234,7 +237,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="modal-min-conn-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Min conns</label>
+                  <label htmlFor="modal-min-conn-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('graph.export.min_conns')}</label>
                   <input
                     id="modal-min-conn-input"
                     type="number"
@@ -247,7 +250,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                 </div>
 
                 <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-                  <label htmlFor="modal-min-tfidf-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>Min TF-IDF</label>
+                  <label htmlFor="modal-min-tfidf-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{t('graph.export.min_tfidf')}</label>
                   <input
                     id="modal-min-tfidf-input"
                     type="number"
@@ -263,7 +266,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
 
               <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-                  <label htmlFor="modal-min-weight-input" style={{ fontWeight: 500 }}>Min connection weight</label>
+                  <label htmlFor="modal-min-weight-input" style={{ fontWeight: 500 }}>{t('graph.export.min_weight')}</label>
                   <span>{minEdgeWeight.toFixed(2)}</span>
                 </div>
                 <input
@@ -281,11 +284,11 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
               {/* Entity Type Selector */}
               <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>Filter by Entity Type</span>
+                  <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--color-text)' }}>{t('graph.export.filter_by_type')}</span>
                   <div style={{ display: 'flex', gap: 8 }}>
-                    <button onClick={handleSelectAllTypes} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>All</button>
+                    <button onClick={handleSelectAllTypes} style={{ background: 'none', border: 'none', color: 'var(--color-primary)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>{t('graph.export.select_all')}</button>
                     <span style={{ color: 'var(--color-border)', fontSize: '0.72rem' }}>|</span>
-                    <button onClick={handleSelectNoneTypes} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>None</button>
+                    <button onClick={handleSelectNoneTypes} style={{ background: 'none', border: 'none', color: 'var(--color-text-muted)', fontSize: '0.72rem', cursor: 'pointer', fontWeight: 500 }}>{t('graph.export.select_none')}</button>
                   </div>
                 </div>
                 <div
@@ -303,7 +306,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
                   className="custom-scrollbar"
                 >
                   {allTypes.length === 0 ? (
-                    <span style={{ gridColumn: 'span 2', fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>No types found</span>
+                    <span style={{ gridColumn: 'span 2', fontSize: '0.78rem', color: 'var(--color-text-muted)', textAlign: 'center' }}>{t('graph.export.no_types')}</span>
                   ) : (
                     allTypes.map((type) => (
                       <label key={type} style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: '0.78rem', color: selectedTypes.has(type) ? 'var(--color-text)' : 'var(--color-text-muted)', cursor: 'pointer', userSelect: 'none' }}>
@@ -326,7 +329,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
         {/* Footer */}
         <div style={{ padding: 18, borderTop: '1px solid var(--color-border)', display: 'flex', justifyContent: 'flex-end', gap: 12 }}>
           <Button size="sm" variant="ghost" onClick={onClose} disabled={isProcessing}>
-            Cancel
+            {t('graph.export.btn_cancel')}
           </Button>
           {!isLoading && !error && (
             <Button
@@ -336,7 +339,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
               loading={isProcessing}
               disabled={selectedTypes.size === 0}
             >
-              Export
+              {t('graph.export.btn_export')}
             </Button>
           )}
         </div>

@@ -1,6 +1,7 @@
 import { useRouter } from 'next/navigation';
 import SectionCard from './SectionCard';
 import Spinner from '@/components/ui/Spinner';
+import { useTranslation } from '@/lib/i18n';
 
 interface LocalSessionManagerProps {
   isLoadingSessions: boolean;
@@ -22,11 +23,12 @@ export default function LocalSessionManager({
   handleDeleteAllSessions,
 }: LocalSessionManagerProps) {
   const router = useRouter();
+  const { t } = useTranslation();
 
   return (
     <SectionCard
-      title="Local Session Manager"
-      description="Manage your sessions storage. Navigate between sessions, start new analysis, or delete old sessions."
+      title={t('session.manager_title')}
+      description={t('session.manager_desc')}
     >
       {isLoadingSessions ? (
         <div style={{ display: 'flex', justifyContent: 'center', padding: '2rem' }}>
@@ -35,7 +37,7 @@ export default function LocalSessionManager({
       ) : sessions.length === 0 ? (
         <div style={{ textAlign: 'center', padding: '2.5rem 1rem', background: 'var(--color-surface-raised)', borderRadius: 'var(--radius)', border: 'none' }}>
           <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0, marginBottom: '1rem' }}>
-            No saved sessions found in the SQLite database.
+            {t('session.no_saved_sessions')}
           </p>
           <button
             onClick={handleStartNewSession}
@@ -50,7 +52,7 @@ export default function LocalSessionManager({
               cursor: 'pointer',
             }}
           >
-            Start New Session
+            {t('session.start_new_btn')}
           </button>
         </div>
       ) : (
@@ -69,7 +71,7 @@ export default function LocalSessionManager({
               onMouseEnter={(e) => { e.currentTarget.style.background = '#3d1d26'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#2a171d'; }}
             >
-              Delete All Sessions
+              {t('session.delete_all_btn')}
             </button>
             
             <button
@@ -88,7 +90,7 @@ export default function LocalSessionManager({
                 gap: '6px',
               }}
             >
-              <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>+</span> Start New Session
+              <span style={{ fontSize: '1rem', fontWeight: 'bold' }}>+</span> {t('session.start_new_btn')}
             </button>
           </div>
           
@@ -97,7 +99,7 @@ export default function LocalSessionManager({
               const isActive = sessionId === s.id;
               return (
                 <div
-                  key={s.id}
+                   key={s.id}
                   style={{
                     padding: '1.25rem',
                     background: isActive ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
@@ -113,7 +115,7 @@ export default function LocalSessionManager({
                   <div style={{ flex: 1, minWidth: 0, display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem', flexWrap: 'wrap' }}>
                       <span style={{ fontSize: '0.8125rem', fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--color-text)' }}>
-                        Session {s.id.slice(0, 8)}
+                        {t('session.session_prefix')} {s.id.slice(0, 8)}
                       </span>
                       <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
                         • {new Date(s.createdAt).toLocaleDateString()} {new Date(s.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
@@ -124,21 +126,21 @@ export default function LocalSessionManager({
                           color: '#10B981', border: 'none',
                           borderRadius: 'var(--radius-sm)', padding: '1px 6px',
                         }}>
-                          Active
+                          {t('session.active_label')}
                         </span>
                       )}
                     </div>
                     
                     <div style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                      Files: {s.fileNames.length > 0 ? s.fileNames.join(', ') + (s.fileCount > 3 ? '...' : '') : 'No files uploaded yet'}
+                      {t('session.files_label')} {s.fileNames.length > 0 ? s.fileNames.join(', ') + (s.fileCount > 3 ? '...' : '') : t('session.no_files_uploaded')}
                     </div>
                     
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
                       <span style={{ fontSize: '0.75rem', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
-                        {s.fileCount} files
+                        {t('session.files_count', { count: s.fileCount, plural: s.fileCount !== 1 ? 's' : '' })}
                       </span>
                       <span style={{ fontSize: '0.75rem', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
-                        {s.entityCount} entities
+                        {t('session.entities_count', { count: s.entityCount })}
                       </span>
                     </div>
                   </div>
@@ -158,7 +160,7 @@ export default function LocalSessionManager({
                           cursor: 'pointer',
                         }}
                       >
-                        Activate
+                        {t('session.activate_btn')}
                       </button>
                     ) : (
                       <button
@@ -174,7 +176,7 @@ export default function LocalSessionManager({
                           cursor: 'pointer',
                         }}
                       >
-                        View Graph
+                        {t('session.view_graph_btn')}
                       </button>
                     )}
                     
@@ -193,7 +195,7 @@ export default function LocalSessionManager({
                       }}
                       onMouseEnter={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)'; }}
                       onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; }}
-                      title="Delete Session"
+                      title={t('session.delete_tooltip')}
                     >
                       <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#EF4444" strokeWidth="2">
                         <polyline points="3 6 5 6 21 6" />

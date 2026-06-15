@@ -1,11 +1,12 @@
 'use client';
 
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useMemo } from 'react';
 import useSWR from 'swr';
 import { useSearchParams } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import Spinner from '@/components/ui/Spinner';
 import { useUploadStore } from '@/store/uploadStore';
+import { useTranslation } from '@/lib/i18n';
 
 import { EmailNodeData, EmailStats, LayoutType, ActiveTab } from '@/components/emails/types';
 import { useSenderColors, emailToNodeData } from '@/components/emails/utils';
@@ -28,6 +29,7 @@ const DEFAULT_STATS: EmailStats = {
 export default function EmailsClient() {
   const { sessionId } = useUploadStore();
   const searchParams = useSearchParams();
+  const { t } = useTranslation();
 
   // ── Filter state ────────────────────────────────────────────────────────────
   const [selectedEmail, setSelectedEmail] = useState<EmailNodeData | null>(null);
@@ -87,7 +89,7 @@ export default function EmailsClient() {
   }, []);
 
   const handleDeleteEmail = useCallback(async (messageId: string, subject: string) => {
-    if (!confirm(`Permanently remove email "${subject}" from this session's graph?`)) return;
+    if (!confirm(t('emails.confirm_delete', { subject }))) return;
     try {
       setSelectedEmail(null);
       const res = await fetch(`/api/emails?messageId=${encodeURIComponent(messageId)}`, { method: 'DELETE' });
@@ -106,7 +108,7 @@ export default function EmailsClient() {
         <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '1.5rem', padding: '2rem' }}>
           <Spinner size={32} />
           <p style={{ fontSize: '0.875rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--color-text-muted)', letterSpacing: '0.05em', textTransform: 'uppercase' }}>
-            Loading Email Thread Database...
+            {t('emails.loading_db')}
           </p>
         </div>
       </div>
@@ -123,9 +125,9 @@ export default function EmailsClient() {
             <polyline points="22,6 12,13 2,6" />
           </svg>
           <div style={{ textAlign: 'center', maxWidth: '400px' }}>
-            <h3 style={{ color: 'var(--color-text)', fontSize: '1rem', fontWeight: 500, marginBottom: '0.5rem' }}>No Email Records Found</h3>
+            <h3 style={{ color: 'var(--color-text)', fontSize: '1rem', fontWeight: 500, marginBottom: '0.5rem' }}>{t('emails.empty_title')}</h3>
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem', lineHeight: '1.4' }}>
-              Upload `.eml` files or `.pst` email archives in the Upload tab to start.
+              {t('emails.empty_desc')}
             </p>
           </div>
         </div>

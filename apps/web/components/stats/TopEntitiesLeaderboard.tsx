@@ -1,4 +1,5 @@
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
+import { useTranslation } from '@/lib/i18n';
 
 interface TopEntitiesLeaderboardProps {
   topEntities: Array<{
@@ -15,6 +16,7 @@ export default function TopEntitiesLeaderboard({
   displayLimit,
   setDisplayLimit,
 }: TopEntitiesLeaderboardProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="signature-card flex flex-col"
@@ -25,10 +27,10 @@ export default function TopEntitiesLeaderboard({
     >
       <div className="flex items-center justify-between shrink-0">
         <h3 className="text-sm font-semibold text-white/70">
-          Top performers
+          {t('stats.leaderboard.title')}
         </h3>
         <div className="flex items-center gap-2">
-          <span className="text-[10px] text-white/30 tracking-wider font-mono">Show:</span>
+          <span className="text-[10px] text-white/30 tracking-wider font-mono">{t('stats.leaderboard.show')}</span>
           <select
             value={displayLimit}
             onChange={(e) => setDisplayLimit(Number(e.target.value))}
@@ -72,7 +74,7 @@ export default function TopEntitiesLeaderboard({
                   style={{ background: ENTITY_COLORS[entity.type as EntityType] || 'var(--accent)' }}
                 />
                 <span className="text-[9px] tracking-widest text-white/30 font-mono">
-                  {entity.type}
+                  {t('entity.' + entity.type)}
                 </span>
               </div>
             </div>

@@ -4,15 +4,16 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { useTranslation } from '@/lib/i18n';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Upload', id: 'nav-upload' },
-  { href: '/graph', label: 'Graph', id: 'nav-graph' },
-  { href: '/emails', label: 'Emails', id: 'nav-emails' },
-  { href: '/stats', label: 'Stats', id: 'nav-stats' },
-  { href: '/ai-report', label: 'AI Report', id: 'nav-ai-report' },
-  { href: '/session', label: 'Session', id: 'nav-session' },
-  { href: '/settings', label: 'Settings', id: 'nav-settings' },
+  { href: '/', labelKey: 'nav.upload', id: 'nav-upload' },
+  { href: '/graph', labelKey: 'nav.graph', id: 'nav-graph' },
+  { href: '/emails', labelKey: 'nav.emails', id: 'nav-emails' },
+  { href: '/stats', labelKey: 'nav.stats', id: 'nav-stats' },
+  { href: '/ai-report', labelKey: 'nav.ai_report', id: 'nav-ai-report' },
+  { href: '/session', labelKey: 'nav.session', id: 'nav-session' },
+  { href: '/settings', labelKey: 'nav.settings', id: 'nav-settings' },
 ];
 
 export default function Header() {
@@ -20,6 +21,7 @@ export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
   const [logoHovered, setLogoHovered] = useState(false);
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, height: 0, top: 0 });
+  const { t } = useTranslation();
 
   useEffect(() => {
     const activeItem = NAV_ITEMS.find((item) => pathname === item.href);
@@ -202,7 +204,7 @@ export default function Header() {
                 }
               }}
             >
-              {item.label}
+              {t(item.labelKey)}
             </Link>
           );
         })}
@@ -297,7 +299,7 @@ export default function Header() {
                       transition: 'background-color 80ms ease, color 300ms ease-in',
                     }}
                   >
-                    {item.label}
+                    {t(item.labelKey)}
                   </Link>
                 );
               })}

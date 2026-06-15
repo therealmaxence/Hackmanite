@@ -5,6 +5,7 @@ import { useCallback } from 'react';
 import { useDropzone } from 'react-dropzone';
 import Spinner from '@/components/ui/Spinner';
 import { getFilesFromEvent } from '@/lib/upload-utils';
+import { useTranslation } from '@/lib/i18n';
 
 interface DropZoneProps {
   onDrop: (files: File[]) => void;
@@ -37,6 +38,7 @@ const ACCEPTED_TYPES = {
 };
 
 export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
+  const { t } = useTranslation();
   const { getRootProps, getInputProps, isDragActive, isDragReject } = useDropzone({
     onDrop: useCallback((accepted: File[]) => onDrop(accepted), [onDrop]),
     getFilesFromEvent,
@@ -75,7 +77,7 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
           <Spinner size={32} />
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
-            Uploading files…
+            {t('dropzone.uploading')}
           </p>
         </div>
       ) : (
@@ -113,22 +115,20 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
 
           {isDragReject ? (
             <p style={{ color: 'var(--color-error)', fontWeight: 500 }}>
-              Unsupported file type
+              {t('dropzone.reject')}
             </p>
           ) : isDragActive ? (
             <p style={{ color: 'var(--color-primary-hover)', fontWeight: 500 }}>
-              Release to upload
+              {t('dropzone.active')}
             </p>
           ) : (
             <>
               <p style={{ color: 'var(--color-text)', fontWeight: 500, marginBottom: '0.75rem' }}>
-                Drop files here or{' '}
-                <span style={{ color: 'var(--color-primary-hover)' }}>click to browse</span>
+                {t('dropzone.idle_1')}
+                <span style={{ color: 'var(--color-primary-hover)' }}>{t('dropzone.idle_2')}</span>
               </p>
-              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', lineHeight: 1.6 }}>
-                PDF, DOCX, XLSX, TXT, MD, JSON, CSV, PY, JS, PNG, JPG, TIFF, EML, PST
-                <br />
-                Up to 100 MB per file · Multiple files supported
+              <p style={{ color: 'var(--color-text-muted)', fontSize: '0.75rem', lineHeight: 1.6, whiteSpace: 'pre-line' }}>
+                {t('dropzone.limits')}
               </p>
             </>
           )}

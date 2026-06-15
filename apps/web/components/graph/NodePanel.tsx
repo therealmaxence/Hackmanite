@@ -8,6 +8,7 @@ import Badge from '@/components/ui/Badge';
 import Spinner from '@/components/ui/Spinner';
 import FileNodePanel from './FileNodePanel';
 import EntityNodePanel from './EntityNodePanel';
+import { useTranslation } from '@/lib/i18n';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
@@ -15,6 +16,7 @@ export default function NodePanel() {
   const { selectedNodeId, isPanelOpen, togglePanel, nodes, selectNode, removeNode } = useGraphStore();
   const { sessionId } = useUploadStore();
   const { mutate } = useSWRConfig();
+  const { t } = useTranslation();
 
   const selectedNode = nodes.find((n) => n.id === selectedNodeId);
   const isFile = selectedNode?.type === 'FILE';
@@ -35,7 +37,7 @@ export default function NodePanel() {
   };
 
   const handleDeleteFile = async () => {
-    if (!confirm(`Permanently remove file "${data?.originalName}" and all its extracted entities from this session's graph?`)) return;
+    if (!confirm(t('graph.panel.confirm_delete_file', { name: data?.originalName || '' }))) return;
     try {
       // Optimistic: remove the file node and its edges locally right away
       removeNode(selectedNodeId);
@@ -51,7 +53,7 @@ export default function NodePanel() {
   };
 
   const handleDeleteEntity = async () => {
-    if (!confirm(`Remove "${data?.displayName}" from this session's graph?`)) return;
+    if (!confirm(t('graph.panel.confirm_delete_entity', { name: data?.displayName || '' }))) return;
     try {
       // Optimistic: remove the entity node and its edges locally right away
       removeNode(selectedNodeId);
@@ -88,7 +90,7 @@ export default function NodePanel() {
         <button
           id="close-node-panel"
           onClick={() => togglePanel(false)}
-          aria-label="Close details panel"
+          aria-label={t('graph.panel.close_aria')}
           style={{ background: 'none', border: 'none', color: 'var(--text-muted)', cursor: 'pointer', padding: 8, minWidth: 44, minHeight: 44, borderRadius: 'var(--radius-sm)', lineHeight: 1, fontSize: '1.3rem', transition: 'color 0.2s' }}
           onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--text-primary)'; }}
           onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--text-muted)'; }}
@@ -114,7 +116,7 @@ export default function NodePanel() {
             />
           )
         ) : (
-          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>Entity not found</p>
+          <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem' }}>{t('graph.panel.entity_not_found')}</p>
         )}
       </div>
     </div>

@@ -12,10 +12,12 @@ import { useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
 import { useGraphStore } from '@/store/graphStore';
 import { useProgressiveGraph } from '@/hooks/useProgressiveGraph';
+import { useTranslation } from '@/lib/i18n';
 
 export default function GraphClient() {
   const { sessionId } = useUploadStore();
   const { setFilter } = useGraphStore();
+  const { t } = useTranslation();
 
   useEffect(() => {
     if (sessionId) {
@@ -81,7 +83,7 @@ export default function GraphClient() {
                 draggable={false}
               />
               <p style={{ color: 'var(--text-muted)', fontSize: '0.8125rem', letterSpacing: '0.05em', textTransform: 'uppercase', opacity: 0.5 }}>
-                No entities yet — upload files first
+                {t('graph.empty_state')}
               </p>
             </div>
           ) : (
@@ -134,6 +136,7 @@ function ProgressBar({
   autoLoadDone,
   onLoadMore,
 }: ProgressBarProps) {
+  const { t } = useTranslation();
   if (totalCount === 0) return null;
 
   const pct = totalCount > 0 ? Math.min(100, Math.round((loadedCount / totalCount) * 100)) : 0;
@@ -176,17 +179,17 @@ function ProgressBar({
         /* Subtle spinner + text while a batch is in flight */
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: 0.75 }}>
           <Spinner size={11} />
-          Loading nodes… {loadedCount.toLocaleString()} / {totalCount.toLocaleString()}
+          {t('graph.loading_nodes', { loaded: loadedCount.toLocaleString(), total: totalCount.toLocaleString() })}
         </span>
       ) : done ? (
         <span style={{ opacity: 0.5 }}>
-          {loadedCount.toLocaleString()} / {totalCount.toLocaleString()} nodes
+          {t('graph.nodes_count', { loaded: loadedCount.toLocaleString(), total: totalCount.toLocaleString() })}
         </span>
       ) : (
         /* Auto-loading paused — show "Load more" button */
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span style={{ opacity: 0.5 }}>
-            {loadedCount.toLocaleString()} / {totalCount.toLocaleString()}
+            {t('graph.nodes_count', { loaded: loadedCount.toLocaleString(), total: totalCount.toLocaleString() })}
           </span>
           {hasMore && autoLoadDone && (
             <button
@@ -213,7 +216,7 @@ function ProgressBar({
                 (e.currentTarget as HTMLButtonElement).style.color = 'var(--color-primary-hover)';
               }}
             >
-              Load more
+              {t('graph.load_more_btn')}
             </button>
           )}
         </span>

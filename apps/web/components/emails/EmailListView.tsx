@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { EmailNodeData } from './types';
+import { useTranslation } from '@/lib/i18n';
 
 interface EmailListViewProps {
   emails: Record<string, unknown>[];
@@ -20,6 +21,7 @@ interface EmailRowProps {
 function EmailRow({ email, isSelected, senderColors, onSelectEmail }: EmailRowProps) {
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const { t } = useTranslation();
 
   const handleMouseMove = (e: React.MouseEvent<HTMLTableRowElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -49,7 +51,7 @@ function EmailRow({ email, isSelected, senderColors, onSelectEmail }: EmailRowPr
       }}
     >
       <td style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', whiteSpace: 'nowrap' }}>
-        {email.date ? new Date(email.date as string).toLocaleDateString() : 'No Date'}
+        {email.date ? new Date(email.date as string).toLocaleDateString() : t('emails.timeline.no_date')}
       </td>
       <td style={{ padding: '0.75rem 1rem', fontWeight: 500, color: senderColors[from.toLowerCase()] || 'var(--color-text)', maxWidth: '160px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
         {from.includes('<') ? from.split('<')[0].trim() : from}
@@ -78,14 +80,15 @@ export default function EmailListView({
   senderColors,
   onSelectEmail,
 }: EmailListViewProps) {
+  const { t } = useTranslation();
   return (
     <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-base)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
         <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
-          Emails Thread Record Ledger
+          {t('emails.list.ledger')}
         </h3>
         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-raised)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}>
-          {emails.length} record(s) matching filters
+          {t('emails.list.matching_records', { count: emails.length })}
         </span>
       </div>
 
@@ -93,7 +96,13 @@ export default function EmailListView({
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem' }}>
           <thead>
             <tr style={{ background: 'var(--color-surface-raised)', borderBottom: 'none' }}>
-              {['Date', 'From', 'To', 'Subject', 'Source File'].map((col) => (
+              {[
+                t('emails.list.col_date'),
+                t('emails.list.col_from'),
+                t('emails.list.col_to'),
+                t('emails.list.col_subject'),
+                t('emails.list.col_source'),
+              ].map((col) => (
                 <th key={col} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{col}</th>
               ))}
             </tr>

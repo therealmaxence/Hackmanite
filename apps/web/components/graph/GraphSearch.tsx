@@ -1,14 +1,17 @@
 'use client';
 
+import { useTranslation } from '@/lib/i18n';
+
 interface Props {
   value: string;
   onChange: (val: string) => void;
 }
 
 export default function GraphSearch({ value, onChange }: Props) {
+  const { t } = useTranslation();
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-      <label htmlFor="graph-search-input" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>Search</label>
+      <label htmlFor="graph-search-input" style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.search_label')}</label>
       <div className="graph-search" style={{ position: 'relative' }}>
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
           <circle cx="11" cy="11" r="8" />
@@ -19,7 +22,7 @@ export default function GraphSearch({ value, onChange }: Props) {
           type="text"
           value={value}
           onChange={(e) => onChange(e.target.value)}
-          placeholder="Search entities…"
+          placeholder={t('graph.controls.search_placeholder')}
           className="signature-input"
           style={{ width: '100%', height: 42, paddingLeft: 36, paddingRight: 12 }}
         />

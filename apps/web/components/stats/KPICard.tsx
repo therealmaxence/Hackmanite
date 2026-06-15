@@ -1,5 +1,6 @@
 import { TooltipProps } from 'recharts';
 import { EntityType } from '@/types/entities';
+import { useTranslation } from '@/lib/i18n';
 
 export function KPICard({
   label,
@@ -36,6 +37,7 @@ export function KPICard({
 }
 
 export const CustomTooltip = ({ active, payload }: TooltipProps<number, string>) => {
+  const { t } = useTranslation();
   if (active && payload && payload.length) {
     const d = payload[0].payload;
     const type = (d.type || 'UNKNOWN') as EntityType;
@@ -47,10 +49,10 @@ export const CustomTooltip = ({ active, payload }: TooltipProps<number, string>)
           border: '1px solid var(--color-border)',
         }}
       >
-        <p className="text-[9px] tracking-[0.1em] text-white/40 mb-1">{type}</p>
+        <p className="text-[9px] tracking-[0.1em] text-white/40 mb-1">{t('entity.' + type)}</p>
         <p className="text-lg font-bold font-mono text-accent">
           {payload[0].value}{' '}
-          <span className="text-[10px] font-normal text-white/30 ml-1">entries</span>
+          <span className="text-[10px] font-normal text-white/30 ml-1">{t('stats.tooltip.entries')}</span>
         </p>
       </div>
     );

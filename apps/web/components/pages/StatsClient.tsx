@@ -9,6 +9,7 @@ import useSWR from 'swr';
 import { useGraphStore } from '@/store/graphStore';
 import LegendBar from '@/components/graph/LegendBar';
 import Spinner from '@/components/ui/Spinner';
+import { useTranslation } from '@/lib/i18n';
 
 // Extracted Sub-Components
 import StatsKPIGrid from '@/components/stats/StatsKPIGrid';
@@ -100,6 +101,7 @@ export default function StatsClient() {
   const [displayLimit, setDisplayLimit] = useState(10);
   const [tfidfDisplayLimit, setTfidfDisplayLimit] = useState(10);
   const [showLegend, setShowLegend] = useState(true);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const mainEl = document.querySelector('main');
@@ -199,10 +201,10 @@ export default function StatsClient() {
               className="space-y-4"
             >
               <h1 className="text-4xl md:text-5xl font-display font-bold text-white leading-tight">
-                StatisticsDashboard
+                {t('stats.title')}
               </h1>
               <p className="text-sm text-white/40 tracking-[0.04em] mt-4 ml-0.5 font-medium">
-                Session analytics and graph metrics.
+                {t('stats.desc')}
               </p>
             </motion.div>
           </header>
@@ -221,17 +223,17 @@ export default function StatsClient() {
                 style={{ objectFit: 'contain', opacity: 0.15, userSelect: 'none', pointerEvents: 'none' }}
                 draggable={false}
               />
-              <p className="text-sm text-white/40 font-mono font-medium">No active session</p>
+              <p className="text-sm text-white/40 font-mono font-medium">{t('stats.no_active_session')}</p>
             </div>
           ) : isPageLoading ? (
             <div className="h-[400px] flex flex-col items-center justify-center gap-6">
               <Spinner size={32} />
-              <p className="text-sm font-mono text-white/40 animate-pulse">Analyzing graph structure...</p>
+              <p className="text-sm font-mono text-white/40 animate-pulse">{t('stats.analyzing')}</p>
             </div>
           ) : isPageError ? (
             <div className="p-10 glass rounded-sm border border-error/20 text-center space-y-4">
-              <p className="text-error font-bold">Analysis Interrupted</p>
-              <p className="text-sm text-white/40">Failed to retrieve session statistics from the neural service.</p>
+              <p className="text-error font-bold">{t('stats.error_title')}</p>
+              <p className="text-sm text-white/40">{t('stats.error_desc')}</p>
             </div>
           ) : generalData && generalData.general ? (
             <motion.div
@@ -257,21 +259,21 @@ export default function StatsClient() {
                   style={{ gap: '2.5rem', width: '100%', marginTop: '-3rem' }}
                 >
                   <KPICard
-                    label="Graph Density"
+                    label={t('stats.kpi.density')}
                     value="..."
-                    sub="Calculating network density..."
+                    sub={t('stats.kpi.density_loading')}
                     color="#A84CF0"
                   />
                   <KPICard
-                    label="Clustering Coeff."
+                    label={t('stats.kpi.clustering')}
                     value="..."
-                    sub="Finding local clusters..."
+                    sub={t('stats.kpi.clustering_loading')}
                     color="#4CF0A8"
                   />
                   <KPICard
-                    label="Avg Path Length"
+                    label={t('stats.kpi.path_length')}
                     value="..."
-                    sub="Measuring shortest paths..."
+                    sub={t('stats.kpi.path_length_loading')}
                     color="#F0A84C"
                   />
                 </div>
@@ -318,7 +320,7 @@ export default function StatsClient() {
                   {bridgesData ? (
                     <BridgeEntitiesTable bridgeEntities={bridgesData.bridgeEntities} />
                   ) : (
-                    <PanelLoader message="Identifying central bridge entities..." />
+                    <PanelLoader message={t('stats.bridges.loading')} />
                   )}
                 </div>
                 <CooccurrencePairs cooccurrences={generalData.cooccurrences} />

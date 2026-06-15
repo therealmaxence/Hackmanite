@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
+import { useTranslation } from '@/lib/i18n';
 
 const statusProgress: Record<string, number> = {
   PENDING: 5,
@@ -13,6 +14,7 @@ const statusProgress: Record<string, number> = {
 export default function StatusBar() {
   const { files, doneCount, pendingCount, failedCount, isUploading } = useUploadStore();
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -74,20 +76,20 @@ export default function StatusBar() {
       `}</style>
 
       <span>
-        <span style={{ color: 'var(--text-secondary)' }}>{mounted ? files.length : 0}</span> files
+        <span style={{ color: 'var(--text-secondary)' }}>{mounted ? files.length : 0}</span> {t('statusbar.files')}
       </span>
       <span>
-        <span style={{ color: 'var(--success)' }}>{mounted ? doneCount() : 0}</span> done
+        <span style={{ color: 'var(--success)' }}>{mounted ? doneCount() : 0}</span> {t('statusbar.done')}
       </span>
       {mounted && (pendingCount() > 0 || isUploading) && (
         <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
           <span>
             {pendingCount() > 0 ? (
               <>
-                <span style={{ color: 'var(--accent)' }}>{pendingCount()}</span> processing
+                <span style={{ color: 'var(--accent)' }}>{pendingCount()}</span> {t('statusbar.processing')}
               </>
             ) : (
-              <span style={{ color: 'var(--accent)' }}>uploading...</span>
+              <span style={{ color: 'var(--accent)' }}>{t('statusbar.uploading')}</span>
             )}
           </span>
         </span>
@@ -128,7 +130,7 @@ export default function StatusBar() {
       )}
       {mounted && failedCount() > 0 && (
         <span>
-          <span style={{ color: 'var(--error)' }}>{failedCount()}</span> failed
+          <span style={{ color: 'var(--error)' }}>{failedCount()}</span> {t('statusbar.failed')}
         </span>
       )}
       <span>Hackmanite</span>

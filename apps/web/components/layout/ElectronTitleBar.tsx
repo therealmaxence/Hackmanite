@@ -1,10 +1,12 @@
 "use client";
 
 import React, { useEffect, useState } from 'react';
+import { useTranslation } from '@/lib/i18n';
 
 export default function ElectronTitleBar() {
   const [isElectron, setIsElectron] = useState(false);
   const [isMaximized, setIsMaximized] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     const userAgent = window.navigator.userAgent.toLowerCase();
@@ -60,7 +62,7 @@ export default function ElectronTitleBar() {
         <button 
           onClick={handleMinimize}
           className="h-8 w-11 flex items-center justify-center hover:bg-[var(--color-surface-hover)] transition-colors duration-150 outline-none border-none cursor-pointer"
-          title="Minimize"
+          title={t('titlebar.minimize')}
           style={{ background: 'transparent', color: 'var(--color-text)' }}
         >
           <svg width="10" height="1" viewBox="0 0 10 1" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -72,7 +74,7 @@ export default function ElectronTitleBar() {
         <button 
           onClick={handleMaximize}
           className="h-8 w-11 flex items-center justify-center hover:bg-[var(--color-surface-hover)] transition-colors duration-150 outline-none border-none cursor-pointer"
-          title={isMaximized ? "Restore Down" : "Maximize"}
+          title={isMaximized ? t('titlebar.restore') : t('titlebar.maximize')}
           style={{ background: 'transparent', color: 'var(--color-text)' }}
         >
           {isMaximized ? (
@@ -91,7 +93,7 @@ export default function ElectronTitleBar() {
         <button 
           onClick={handleClose}
           className="h-8 w-11 flex items-center justify-center hover:bg-[#e11d48] hover:text-white transition-colors duration-150 outline-none border-none cursor-pointer"
-          title="Close"
+          title={t('titlebar.close')}
           style={{ background: 'transparent', color: 'currentColor' }}
         >
           <svg width="10" height="10" viewBox="0 0 10 10" fill="none" xmlns="http://www.w3.org/2000/svg">

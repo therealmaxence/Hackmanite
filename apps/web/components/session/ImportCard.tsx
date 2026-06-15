@@ -4,6 +4,7 @@ import SectionCard from './SectionCard';
 import StatusBadge, { ImportState } from './StatusBadge';
 import Spinner from '@/components/ui/Spinner';
 import { useUploadStore } from '@/store/uploadStore';
+import { useTranslation } from '@/lib/i18n';
 
 interface ImportResult {
   sessionId: string;
@@ -24,6 +25,7 @@ interface ImportResult {
 export default function ImportCard() {
   const router = useRouter();
   const { setSessionId, addFiles, clearFiles } = useUploadStore();
+  const { t } = useTranslation();
 
   const [importState, setImportState] = useState<ImportState>('idle');
   const [importError, setImportError] = useState('');
@@ -41,7 +43,7 @@ export default function ImportCard() {
       const text = await file.text();
       body = JSON.parse(text);
     } catch {
-      setImportError('Invalid JSON file — could not parse.');
+      setImportError(t('import.invalid_json'));
       setImportState('error');
       return;
     }
@@ -66,7 +68,7 @@ export default function ImportCard() {
       setImportError(err instanceof Error ? err.message : 'Import failed');
       setImportState('error');
     }
-  }, [setSessionId, addFiles, clearFiles]);
+  }, [setSessionId, addFiles, clearFiles, t]);
 
   const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -85,8 +87,8 @@ export default function ImportCard() {
 
   return (
     <SectionCard
-      title="Import Session"
-      description="Restore a previously exported session. All entities and edges will be re-created and the active session will switch to the imported one."
+      title={t('import.title')}
+      description={t('import.desc')}
     >
       {/* Drop zone */}
       <div
@@ -122,7 +124,7 @@ export default function ImportCard() {
           <>
             <Spinner size={28} />
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', margin: 0 }}>
-              {importState === 'parsing' ? 'Parsing JSON file…' : 'Sending to server…'}
+              {importState === 'parsing' ? t('import.parsing') : t('import.uploading')}
             </p>
           </>
         ) : (
@@ -134,10 +136,10 @@ export default function ImportCard() {
             </svg>
             <div>
               <p style={{ fontSize: '0.9rem', fontWeight: 500, color: 'var(--color-text)', margin: 0, marginBottom: '0.25rem' }}>
-                Drop JSON file here or <span style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>browse</span>
+                {t('import.drop_copy')}<span style={{ color: 'var(--color-primary)', textDecoration: 'underline' }}>{t('import.browse')}</span>
               </p>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0 }}>
-                Accepts <code style={{ fontFamily: 'var(--font-mono)', fontSize: '0.7rem', background: 'var(--color-surface-raised)', padding: '1px 5px', borderRadius: 'var(--radius-sm)' }}>.json</code> files exported from EntityGraph
+                {t('import.accepts', { code: '.json' })}
               </p>
             </div>
           </>
@@ -166,15 +168,15 @@ export default function ImportCard() {
           gap: '1rem',
         }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '0.625rem' }}>
-            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#10B981' }}>[Success] Session imported successfully</span>
+            <span style={{ fontSize: '0.875rem', fontWeight: 600, color: '#10B981' }}>{t('import.success')}</span>
           </div>
 
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '0.75rem' }}>
             {[
-              { label: 'Session ID', value: importResult.sessionId.slice(0, 12) + '…' },
-              { label: 'Files restored', value: String(importResult.files.length) },
-              { label: 'Entities found', value: String(importResult.files.reduce((s, f) => s + f.entityCount, 0)) },
-              { label: 'Emails restored', value: String(importResult.emailsRestoredCount || 0) },
+              { label: t('import.metric_id'), value: importResult.sessionId.slice(0, 12) + '…' },
+              { label: t('import.metric_files'), value: String(importResult.files.length) },
+              { label: t('import.metric_entities'), value: String(importResult.files.reduce((s, f) => s + f.entityCount, 0)) },
+              { label: t('import.metric_emails'), value: String(importResult.emailsRestoredCount || 0) },
             ].map(({ label, value }) => (
               <div key={label} style={{ padding: '0.75rem', background: 'var(--color-bg)', borderRadius: 'var(--radius-sm)', border: 'none' }}>
                 <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', margin: 0, marginBottom: '0.2rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{label}</p>
@@ -189,7 +191,7 @@ export default function ImportCard() {
               onClick={() => router.push('/graph')}
               style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-primary)', color: 'var(--color-on-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
             >
-              Open in Graph →
+              {t('import.open_graph')}
             </button>
             {importResult.emailsRestoredCount && importResult.emailsRestoredCount > 0 ? (
               <button
@@ -197,7 +199,7 @@ export default function ImportCard() {
                 onClick={() => router.push('/emails')}
                 style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-surface-raised)', color: 'var(--color-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
               >
-                Open in Emails →
+                {t('import.open_emails')}
               </button>
             ) : null}
             <button
@@ -205,7 +207,7 @@ export default function ImportCard() {
               onClick={() => router.push('/stats')}
               style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-surface-raised)', color: 'var(--color-text)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
             >
-              View Stats
+              {t('import.open_stats')}
             </button>
           </div>
         </div>

@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import SectionCard from './SectionCard';
 import StatusBadge, { ExportState } from './StatusBadge';
 import Spinner from '@/components/ui/Spinner';
+import { useTranslation } from '@/lib/i18n';
 
 interface ExportCardProps {
   sessionId: string | null;
@@ -11,6 +12,7 @@ export default function ExportCard({ sessionId }: ExportCardProps) {
   const [exportState, setExportState] = useState<ExportState>('idle');
   const [exportError, setExportError] = useState('');
   const [lastExportedAt, setLastExportedAt] = useState<string | null>(null);
+  const { t } = useTranslation();
 
   const handleExport = useCallback(async () => {
     if (!sessionId) return;
@@ -42,8 +44,8 @@ export default function ExportCard({ sessionId }: ExportCardProps) {
 
   return (
     <SectionCard
-      title="Export Session"
-      description="Download the current session as a JSON file containing all entities, graph edges, and file metadata. The snapshot is self-contained and can be imported on any EntityGraph instance."
+      title={t('export.title')}
+      description={t('export.desc')}
     >
       <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
         <button
@@ -74,7 +76,7 @@ export default function ExportCard({ sessionId }: ExportCardProps) {
               <line x1="12" y1="15" x2="12" y2="3" />
             </svg>
           )}
-          Download JSON
+          {t('export.download_btn')}
         </button>
  
         <StatusBadge state={exportState} errorMsg={exportError} />
@@ -82,11 +84,11 @@ export default function ExportCard({ sessionId }: ExportCardProps) {
  
       {lastExportedAt && exportState === 'done' && (
         <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0 }}>
-          Last exported at {lastExportedAt}
+          {t('export.last_exported', { time: lastExportedAt })}
         </p>
       )}
       {exportState === 'error' && (
-        <p style={{ fontSize: '0.75rem', color: 'var(--color-error)', margin: 0 }}>⚠ {exportError}</p>
+        <p style={{ fontSize: '0.75rem', color: 'var(--color-error)', margin: 0 }}>{t('export.error_prefix')}{exportError}</p>
       )}
  
       {/* JSON format preview */}

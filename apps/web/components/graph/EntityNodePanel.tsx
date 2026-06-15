@@ -4,6 +4,7 @@ import { useState } from 'react';
 import Badge from '@/components/ui/Badge';
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
 import SnippetCard from './SnippetCard';
+import { useTranslation } from '@/lib/i18n';
 
 interface FileEntry {
   fileId: string;
@@ -48,19 +49,20 @@ interface Props {
 
 export default function EntityNodePanel({ data, totalOccurrences, tfidf, sessionId, onSelectNode, onDelete }: Props) {
   const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>({});
+  const { t } = useTranslation();
 
   return (
     <>
       <section style={{ marginBottom: '2.5rem' }}>
-        <SectionLabel>Entity Overview</SectionLabel>
+        <SectionLabel>{t('graph.panel.entity_overview')}</SectionLabel>
         <div style={{ background: 'var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: '1.25rem', display: 'flex', flexDirection: 'column', gap: '0.875rem' }}>
-          <InfoRow label="Canonical Name"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{data.canonical}</span></InfoRow>
-          <InfoRow label="Entity Type"><Badge entityType={data.type} size="sm">{data.type}</Badge></InfoRow>
-          <InfoRow label="Total Occurrences"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{totalOccurrences}</span></InfoRow>
+          <InfoRow label={t('graph.panel.canonical_name')}><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{data.canonical}</span></InfoRow>
+          <InfoRow label={t('graph.panel.entity_type')}><Badge entityType={data.type} size="sm">{data.type}</Badge></InfoRow>
+          <InfoRow label={t('graph.panel.total_occurrences')}><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{totalOccurrences}</span></InfoRow>
           {tfidf !== undefined && (
-            <InfoRow label="TF-IDF Importance"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--color-primary)' }}>{tfidf.toFixed(4)}</span></InfoRow>
+            <InfoRow label={t('graph.panel.tfidf_importance')}><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600, color: 'var(--color-primary)' }}>{tfidf.toFixed(4)}</span></InfoRow>
           )}
-          <InfoRow label="Unique Files"><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{data.files?.length || 0}</span></InfoRow>
+          <InfoRow label={t('graph.panel.unique_files')}><span style={{ fontFamily: 'var(--font-mono)', fontWeight: 600 }}>{data.files?.length || 0}</span></InfoRow>
         </div>
 
         {data.type === 'EMAIL' && (
@@ -73,14 +75,14 @@ export default function EntityNodePanel({ data, totalOccurrences, tfidf, session
               onMouseEnter={(e) => { e.currentTarget.style.background = '#e08f06'; e.currentTarget.style.color = '#000000'; }}
               onMouseLeave={(e) => { e.currentTarget.style.background = '#2b2118'; e.currentTarget.style.color = '#f59e0b'; }}
             >
-              Open in Email Viewer
+              {t('graph.panel.open_email_viewer')}
             </a>
           </div>
         )}
 
         {data.metadata && Object.keys(data.metadata).length > 0 && (
           <div style={{ marginTop: '1.25rem' }}>
-            <SectionLabel>Properties</SectionLabel>
+            <SectionLabel>{t('graph.panel.properties')}</SectionLabel>
             <div style={{ background: 'var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: '1rem', display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))', gap: '0.75rem' }}>
               {Object.entries(data.metadata).map(([k, v]) => (
                 <div key={k} style={{ display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
@@ -94,7 +96,12 @@ export default function EntityNodePanel({ data, totalOccurrences, tfidf, session
       </section>
 
       <section style={{ marginBottom: '2.5rem' }}>
-        <SectionLabel>Appears In & Snippets ({data.files?.length || 0} files)</SectionLabel>
+        <SectionLabel>
+          {t('graph.panel.appears_in_and_snippets', {
+            count: data.files?.length || 0,
+            fileLabel: (data.files?.length === 1 ? t('graph.panel.file') : t('graph.panel.files'))
+          })}
+        </SectionLabel>
         {(data.files || []).map((f) => (
           <FileSnippetBlock
             key={f.fileId}
@@ -111,7 +118,7 @@ export default function EntityNodePanel({ data, totalOccurrences, tfidf, session
 
       {(data.coOccurringEntities?.length ?? 0) > 0 && (
         <section style={{ marginBottom: '2rem' }}>
-          <SectionLabel>Connected Entities (Top {Math.min(data.coOccurringEntities!.length, 15)})</SectionLabel>
+          <SectionLabel>{t('graph.panel.connected_entities', { count: Math.min(data.coOccurringEntities!.length, 15) })}</SectionLabel>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
             {data.coOccurringEntities!.slice(0, 15).map((co) => (
               <CoEntityCard key={co.id} co={co} onSelect={() => onSelectNode(co.id)} />
@@ -121,7 +128,7 @@ export default function EntityNodePanel({ data, totalOccurrences, tfidf, session
       )}
 
       <section style={{ marginTop: '3.5rem', paddingTop: '1.5rem' }}>
-        <DangerButton onClick={onDelete}>Delete Node from Graph</DangerButton>
+        <DangerButton onClick={onDelete}>{t('graph.panel.delete_node')}</DangerButton>
       </section>
     </>
   );
@@ -136,6 +143,7 @@ function FileSnippetBlock({ file, entityId, entityDisplayName, entityType, expan
   onToggle: () => void;
   onSelectNode: (id: string) => void;
 }) {
+  const { t } = useTranslation();
   const visibleSnippets = expanded ? file.snippets : file.snippets?.slice(0, 5);
 
   return (
@@ -177,7 +185,7 @@ function FileSnippetBlock({ file, entityId, entityDisplayName, entityType, expan
             onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-hover)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.background = 'var(--color-surface)'; }}
           >
-            {expanded ? 'Show fewer snippets' : `Show all ${file.snippets.length} snippets`}
+            {expanded ? t('graph.panel.show_fewer_snippets') : t('graph.panel.show_all_snippets', { count: file.snippets.length })}
           </button>
         )}
       </div>

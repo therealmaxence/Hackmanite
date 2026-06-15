@@ -1,20 +1,22 @@
 'use client';
 
 import { EmailStats } from './types';
+import { useTranslation } from '@/lib/i18n';
 
 interface KpiRibbonProps {
   stats: EmailStats;
 }
 
 const KPI_CONFIG = [
-  { key: 'totalEmails' as const,      label: 'Total Emails',           color: 'var(--color-primary)' },
-  { key: 'totalThreads' as const,     label: 'Conversation Threads',   color: 'var(--color-secondary)' },
-  { key: 'totalSenders' as const,     label: 'Unique Senders',         color: 'var(--color-secondary-hover)' },
-  { key: 'totalRecipients' as const,  label: 'Unique Recipients',      color: 'var(--color-info)' },
-  { key: 'totalAttachments' as const, label: 'Total Attachments',      color: 'var(--color-warning)' },
+  { key: 'totalEmails' as const,      labelKey: 'emails.kpi.total_emails',    color: 'var(--color-primary)' },
+  { key: 'totalThreads' as const,     labelKey: 'emails.kpi.threads',         color: 'var(--color-secondary)' },
+  { key: 'totalSenders' as const,     labelKey: 'emails.kpi.senders',         color: 'var(--color-secondary-hover)' },
+  { key: 'totalRecipients' as const,  labelKey: 'emails.kpi.recipients',      color: 'var(--color-info)' },
+  { key: 'totalAttachments' as const, labelKey: 'emails.kpi.attachments',     color: 'var(--color-warning)' },
 ];
 
 export default function KpiRibbon({ stats }: KpiRibbonProps) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -40,7 +42,7 @@ export default function KpiRibbon({ stats }: KpiRibbonProps) {
         >
           <div>
             <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.25rem' }}>
-              {kpi.label}
+              {t(kpi.labelKey)}
             </p>
             <h4 style={{ fontSize: '1.5rem', fontWeight: 600, color: 'var(--color-text)', fontFamily: 'var(--font-mono, monospace)', margin: 0 }}>
               {stats[kpi.key]}

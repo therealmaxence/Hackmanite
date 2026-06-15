@@ -4,9 +4,11 @@ import { useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
 import useSWR from 'swr';
 import FileRow from './FileRow';
+import { useTranslation } from '@/lib/i18n';
 
 export default function FileList() {
   const { files, sessionId, resetSession, updateFileStatus } = useUploadStore();
+  const { t } = useTranslation();
 
   const hasActiveJobs = files.some(
     (f) => f.status === 'PENDING' || f.status === 'PROCESSING'
@@ -70,7 +72,7 @@ export default function FileList() {
   }, [data, files, updateFileStatus]);
 
   const handleClearAll = async () => {
-    if (confirm('Clear entire queue and reset graph?')) {
+    if (confirm(t('upload.confirm_clear'))) {
       try {
         if (sessionId) {
           await fetch(`/api/session/${sessionId}`, { method: 'DELETE' });
@@ -109,8 +111,8 @@ export default function FileList() {
           <line x1="9" y1="12" x2="15" y2="12" />
           <line x1="9" y1="15" x2="12" y2="15" />
         </svg>
-        <p style={{ fontSize: '0.8125rem' }}>No files yet</p>
-        <p style={{ fontSize: '0.7rem' }}>Drop files on the left to begin</p>
+        <p style={{ fontSize: '0.8125rem' }}>{t('home.empty_queue_title')}</p>
+        <p style={{ fontSize: '0.7rem' }}>{t('home.empty_queue_copy')}</p>
       </div>
     );
   }
@@ -129,13 +131,13 @@ export default function FileList() {
         }}
       >
         <span style={{ fontSize: '0.7rem', fontWeight: 600, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-          Queue ({files.length})
+          {t('home.queue_label')} ({files.length})
         </span>
         <div style={{ display: 'flex', gap: '0.5rem' }}>
           {hasFailedJobs && (
             <button
               onClick={async () => {
-                if (confirm('Retry all failed files?')) {
+                if (confirm(t('upload.confirm_retry'))) {
                   try {
                     for (const f of files) {
                       if (f.status === 'FAILED') {
@@ -174,13 +176,13 @@ export default function FileList() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 11-.57-8.38l.73-.73" />
               </svg>
-              Retry Failed
+              {t('upload.retry_failed')}
             </button>
           )}
           {hasActiveJobs && (
             <button
               onClick={async () => {
-                if (confirm('Stop all pending extraction jobs?')) {
+                if (confirm(t('upload.confirm_stop'))) {
                   try {
                     if (sessionId) {
                       await fetch(`/api/jobs/stop`, {
@@ -215,7 +217,7 @@ export default function FileList() {
               <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden="true">
                 <rect x="6" y="6" width="12" height="12" rx="2" />
               </svg>
-              Stop Processing
+              {t('upload.stop_processing')}
             </button>
           )}
           <button
@@ -235,7 +237,7 @@ export default function FileList() {
             onMouseEnter={(e) => (e.currentTarget.style.background = '#2a171d')}
             onMouseLeave={(e) => (e.currentTarget.style.background = 'var(--bg-raised)')}
           >
-            Clear All
+            {t('upload.clear_all')}
           </button>
         </div>
       </div>

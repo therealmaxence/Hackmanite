@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
+import { useTranslation } from '@/lib/i18n';
 
 interface HiddenNode {
   id: string;
@@ -21,6 +22,7 @@ export default function HiddenNodesModal({
   onClose,
   onUnhideSuccess,
 }: HiddenNodesModalProps) {
+  const { t } = useTranslation();
   const [isLoading, setIsLoading] = useState(true);
   const [isProcessing, setIsProcessing] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -135,10 +137,10 @@ export default function HiddenNodesModal({
         {/* Header */}
         <div style={{ padding: '20px 24px', borderBottom: '1px solid var(--color-border)' }}>
           <h2 style={{ fontSize: '1.2rem', fontWeight: 600, color: 'var(--color-text)' }}>
-            Hidden Nodes
+            {t('graph.hidden.title')}
           </h2>
           <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
-            Checked nodes are hidden. Uncheck nodes to restore them.
+            {t('graph.hidden.subtitle')}
           </span>
         </div>
 
@@ -167,14 +169,14 @@ export default function HiddenNodesModal({
             >
               <Spinner size={24} />
               <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                Loading hidden nodes list...
+                {t('graph.hidden.loading')}
               </span>
             </div>
           ) : error ? (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12, color: 'var(--color-error)' }}>
               <span style={{ fontSize: '0.875rem' }}>⚠ {error}</span>
               <Button size="sm" onClick={onClose} variant="ghost" style={{ alignSelf: 'center' }}>
-                Close
+                {t('graph.hidden.btn_cancel')}
               </Button>
             </div>
           ) : hiddenNodes.length === 0 ? (
@@ -186,14 +188,14 @@ export default function HiddenNodesModal({
                 fontSize: '0.875rem',
               }}
             >
-              No nodes are currently hidden in this session.
+              {t('graph.hidden.no_hidden')}
             </div>
           ) : (
             <>
               {/* Toolbar */}
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                 <span style={{ fontSize: '0.82rem', color: 'var(--color-text-muted)' }}>
-                  {selectedIds.size} of {hiddenNodes.length} hidden
+                  {t('graph.hidden.status', { count: selectedIds.size, total: hiddenNodes.length })}
                 </span>
                 <div style={{ display: 'flex', gap: 10 }}>
                   <button
@@ -207,7 +209,7 @@ export default function HiddenNodesModal({
                       fontWeight: 500,
                     }}
                   >
-                    Restore All
+                    {t('graph.hidden.restore_all')}
                   </button>
                   <span style={{ color: 'var(--color-border)', fontSize: '0.72rem' }}>|</span>
                   <button
@@ -221,7 +223,7 @@ export default function HiddenNodesModal({
                       fontWeight: 500,
                     }}
                   >
-                    Keep All Hidden
+                    {t('graph.hidden.keep_all')}
                   </button>
                 </div>
               </div>
@@ -300,7 +302,7 @@ export default function HiddenNodesModal({
           }}
         >
           <Button size="sm" variant="ghost" onClick={onClose} disabled={isProcessing}>
-            Cancel
+            {t('graph.hidden.btn_cancel')}
           </Button>
           {!isLoading && !error && hiddenNodes.length > 0 && (
             <Button
@@ -309,7 +311,7 @@ export default function HiddenNodesModal({
               onClick={handleSave}
               loading={isProcessing}
             >
-              Save Changes
+              {t('graph.hidden.btn_save')}
             </Button>
           )}
         </div>

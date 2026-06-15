@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import ElectronTitleBar from "@/components/layout/ElectronTitleBar";
+import { I18nProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
   title: "Hackmanite",
@@ -36,8 +37,10 @@ export default function RootLayout({
         />
       </head>
       <body className="antialiased">
-        <ElectronTitleBar />
-        {children}
+        <I18nProvider>
+          <ElectronTitleBar />
+          {children}
+        </I18nProvider>
       </body>
     </html>
   );

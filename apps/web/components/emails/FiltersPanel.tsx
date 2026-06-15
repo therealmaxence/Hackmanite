@@ -5,6 +5,7 @@ import { useSWRConfig } from 'swr';
 import { useUploadStore } from '@/store/uploadStore';
 import Button from '@/components/ui/Button';
 import exportSessionAsJson from '@/lib/sessionExport';
+import { useTranslation } from '@/lib/i18n';
 import { ActiveTab, LayoutType } from './types';
 
 interface FilterOptions {
@@ -57,6 +58,7 @@ export default function FiltersPanel({
 }: FiltersPanelProps) {
   const { sessionId, setSessionId, addFiles } = useUploadStore();
   const { mutate } = useSWRConfig();
+  const { t } = useTranslation();
   const [isSaving, setIsSaving] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -91,11 +93,11 @@ export default function FiltersPanel({
       try {
         parsedData = JSON.parse(text);
       } catch (err) {
-        throw new Error('Invalid JSON format. Please upload a valid JSON file.');
+        throw new Error(t('graph.controls.err_invalid_json'));
       }
 
       if (!parsedData.nodes || !parsedData.edges) {
-        throw new Error('Invalid graph structure. The JSON must contain "nodes" and "edges" arrays.');
+        throw new Error(t('graph.controls.err_invalid_structure'));
       }
 
       const response = await fetch('/api/session/import', {
@@ -114,7 +116,7 @@ export default function FiltersPanel({
 
       if (!response.ok) {
         const errJson = await response.json().catch(() => ({}));
-        throw new Error(errJson.error || 'Failed to import JSON graph.');
+        throw new Error(errJson.error || t('graph.controls.err_import_failed'));
       }
 
       const resData = await response.json();
@@ -132,7 +134,7 @@ export default function FiltersPanel({
 
     } catch (err: any) {
       console.error('Import failed', err);
-      setImportError(err.message || 'An unknown error occurred during import.');
+      setImportError(err.message || t('graph.controls.err_unknown_import'));
     } finally {
       setIsImporting(false);
       e.target.value = '';
@@ -155,15 +157,15 @@ export default function FiltersPanel({
       {/* Filters section */}
       <div>
         <h3 style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.875rem' }}>
-          Explorer Filters
+          {t('emails.filters.title')}
         </h3>
 
         {/* Search */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1rem' }}>
-          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Search queries</label>
+          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('emails.filters.search')}</label>
           <input
             type="text"
-            placeholder="Subject, body, address..."
+            placeholder={t('emails.filters.search_placeholder')}
             value={searchQuery}
             onChange={(e) => onSearchChange(e.target.value)}
             style={inputStyle}
@@ -180,7 +182,7 @@ export default function FiltersPanel({
 
         {/* Sender filter */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1rem' }}>
-          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>From Sender</label>
+          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('emails.filters.from')}</label>
           <select
             value={senderFilter}
             onChange={(e) => onSenderChange(e.target.value)}
@@ -194,14 +196,14 @@ export default function FiltersPanel({
               e.target.style.boxShadow = 'none';
             }}
           >
-            <option value="all">All Senders</option>
+            <option value="all">{t('emails.filters.from_all')}</option>
             {filterOptions.senders.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
         </div>
 
         {/* Recipient filter */}
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '1rem' }}>
-          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>To/Cc Recipient</label>
+          <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('emails.filters.to')}</label>
           <select
             value={recipientFilter}
             onChange={(e) => onRecipientChange(e.target.value)}
@@ -215,7 +217,7 @@ export default function FiltersPanel({
               e.target.style.boxShadow = 'none';
             }}
           >
-            <option value="all">All Recipients</option>
+            <option value="all">{t('emails.filters.to_all')}</option>
             {filterOptions.recipients.map((r) => <option key={r} value={r}>{r}</option>)}
           </select>
         </div>
@@ -235,16 +237,16 @@ export default function FiltersPanel({
             }}
           >
             <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-info)', margin: 0 }}>
-              Focused Conversation Active
+              {t('emails.filters.focused_active')}
             </p>
             <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-muted)', margin: 0 }}>
-              Isolating conversation path replies.
+              {t('emails.filters.focused_desc')}
             </p>
             <button
               onClick={onResetFocus}
               style={{ alignSelf: 'flex-start', marginTop: '0.25rem', background: 'transparent', border: 'none', color: 'var(--color-text)', fontSize: '0.75rem', textDecoration: 'underline', padding: 0, cursor: 'pointer' }}
             >
-              Reset Focus
+              {t('emails.filters.reset_focus')}
             </button>
           </div>
         )}
@@ -253,7 +255,7 @@ export default function FiltersPanel({
       {/* Visualization options */}
       <div>
         <h3 style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '0.75rem' }}>
-          Visualization Options
+          {t('emails.filters.vis_options')}
         </h3>
 
         {/* View mode tabs */}
@@ -275,7 +277,7 @@ export default function FiltersPanel({
                 transition: 'background 0.15s ease-in-out',
               }}
             >
-              {tab === 'graph' ? 'DAG Graph' : 'Table view'}
+              {tab === 'graph' ? t('emails.filters.tab_graph') : t('emails.filters.tab_list')}
             </button>
           ))}
         </div>
@@ -283,7 +285,7 @@ export default function FiltersPanel({
         {/* Layout selector (graph only) */}
         {activeTab === 'graph' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
-            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>Graph Layout</label>
+            <label style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('emails.filters.graph_layout')}</label>
             <select
               value={layoutType}
               onChange={(e) => onLayoutChange(e.target.value as LayoutType)}
@@ -297,8 +299,8 @@ export default function FiltersPanel({
                 e.target.style.boxShadow = 'none';
               }}
             >
-              <option value="breadthfirst">Hierarchy Tree (DAG)</option>
-              <option value="cose-bilkent">Force-directed</option>
+              <option value="breadthfirst">{t('emails.filters.layout_tree')}</option>
+              <option value="cose-bilkent">{t('emails.filters.layout_force')}</option>
             </select>
           </div>
         )}
@@ -307,16 +309,16 @@ export default function FiltersPanel({
       {/* Session actions */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.625rem', borderTop: 'none', paddingTop: '1.25rem', marginTop: 'auto' }}>
         <h3 style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text)', textTransform: 'uppercase', letterSpacing: '0.05em', margin: 0 }}>
-          Session Actions
+          {t('emails.filters.session_actions')}
         </h3>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: '0.25rem' }}>
           <Button id="save-session-export" variant="secondary" size="xs" onClick={handleSaveExport} disabled={!sessionId} loading={isSaving}>
-            Save JSON
+            {t('graph.controls.btn_save_json')}
           </Button>
 
           <Button id="import-session-json" variant="secondary" size="xs" onClick={handleImportClick} loading={isImporting}>
-            Import JSON
+            {t('graph.controls.btn_import_json')}
           </Button>
         </div>
 

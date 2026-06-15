@@ -2,17 +2,11 @@
 
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
 import { useGraphStore } from '@/store/graphStore';
+import { useTranslation } from '@/lib/i18n';
 
 const ENTITY_TYPES: EntityType[] = [
   'PERSON', 'ORGANIZATION', 'LOCATION', 'EMAIL', 'ADDRESS', 'DATE', 'PHONE', 'IP_ADDRESS', 'URL',
 ];
-
-const formatTypeLabel = (t: string): string => {
-  if (t === 'IP_ADDRESS') return 'IP Address';
-  return t.split('_')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-    .join(' ');
-};
 
 interface EntityFilterBarProps {
   className?: string;
@@ -21,6 +15,7 @@ interface EntityFilterBarProps {
 
 export default function EntityFilterBar({ className = '', showCounts = false }: EntityFilterBarProps) {
   const { filters, setFilter, resetFilters } = useGraphStore();
+  const { t } = useTranslation();
 
   const toggleType = (type: EntityType) => {
     const current = filters.entityTypes;
@@ -44,7 +39,7 @@ export default function EntityFilterBar({ className = '', showCounts = false }: 
         <button
           onClick={resetFilters}
           disabled={isDefault}
-          title="Reset to default filters"
+          title={t('shared.reset_tooltip')}
           className="flex items-center justify-center gap-1.5 w-[120px] h-[28px] px-2 rounded-sm transition-all duration-300 shrink-0"
           style={{
             background: isDefault ? 'var(--color-surface-raised)' : '#2a2438',
@@ -59,18 +54,19 @@ export default function EntityFilterBar({ className = '', showCounts = false }: 
             </svg>
           </div>
           <span className="text-[10px] font-mono tracking-wider font-medium">
-            Reset
+            {t('shared.reset')}
           </span>
         </button>
         <div className="w-[1px] h-4 shrink-0 mx-1" style={{ background: 'var(--color-surface-hover)' }} />
         {ENTITY_TYPES.map((type) => {
           const active = filters.entityTypes.includes(type);
+          const typeLabel = t('entity.' + type);
           return (
             <button
               key={type}
               id={`filter-${type}`}
               onClick={() => toggleType(type)}
-              title={`Toggle ${formatTypeLabel(type)}`}
+              title={t('shared.toggle_tooltip', { type: typeLabel })}
               className={`
                 flex items-center justify-center gap-1.5 w-[120px] h-[28px] px-2 rounded-sm transition-all duration-300 shrink-0
                 ${active ? 'opacity-100 scale-100' : 'opacity-40 grayscale scale-95 hover:opacity-60'}
@@ -86,7 +82,7 @@ export default function EntityFilterBar({ className = '', showCounts = false }: 
                 }}
               />
               <span className="text-[10px] font-mono tracking-wider text-white/60 font-medium">
-                {formatTypeLabel(type)}
+                {typeLabel}
               </span>
             </button>
           );

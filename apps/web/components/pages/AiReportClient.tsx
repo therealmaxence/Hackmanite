@@ -7,9 +7,11 @@ import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
 import MarkdownReport from '@/components/ai/MarkdownReport';
 import CustomSlider from '@/components/ui/CustomSlider';
+import { useTranslation } from '@/lib/i18n';
 
 export default function AiReportClient() {
   const { sessionId } = useUploadStore();
+  const { t } = useTranslation();
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [model, setModel] = useState('mistral-large-latest');
@@ -114,10 +116,10 @@ export default function AiReportClient() {
     setIsGenerating(true);
     setError(null);
     setReport('');
-    setStatusMsg('Aggregating graph statistics and calculating centrality...');
+    setStatusMsg('ai.status.aggregating');
 
-    setTimeout(() => setStatusMsg('Assembling analytical prompt for Mistral AI...'), 1200);
-    setTimeout(() => setStatusMsg('Connecting to Mistral model...'), 2400);
+    setTimeout(() => setStatusMsg('ai.status.assembling'), 1200);
+    setTimeout(() => setStatusMsg('ai.status.connecting'), 2400);
 
     try {
       const res = await fetch('/api/ai/report', {
@@ -194,12 +196,12 @@ export default function AiReportClient() {
           }}
         >
           <header className="space-y-4 no-print">
-            <h1 className="text-4xl md:text-5xl font-display font-bold text-white leading-tight">AI Intelligence Report</h1>
+            <h1 className="text-4xl md:text-5xl font-display font-bold text-white leading-tight">{t('ai.kicker')}</h1>
           </header>
 
           {!sessionId ? (
             <div className="h-[300px] signature-card flex flex-col items-center justify-center gap-4 border border-dashed border-white/5">
-              <p className="text-sm font-mono text-white/30 uppercase tracking-wider">No Active Session Selected</p>
+              <p className="text-sm font-mono text-white/30 uppercase tracking-wider">{t('ai.no_active_session')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-12">
@@ -217,7 +219,7 @@ export default function AiReportClient() {
                     className="flex justify-between items-center w-full cursor-pointer hover:bg-white/5 transition-colors"
                     style={{ padding: '1.5rem 2rem', background: 'none', border: 'none', outline: 'none' }}
                   >
-                    <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">Mistral API Setup</h3>
+                    <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">{t('ai.api_setup')}</h3>
                     <svg
                       className="w-4 h-4 text-white/40 transition-transform duration-300"
                       style={{ transform: showApiSetup ? 'rotate(180deg)' : 'rotate(0deg)' }}
@@ -231,13 +233,13 @@ export default function AiReportClient() {
                   {showApiSetup && (
                     <div className="flex flex-col border-t border-white/5" style={{ padding: '1.5rem 2rem 2rem', gap: '2rem' }}>
                       <div className="flex flex-col gap-2.5">
-                        <label className="text-[11px] text-white/40 font-mono font-medium">API Key</label>
+                        <label className="text-[11px] text-white/40 font-mono font-medium">{t('ai.api_key')}</label>
                         <div className="relative">
                           <input
                             type={showKey ? 'text' : 'password'}
                             value={apiKey}
                             onChange={(e) => handleSaveKey(e.target.value)}
-                            placeholder="Mistral API Key..."
+                            placeholder={`${t('ai.api_key')}...`}
                             className="signature-input w-full font-mono text-xs"
                             style={{ padding: '0.75rem 1.25rem', paddingRight: '4.5rem' }}
                           />
@@ -246,13 +248,13 @@ export default function AiReportClient() {
                             onClick={() => setShowKey(!showKey)}
                             className="absolute right-4 top-1/2 -translate-y-1/2 text-white/40 hover:text-white/80 text-xs font-mono transition-colors"
                           >
-                            {showKey ? 'Hide' : 'Show'}
+                            {showKey ? t('ai.hide') : t('ai.show')}
                           </button>
                         </div>
                       </div>
 
                       <div className="flex flex-col gap-2.5">
-                        <label className="text-[11px] text-white/40 font-mono font-medium">Model</label>
+                        <label className="text-[11px] text-white/40 font-mono font-medium">{t('ai.model')}</label>
                         <div className="relative">
                           <select
                             value={model}
@@ -260,9 +262,9 @@ export default function AiReportClient() {
                             className="signature-input w-full appearance-none text-xs cursor-pointer bg-surface-input text-white border-none"
                             style={{ padding: '0.75rem 1.25rem', paddingRight: '2.5rem' }}
                           >
-                            <option value="mistral-large-latest">Mistral Large (High quality)</option>
-                            <option value="mistral-small-latest">Mistral Small (Fast)</option>
-                            <option value="open-mixtral-8x22b">Mixtral 8x22B (Balanced)</option>
+                            <option value="mistral-large-latest">{t('ai.model.large')}</option>
+                            <option value="mistral-small-latest">{t('ai.model.small')}</option>
+                            <option value="open-mixtral-8x22b">{t('ai.model.mixtral')}</option>
                           </select>
                           <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
                             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -283,7 +285,7 @@ export default function AiReportClient() {
                     className="flex justify-between items-center w-full cursor-pointer hover:bg-white/5 transition-colors"
                     style={{ padding: '1.5rem 2rem', background: 'none', border: 'none', outline: 'none' }}
                   >
-                    <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">Analysis Scope</h3>
+                    <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">{t('ai.analysis_scope')}</h3>
                     <svg
                       className="w-4 h-4 text-white/40 transition-transform duration-300"
                       style={{ transform: showAnalysisScope ? 'rotate(180deg)' : 'rotate(0deg)' }}
@@ -298,7 +300,7 @@ export default function AiReportClient() {
                     <div className="flex flex-col border-t border-white/5" style={{ padding: '1.5rem 2rem 2rem', gap: '2rem' }}>
                   
                   <div className="flex flex-col gap-2.5">
-                    <label className="text-[11px] text-white/40 font-mono font-medium">Focus Mode</label>
+                    <label className="text-[11px] text-white/40 font-mono font-medium">{t('ai.focus_mode')}</label>
                     <div className="relative">
                       <select
                         value={focusType}
@@ -306,10 +308,10 @@ export default function AiReportClient() {
                         className="signature-input w-full appearance-none text-xs cursor-pointer bg-surface-input text-white border-none"
                         style={{ padding: '0.75rem 1.25rem', paddingRight: '2.5rem' }}
                       >
-                        <option value="general">Executive Summary (General)</option>
-                        <option value="threats">Threat Actors & Targets</option>
-                        <option value="networks">Network & Link Clusters</option>
-                        <option value="timeline">Temporal & Timeline</option>
+                        <option value="general">{t('ai.focus.general')}</option>
+                        <option value="threats">{t('ai.focus.threats')}</option>
+                        <option value="networks">{t('ai.focus.networks')}</option>
+                        <option value="timeline">{t('ai.focus.timeline')}</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -320,7 +322,7 @@ export default function AiReportClient() {
                   </div>
 
                   <div className="flex flex-col gap-2.5">
-                    <label className="text-[11px] text-white/40 font-mono font-medium">Output Language</label>
+                    <label className="text-[11px] text-white/40 font-mono font-medium">{t('ai.output_lang')}</label>
                     <div className="relative">
                       <select
                         value={language}
@@ -328,8 +330,8 @@ export default function AiReportClient() {
                         className="signature-input w-full appearance-none text-xs cursor-pointer bg-surface-input text-white border-none"
                         style={{ padding: '0.75rem 1.25rem', paddingRight: '2.5rem' }}
                       >
-                        <option value="en">English</option>
-                        <option value="fr">Français</option>
+                        <option value="en">{t('language.en')}</option>
+                        <option value="fr">{t('language.fr')}</option>
                       </select>
                       <div className="absolute right-4 top-1/2 -translate-y-1/2 pointer-events-none text-white/40">
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -340,7 +342,7 @@ export default function AiReportClient() {
                   </div>
 
                   <CustomSlider
-                    label="Top Entities Limit"
+                    label={t('ai.top_entities')}
                     value={topEntitiesLimit}
                     min={10}
                     max={100}
@@ -350,7 +352,7 @@ export default function AiReportClient() {
                   />
 
                   <CustomSlider
-                    label="Top TF-IDF (Salient) Limit"
+                    label={t('ai.top_tfidf')}
                     value={topTfidfLimit}
                     min={10}
                     max={100}
@@ -360,7 +362,7 @@ export default function AiReportClient() {
                   />
 
                   <CustomSlider
-                    label="Central Bridges Limit"
+                    label={t('ai.bridges')}
                     value={bridgesLimit}
                     min={5}
                     max={30}
@@ -370,11 +372,11 @@ export default function AiReportClient() {
                   />
 
                   <div className="flex flex-col gap-2.5">
-                    <label className="text-[11px] text-white/40 font-mono font-medium">Custom Directives</label>
+                    <label className="text-[11px] text-white/40 font-mono font-medium">{t('ai.custom_directives')}</label>
                     <textarea
                       value={customInstructions}
                       onChange={(e) => setCustomInstructions(e.target.value)}
-                      placeholder="e.g. Focus specifically on connections to domain names or specific dates..."
+                      placeholder={t('ai.custom_directives_placeholder')}
                       rows={4}
                       className="signature-input w-full text-xs resize-none"
                       style={{ padding: '0.75rem 1.25rem' }}
@@ -388,11 +390,11 @@ export default function AiReportClient() {
                     onClick={generateReport}
                     style={{ minHeight: 44, fontSize: '0.875rem', marginTop: '0.5rem' }}
                   >
-                    Run AI Analysis
+                    {isGenerating ? t('ai.btn_running') : t('ai.btn_run')}
                   </Button>
 
                   <div className="flex justify-between items-center text-[10px] font-mono text-white/30 px-1 mt-2">
-                    <span>Estimated Input Cost:</span>
+                    <span>{t('ai.est_cost')}</span>
                     <span className="text-white/60 font-semibold">~{estimatedTokens} tokens</span>
                   </div>
 
@@ -403,13 +405,13 @@ export default function AiReportClient() {
                       className="text-xs font-mono text-white/40 hover:text-white/70 transition-colors flex justify-between items-center cursor-pointer"
                       style={{ background: 'none', border: 'none', padding: 0, outline: 'none' }}
                     >
-                      <span>{showPreview ? 'Hide Prompt Preview' : 'Show Prompt Preview'}</span>
+                      <span>{showPreview ? t('ai.hide_preview') : t('ai.show_preview')}</span>
                       <span>{showPreview ? '▲' : '▼'}</span>
                     </button>
                     
                     {showPreview && (
                       <pre className="signature-input font-mono text-[9px] text-white/50 bg-surface-input p-3 rounded overflow-x-auto max-h-48 max-w-full whitespace-pre-wrap select-all leading-relaxed" style={{ width: '100%' }}>
-                        {promptPreview || 'Generating preview...'}
+                        {promptPreview || t('ai.generating_preview')}
                       </pre>
                     )}
                   </div>
@@ -426,21 +428,21 @@ export default function AiReportClient() {
                 {isGenerating && (
                   <div className="signature-card h-[400px] flex flex-col items-center justify-center gap-4 border border-dashed border-white/5">
                     <Spinner size={28} color="var(--color-primary-hover)" />
-                    <p className="text-xs font-mono text-white/40 uppercase tracking-widest animate-pulse">{statusMsg}</p>
+                    <p className="text-xs font-mono text-white/40 uppercase tracking-widest animate-pulse">{t(statusMsg)}</p>
                   </div>
                 )}
 
                 {error && (
                   <div className="signature-card bg-danger/10 border border-error/20 p-8 flex flex-col gap-3">
-                    <h4 className="text-sm font-semibold text-error font-mono">Generation Suspended</h4>
+                    <h4 className="text-sm font-semibold text-error font-mono">{t('ai.error.suspended')}</h4>
                     <p className="text-xs text-white/50 leading-relaxed">{error}</p>
                   </div>
                 )}
 
                 {!isGenerating && !error && !report && (
                   <div className="signature-card h-[400px] flex flex-col items-center justify-center gap-3 border border-dashed border-white/5 text-center p-10">
-                    <p className="text-xs font-mono text-white/30 uppercase tracking-widest font-semibold">Ready for Report Generation</p>
-                    <p className="text-xs text-white/40 max-w-xs leading-relaxed">Configure your Mistral AI credentials and click "Run AI Analysis" to start.</p>
+                    <p className="text-xs font-mono text-white/30 uppercase tracking-widest font-semibold">{t('ai.ready_title')}</p>
+                    <p className="text-xs text-white/40 max-w-xs leading-relaxed">{t('ai.ready_desc')}</p>
                   </div>
                 )}
 
@@ -451,16 +453,16 @@ export default function AiReportClient() {
                   >
                     {/* Top action header */}
                     <div className="flex justify-between items-center border-b border-white/5 pb-4 mb-6 no-print flex-shrink-0">
-                      <span className="text-xs font-mono uppercase text-white/50 font-semibold tracking-wider">Briefing Analysis</span>
+                      <span className="text-xs font-mono uppercase text-white/50 font-semibold tracking-wider">{t('ai.briefing_analysis')}</span>
                       <div className="flex gap-2" style={{ transform: 'translateY(-6px)' }}>
                         <Button variant="secondary" size="xs" onClick={copyToClipboard}>
-                          {copied ? 'Copied!' : 'Copy'}
+                          {copied ? t('ai.btn_copied') : t('ai.btn_copy')}
                         </Button>
                         <Button variant="secondary" size="xs" onClick={downloadMarkdown}>
-                          Download MD
+                          {t('ai.btn_download_md')}
                         </Button>
                         <Button variant="secondary" size="xs" onClick={() => window.print()}>
-                          Print PDF
+                          {t('ai.btn_print_pdf')}
                         </Button>
                       </div>
                     </div>

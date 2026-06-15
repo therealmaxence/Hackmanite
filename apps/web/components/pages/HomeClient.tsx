@@ -9,11 +9,14 @@ import StatusBar from '@/components/layout/StatusBar';
 import { useUpload } from '@/hooks/useUpload';
 import { useUploadStore } from '@/store/uploadStore';
 import Button from '@/components/ui/Button';
+import { useTranslation } from '@/lib/i18n';
+
 export default function HomeClient() {
   const router = useRouter();
   const { uploadFiles, isUploading } = useUpload();
   const { files, doneCount, failedCount } = useUploadStore();
   const [mounted, setMounted] = useState(false);
+  const { t } = useTranslation();
 
   useEffect(() => {
     setMounted(true);
@@ -73,7 +76,7 @@ export default function HomeClient() {
                 fontWeight: 500,
               }}
             >
-              Data Graph Explorer
+              {t('home.hero_kicker')}
             </p>
             <h1
               className="home-title"
@@ -85,9 +88,9 @@ export default function HomeClient() {
                 lineHeight: 1.25,
               }}
             >
-              Upload files.
+              {t('home.hero_title_1')}
               <br />
-              <span style={{ color: 'var(--text-secondary)' }}>Discover entities.</span>
+              <span style={{ color: 'var(--text-secondary)' }}>{t('home.hero_title_2')}</span>
             </h1>
             <p
               className="home-copy"
@@ -98,7 +101,7 @@ export default function HomeClient() {
                 lineHeight: 1.7,
               }}
             >
-              Drop any file or click to upload ...
+              {t('home.hero_copy')}
             </p>
 
             <DropZone onDrop={handleDrop} isLoading={isUploading} />
@@ -113,7 +116,7 @@ export default function HomeClient() {
                   onClick={() => router.push('/graph')}
                   style={{ fontFamily: 'var(--font-display)' }}
                 >
-                  Explore Graph →
+                  {t('home.explore_btn')}
                 </Button>
                 <p
                   className="home-queue-head"
@@ -124,8 +127,14 @@ export default function HomeClient() {
                     marginTop: '1rem',
                   }}
                 >
-                  {mounted ? doneCount() : 0} file{(mounted ? doneCount() : 0) !== 1 ? 's' : ''} processed
-                  {mounted && failedCount() > 0 && `, ${failedCount()} failed`}
+                  {t('home.files_processed', {
+                    count: mounted ? doneCount() : 0,
+                    plural: (mounted ? doneCount() : 0) !== 1 ? 's' : ''
+                  })}
+                  {mounted && failedCount() > 0 && t('home.files_failed', {
+                    count: failedCount(),
+                    plural: failedCount() !== 1 ? 's' : ''
+                  })}
                 </p>
               </div>
             )}
@@ -152,7 +161,7 @@ export default function HomeClient() {
             }}
           >
             <h2 className="home-queue-label" style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
-              Processing Queue
+              {t('home.queue_label')}
             </h2>
             <span
               className="home-queue-count"
@@ -162,7 +171,10 @@ export default function HomeClient() {
                 fontFamily: 'var(--font-mono)',
               }}
             >
-              {mounted ? files.length : 0} file{(mounted ? files.length : 0) !== 1 ? 's' : ''}
+              {t('home.queue_count', {
+                count: mounted ? files.length : 0,
+                plural: (mounted ? files.length : 0) !== 1 ? 's' : ''
+              })}
             </span>
           </div>
           <div style={{ flex: 1, overflow: 'auto' }}>
@@ -192,8 +204,8 @@ export default function HomeClient() {
                   <line x1="9" y1="12" x2="15" y2="12" />
                   <line x1="9" y1="15" x2="12" y2="15" />
                 </svg>
-                <p style={{ fontSize: '0.8125rem' }}>No files yet</p>
-                <p style={{ fontSize: '0.7rem' }}>Drop files on the left to begin</p>
+                <p style={{ fontSize: '0.8125rem' }}>{t('home.empty_queue_title')}</p>
+                <p style={{ fontSize: '0.7rem' }}>{t('home.empty_queue_copy')}</p>
               </div>
             )}
           </div>

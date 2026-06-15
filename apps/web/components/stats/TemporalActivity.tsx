@@ -1,6 +1,7 @@
 import {
   AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer
 } from 'recharts';
+import { useTranslation } from '@/lib/i18n';
 
 interface TemporalActivityProps {
   temporal: {
@@ -11,6 +12,7 @@ interface TemporalActivityProps {
 }
 
 export default function TemporalActivity({ temporal }: TemporalActivityProps) {
+  const { t } = useTranslation();
   const { minDate, maxDate, activityHours } = temporal || {};
 
   const hourlyData = Array.from({ length: 24 }, (_, i) => {
@@ -47,10 +49,10 @@ export default function TemporalActivity({ temporal }: TemporalActivityProps) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h3 className="text-sm font-semibold text-white/70">
-            Temporal Span & Activity
+            {t('stats.temporal.title')}
           </h3>
           <p className="text-[10px] font-mono text-white/30 uppercase tracking-wider mt-1">
-            Data timeframe coverage and processing patterns
+            {t('stats.temporal.desc')}
           </p>
         </div>
 
@@ -65,7 +67,7 @@ export default function TemporalActivity({ temporal }: TemporalActivityProps) {
         {!hasData ? (
           <div className="h-full flex items-center justify-center">
             <p className="text-xs font-mono text-white/30 uppercase tracking-widest">
-              No temporal data available
+              {t('stats.temporal.no_data')}
             </p>
           </div>
         ) : (
@@ -102,7 +104,7 @@ export default function TemporalActivity({ temporal }: TemporalActivityProps) {
                       >
                         <p className="text-white/40 mb-0.5">{payload[0].payload.hour}</p>
                         <p className="text-white/90 font-bold">
-                          {payload[0].value} occurrences
+                          {payload[0].value} {t('stats.temporal.tooltip_suffix')}
                         </p>
                       </div>
                     );

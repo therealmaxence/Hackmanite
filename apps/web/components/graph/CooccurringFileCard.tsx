@@ -1,6 +1,7 @@
 'use client';
 
 import { formatBytes } from './SnippetCard';
+import { useTranslation } from '@/lib/i18n';
 
 interface FileItem {
   id: string;
@@ -14,6 +15,7 @@ interface Props {
 }
 
 export default function CooccurringFileCard({ file }: Props) {
+  const { t } = useTranslation();
   return (
     <div
       style={{
@@ -81,7 +83,7 @@ export default function CooccurringFileCard({ file }: Props) {
         onMouseLeave={(e) => {
           e.currentTarget.style.background = 'var(--color-primary)';
         }}
-        title="Open File"
+        title={t('graph.panel.open_file')}
       >
         <svg
           width="16"

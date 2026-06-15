@@ -5,11 +5,13 @@ import { useUploadStore, UploadedFile } from '@/store/uploadStore';
 import Badge from '@/components/ui/Badge';
 import ProgressBar from '@/components/upload/ProgressBar';
 import StatusDot from './StatusDot';
+import { useTranslation } from '@/lib/i18n';
 
 export default function FileRow({ file }: { file: UploadedFile }) {
   const { removeFile, sessionId, updateFileStatus } = useUploadStore();
   const [coords, setCoords] = useState({ x: 0, y: 0 });
   const [isHovered, setIsHovered] = useState(false);
+  const { t } = useTranslation();
 
   const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
     const rect = e.currentTarget.getBoundingClientRect();
@@ -41,7 +43,7 @@ export default function FileRow({ file }: { file: UploadedFile }) {
 
   const handleDelete = async (e: React.MouseEvent) => {
     e.stopPropagation();
-    if (confirm(`Remove "${file.originalName}" and its data?`)) {
+    if (confirm(t('upload.confirm_delete', { name: file.originalName }))) {
       try {
         await fetch(`/api/files/${file.fileId}`, { method: 'DELETE' });
         removeFile(file.fileId);
@@ -121,7 +123,7 @@ export default function FileRow({ file }: { file: UploadedFile }) {
 
             {file.status === 'DONE' && file.entityCount > 0 && (
               <Badge variant="success" size="sm">
-                {file.entityCount} entities
+                {file.entityCount} {t('upload.entities')}
               </Badge>
             )}
           </div>

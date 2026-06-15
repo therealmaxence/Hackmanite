@@ -6,12 +6,14 @@ import { useGraphStore } from '@/store/graphStore';
 import Spinner from '@/components/ui/Spinner';
 import SelectedNodesList from './SelectedNodesList';
 import CooccurringFileCard from './CooccurringFileCard';
+import { useTranslation } from '@/lib/i18n';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
 export default function MultiNodePanel() {
   const { selectedNodeIds, isPanelOpen, togglePanel, nodes } = useGraphStore();
   const { sessionId } = useUploadStore();
+  const { t } = useTranslation();
 
   const selectedNodes = nodes.filter((n) => selectedNodeIds.includes(n.id));
 
@@ -61,7 +63,7 @@ export default function MultiNodePanel() {
               lineHeight: 1.3,
             }}
           >
-            Intersection Panel
+            {t('graph.panel.intersection_title')}
           </h3>
           <p
             style={{
@@ -73,14 +75,14 @@ export default function MultiNodePanel() {
               fontFamily: 'var(--font-display)',
             }}
           >
-            Selected Nodes ({selectedNodes.length})
+            {t('graph.panel.selected_nodes', { count: selectedNodes.length })}
           </p>
           <SelectedNodesList selectedNodes={selectedNodes} />
         </div>
         <button
           id="close-multi-node-panel"
           onClick={() => togglePanel(false)}
-          aria-label="Close details panel"
+          aria-label={t('graph.panel.close_aria')}
           style={{
             background: 'none',
             border: 'none',
@@ -116,7 +118,7 @@ export default function MultiNodePanel() {
             fontFamily: 'var(--font-display)',
           }}
         >
-          Co-occurring Files
+          {t('graph.panel.cooccurring_files')}
         </p>
 
         {isLoading ? (
@@ -140,7 +142,7 @@ export default function MultiNodePanel() {
             }}
           >
             <p style={{ color: 'var(--color-text-muted)', fontSize: '0.8rem', margin: 0 }}>
-              No files contain all selected nodes.
+              {t('graph.panel.no_cooccurring_files')}
             </p>
           </div>
         )}

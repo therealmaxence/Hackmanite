@@ -1,4 +1,5 @@
 import { KPICard } from './KPICard';
+import { useTranslation } from '@/lib/i18n';
 
 interface NetworkTopologyKPIsProps {
   density: number;
@@ -11,24 +12,25 @@ export default function NetworkTopologyKPIs({
   clusteringCoefficient,
   avgPathLength,
 }: NetworkTopologyKPIsProps) {
+  const { t } = useTranslation();
   return (
     <div className="grid grid-cols-1 sm:grid-cols-3 gap-8" style={{ gap: '2.5rem', width: '100%', marginTop: '-3rem' }}>
       <KPICard
-        label="Graph Density"
+        label={t('stats.kpi.density')}
         value={density}
-        sub="Ratio of connections to possible pairings"
+        sub={t('stats.kpi.density_sub')}
         color="#A84CF0"
       />
       <KPICard
-        label="Clustering Coeff."
+        label={t('stats.kpi.clustering')}
         value={clusteringCoefficient}
-        sub="Tendency of nodes to form tight groups"
+        sub={t('stats.kpi.clustering_sub')}
         color="#4CF0A8"
       />
       <KPICard
-        label="Avg Path Length"
+        label={t('stats.kpi.path_length')}
         value={avgPathLength}
-        sub="Average steps between any two entities"
+        sub={t('stats.kpi.path_length_sub')}
         color="#F0A84C"
       />
     </div>

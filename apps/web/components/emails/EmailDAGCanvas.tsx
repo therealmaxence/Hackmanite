@@ -3,6 +3,7 @@
 import { useRef, useCallback, useState, useEffect } from 'react';
 import { EmailNodeData, LayoutType } from './types';
 import { useEmailGraph } from './hooks/useEmailGraph';
+import { useTranslation } from '@/lib/i18n';
 
 interface EmailDAGCanvasProps {
   elements: Record<string, unknown>[];
@@ -22,6 +23,7 @@ export default function EmailDAGCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const wrapperRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const { t } = useTranslation();
 
   const cyRef = useEmailGraph({
     containerRef,
@@ -120,9 +122,9 @@ export default function EmailDAGCanvas({
         }}
       >
         {[
-          { label: 'Fit', title: 'Fit Graph', action: fitGraph },
-          { label: '+', title: 'Zoom In',  action: zoomIn  },
-          { label: '-', title: 'Zoom Out', action: zoomOut },
+          { label: t('emails.canvas.fit'), title: t('emails.canvas.fit'), action: fitGraph },
+          { label: '+', title: t('emails.canvas.zoom_in'),  action: zoomIn  },
+          { label: '-', title: t('emails.canvas.zoom_out'), action: zoomOut },
         ].map(({ label, title, action }) => (
           <button
             key={title}
@@ -153,7 +155,7 @@ export default function EmailDAGCanvas({
       {/* Floating fullscreen control */}
       <button
         onClick={toggleFullscreen}
-        title={isFullscreen ? 'Exit Full Screen' : 'Full Screen'}
+        title={isFullscreen ? t('graph.canvas.exit_fullscreen') : t('graph.canvas.fullscreen')}
         style={{
           position: 'absolute',
           top: '1rem',
@@ -206,15 +208,15 @@ export default function EmailDAGCanvas({
       >
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '8px', height: '8px', borderRadius: '50%', background: 'var(--color-secondary)', display: 'inline-block' }} />
-          <span>Email node (by sender)</span>
+          <span>{t('emails.canvas.node_desc')}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '14px', height: '2px', background: '#2C3545', display: 'inline-block' }} />
-          <span>Reply flow</span>
+          <span>{t('emails.canvas.reply_flow')}</span>
         </div>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
           <span style={{ width: '14px', height: '0px', borderTop: '2px dashed #EC4899', display: 'inline-block' }} />
-          <span>Forward flow</span>
+          <span>{t('emails.canvas.fwd_flow')}</span>
         </div>
       </div>
     </div>

@@ -2,6 +2,7 @@
 
 import Header from '@/components/layout/Header';
 import { useSessionManager } from '@/hooks/useSessionManager';
+import { useTranslation } from '@/lib/i18n';
 
 // Extracted Sub-Components
 import LocalSessionManager from '@/components/session/LocalSessionManager';
@@ -18,6 +19,7 @@ export default function SessionClient() {
     handleDeleteAllSessions,
     handleStartNewSession,
   } = useSessionManager();
+  const { t } = useTranslation();
 
   return (
     <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
@@ -29,13 +31,13 @@ export default function SessionClient() {
           {/* Page header */}
           <header>
             <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-              Session Management
+              {t('session.kicker')}
             </p>
             <h1 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 600, color: 'var(--color-text)', margin: 0, lineHeight: 1.2 }}>
-              Export &amp; Import
+              {t('session.title')}
             </h1>
             <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.75rem', lineHeight: 1.6, maxWidth: '520px' }}>
-              Import and export your sessions as JSON files.
+              {t('session.copy')}
             </p>
           </header>
 
@@ -53,10 +55,10 @@ export default function SessionClient() {
             <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: sessionId ? '#10B981' : '#6B7280', flexShrink: 0 }} />
             <div style={{ flex: 1, minWidth: 0 }}>
               <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, marginBottom: '0.2rem' }}>
-                {sessionId ? 'Active session' : 'No active session'}
+                {sessionId ? t('session.active_badge') : t('session.no_active_badge')}
               </p>
               <p style={{ fontSize: '0.8125rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                {sessionId ?? 'Upload files on the home page to create a session'}
+                {sessionId ?? t('session.no_active_copy')}
               </p>
             </div>
           </div>
@@ -90,9 +92,9 @@ export default function SessionClient() {
             display: 'flex',
             gap: '0.75rem',
           }}>
-            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#4C9EF0', flexShrink: 0, paddingTop: '2px' }}>[Info]</span>
+            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#4C9EF0', flexShrink: 0, paddingTop: '2px' }}>{t('session.info_prefix')}</span>
             <span>
-              Importing a session <strong style={{ color: 'var(--color-text)' }}>replaces</strong> the current active session in this browser tab.
+              {t('session.info_copy')}
             </span>
           </div>
 

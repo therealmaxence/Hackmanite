@@ -6,6 +6,7 @@ import { useUploadStore } from '@/store/uploadStore';
 import WindowSizeSelector from '@/components/upload/WindowSizeSelector';
 import Button from '@/components/ui/Button';
 import CustomSlider from '@/components/ui/CustomSlider';
+import { useTranslation } from '@/lib/i18n';
 
 interface SessionSettings {
   windowSize: number;
@@ -30,6 +31,8 @@ export default function SettingsClient() {
   const [minOccurrences, setMinOccurrences] = useState(2);
   const [minEdgeWeight, setMinEdgeWeight] = useState(0.0);
   const [minTfidf, setMinTfidf] = useState(0.0);
+
+  const { t, language, setLanguage } = useTranslation();
 
   // Fetch all saved sessions
   const fetchSessions = useCallback(async () => {
@@ -112,7 +115,7 @@ export default function SettingsClient() {
       if (selectedSessionId === 'default') {
         const settings = { windowSize, minConnections, minOccurrences, minEdgeWeight, minTfidf };
         localStorage.setItem('entitygraph_default_settings', JSON.stringify(settings));
-        setSaveStatus({ type: 'success', message: 'Global default settings saved successfully! Future sessions will inherit these values.' });
+        setSaveStatus({ type: 'success', message: t('settings.success_global') });
       } else {
         const res = await fetch(`/api/session/${selectedSessionId}/settings`, {
           method: 'POST',
@@ -127,13 +130,13 @@ export default function SettingsClient() {
         });
 
         if (res.ok) {
-          setSaveStatus({ type: 'success', message: 'Settings saved successfully! Caches cleared.' });
+          setSaveStatus({ type: 'success', message: t('settings.success_session') });
         } else {
-          throw new Error('Failed to save settings');
+          throw new Error(t('settings.error_save'));
         }
       }
     } catch (err: any) {
-      setSaveStatus({ type: 'error', message: err.message || 'Error occurred while saving settings.' });
+      setSaveStatus({ type: 'error', message: err.message || t('settings.error_save') });
     } finally {
       setIsSaving(false);
     }
@@ -151,12 +154,81 @@ export default function SettingsClient() {
           {/* Header */}
           <header>
             <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>
-              Proximity &amp; Projections
+              {t('settings.kicker')}
             </p>
             <h1 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 600, color: 'var(--color-text)', margin: 0, lineHeight: 1.2 }}>
-              Session Settings
+              {t('settings.title')}
             </h1>
           </header>
+
+          {/* Premium Language Settings Card */}
+          <div
+            style={{
+              background: 'var(--color-surface)',
+              border: '1px solid var(--color-border)',
+              borderRadius: 'var(--radius)',
+              padding: '1.5rem',
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '1rem',
+            }}
+          >
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                {t('language.title')}
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                {t('language.desc')}
+              </p>
+            </div>
+
+            <div style={{ display: 'flex', gap: '1rem' }}>
+              <button
+                onClick={() => setLanguage('en')}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: language === 'en' ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.08)',
+                  background: language === 'en' ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                  color: language === 'en' ? 'var(--color-primary-hover)' : 'var(--color-text-muted)',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                  boxShadow: language === 'en' ? 'var(--glow-trace)' : 'none',
+                }}
+              >
+                <span>🇺🇸</span> {t('language.en')}
+              </button>
+              <button
+                onClick={() => setLanguage('fr')}
+                style={{
+                  flex: 1,
+                  padding: '0.75rem 1rem',
+                  borderRadius: 'var(--radius-sm)',
+                  border: language === 'fr' ? '1px solid var(--color-primary)' : '1px solid rgba(255,255,255,0.08)',
+                  background: language === 'fr' ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                  color: language === 'fr' ? 'var(--color-primary-hover)' : 'var(--color-text-muted)',
+                  fontSize: '0.875rem',
+                  fontWeight: 500,
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '0.5rem',
+                  transition: 'all 0.2s',
+                  boxShadow: language === 'fr' ? 'var(--glow-trace)' : 'none',
+                }}
+              >
+                <span>🇫🇷</span> {t('language.fr')}
+              </button>
+            </div>
+          </div>
 
           {/* Session Selector Card */}
           <div
@@ -172,10 +244,10 @@ export default function SettingsClient() {
           >
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
               <label style={{ fontSize: '0.8125rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
-                Session to Configure:
+                {t('settings.select_label')}
               </label>
               {isLoadingSessions ? (
-                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>Loading sessions...</div>
+                <div style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)' }}>{t('settings.loading_sessions')}</div>
               ) : (
                 <select
                   value={selectedSessionId}
@@ -193,7 +265,7 @@ export default function SettingsClient() {
                   }}
                 >
                   <option value="default" style={{ background: 'var(--color-surface)' }}>
-                    [Global Defaults] (Will apply to current session)
+                    {t('settings.global_defaults')}
                   </option>
                   {sessions.map((s) => (
                     <option key={s.id} value={s.id} style={{ background: 'var(--color-surface)' }}>
@@ -216,8 +288,8 @@ export default function SettingsClient() {
                   fontFamily: 'var(--font-mono)',
                 }}
               >
-                <span>Files: {selectedSessionMeta.fileCount}</span>
-                <span>Entities: {selectedSessionMeta.entityCount}</span>
+                <span>{t('settings.files_count', { count: selectedSessionMeta.fileCount })}</span>
+                <span>{t('settings.entities_count', { count: selectedSessionMeta.entityCount })}</span>
               </div>
             )}
           </div>
@@ -225,7 +297,7 @@ export default function SettingsClient() {
           {selectedSessionId && !isLoadingSettings && (
             <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem' }}>
               
-              {/* Part 1: Interactive Character Window Selector (slider moved here!) */}
+              {/* Part 1: Interactive Character Window Selector */}
               <div>
                 <WindowSizeSelector windowSize={windowSize} setWindowSize={setWindowSize} />
               </div>
@@ -245,10 +317,10 @@ export default function SettingsClient() {
                 >
                   <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
                     <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
-                      Extraction Console Tuning
+                      {t('settings.tuning_title')}
                     </h3>
                     <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
-                      Fine-tune graph filters and connection thresholds using the controls below.
+                      {t('settings.tuning_desc')}
                     </p>
                   </div>
 
@@ -261,45 +333,45 @@ export default function SettingsClient() {
                     }}
                   >
                     <CustomSlider
-                      label="Minimum Connections"
+                      label={t('settings.min_connections')}
                       value={minConnections}
                       min={1}
                       max={10}
                       step={1}
                       onChange={setMinConnections}
-                      unit=" edges"
-                      description="Minimum connections for an entity node to appear."
+                      unit={t('settings.unit_edges')}
+                      description={t('settings.min_connections_desc')}
                     />
 
                     <CustomSlider
-                      label="Minimum Occurrences"
+                      label={t('settings.min_occurrences')}
                       value={minOccurrences}
                       min={1}
                       max={20}
                       step={1}
                       onChange={setMinOccurrences}
-                      unit=" counts"
-                      description="Minimum frequency of occurrence across files."
+                      unit={t('settings.unit_counts')}
+                      description={t('settings.min_occurrences_desc')}
                     />
 
                     <CustomSlider
-                      label="Co-occurrence Strength"
+                      label={t('settings.cooccurrence_strength')}
                       value={minEdgeWeight}
                       min={0.0}
                       max={1.0}
                       step={0.05}
                       onChange={setMinEdgeWeight}
-                      description="Minimum connection strength (edge weight)."
+                      description={t('settings.cooccurrence_strength_desc')}
                     />
 
                     <CustomSlider
-                      label="TF-IDF Importance"
+                      label={t('settings.tfidf_importance')}
                       value={minTfidf}
                       min={0.0}
                       max={100000.0}
                       isLog={true}
                       onChange={setMinTfidf}
-                      description="Minimum TF-IDF score to visualize node (logarithmic scale)."
+                      description={t('settings.tfidf_importance_desc')}
                     />
                   </div>
                 </div>
@@ -332,7 +404,7 @@ export default function SettingsClient() {
                 disabled={isSaving}
                 style={{ fontFamily: 'var(--font-display)', width: '280px', padding: '0.875rem', alignSelf: 'center' }}
               >
-                {isSaving ? 'Saving session settings…' : 'Save Session Settings'}
+                {isSaving ? t('settings.save_btn_saving') : t('settings.save_btn_idle')}
               </Button>
 
             </div>
@@ -340,7 +412,7 @@ export default function SettingsClient() {
 
           {selectedSessionId && isLoadingSettings && (
             <div style={{ textAlign: 'center', color: 'var(--color-text-muted)', fontSize: '0.875rem', padding: '3rem 0' }}>
-              Fetching settings for selected session...
+              {t('settings.loading_settings')}
             </div>
           )}
 

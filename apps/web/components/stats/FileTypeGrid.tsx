@@ -1,4 +1,5 @@
 import { formatMimeType, formatBytes } from '@/lib/stats-utils';
+import { useTranslation } from '@/lib/i18n';
 
 interface FileTypeItem {
   mimeType: string;
@@ -11,6 +12,7 @@ interface FileTypeGridProps {
 }
 
 export default function FileTypeGrid({ fileTypeDistribution }: FileTypeGridProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="signature-card flex flex-col"
@@ -20,7 +22,7 @@ export default function FileTypeGrid({ fileTypeDistribution }: FileTypeGridProps
       }}
     >
       <h3 className="text-sm font-semibold text-white/70">
-        Source formats
+        {t('stats.formats.title')}
       </h3>
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         {fileTypeDistribution.map((item) => (
@@ -43,7 +45,7 @@ export default function FileTypeGrid({ fileTypeDistribution }: FileTypeGridProps
                 {formatMimeType(item.mimeType)}
               </p>
               <p className="text-[10px] text-white/25 uppercase tracking-widest mt-0.5">
-                {item.count} {item.count === 1 ? 'File' : 'Files'} ({formatBytes(item.totalSize)})
+                {item.count} {item.count === 1 ? t('stats.formats.file') : t('stats.formats.files')} ({formatBytes(item.totalSize)})
               </p>
             </div>
           </div>

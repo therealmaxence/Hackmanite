@@ -1,4 +1,5 @@
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
+import { useTranslation } from '@/lib/i18n';
 
 interface BridgeEntity {
   id: string;
@@ -12,6 +13,7 @@ interface BridgeEntitiesTableProps {
 }
 
 export default function BridgeEntitiesTable({ bridgeEntities }: BridgeEntitiesTableProps) {
+  const { t } = useTranslation();
   return (
     <div
       className="signature-card flex flex-col justify-between"
@@ -21,12 +23,12 @@ export default function BridgeEntitiesTable({ bridgeEntities }: BridgeEntitiesTa
       }}
     >
       <h3 className="text-sm font-semibold text-white/70">
-        Bridge-entity discovery (betweenness centrality)
+        {t('stats.bridges.title')}
       </h3>
       
       {bridgeEntities.length === 0 ? (
         <div className="h-[300px] flex items-center justify-center">
-          <p className="text-xs font-mono text-white/30 uppercase tracking-widest">No bridge entities identified</p>
+          <p className="text-xs font-mono text-white/30 uppercase tracking-widest">{t('stats.bridges.no_data')}</p>
         </div>
       ) : (
         <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar flex flex-col gap-4">
@@ -50,7 +52,7 @@ export default function BridgeEntitiesTable({ bridgeEntities }: BridgeEntitiesTa
                         style={{ background: ENTITY_COLORS[entity.type as EntityType] || '#6b7280' }}
                       />
                       <span className="text-[9px] tracking-widest text-white/30 font-mono">
-                        {entity.type}
+                        {t('entity.' + entity.type)}
                       </span>
                     </div>
                   </div>

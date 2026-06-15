@@ -21,7 +21,7 @@ logger = structlog.get_logger()
 app = FastAPI(
     title="DataLake NLP Service",
     description="Entity extraction pipeline for Hackmanite",
-    version="1.4.0",
+    version="1.0.0",
 )
 
 app.add_middleware(

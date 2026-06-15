@@ -1,6 +1,6 @@
 {
   "name": "hackmanite-desktop",
-  "version": "1.4.0",
+  "version": "1.0.0",
   "description": "Hackmanite: Standalone desktop application for Entity Graph Explorer",
   "main": "main.js",
   "scripts": {

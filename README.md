@@ -1,6 +1,6 @@
 # Hackmanite — DataLake Entity Graph Explorer
 
-> **Version 1.4.0** · Standalone Windows Desktop Application
+> **Version 1.0.0** · Standalone Windows Desktop Application
 
 Hackmanite is a desktop application for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions.
 
@@ -134,7 +134,7 @@ npm start
 
 > Use **[7-Zip](https://www.7-zip.org/)** to extract — Windows' built-in extractor can silently corrupt files in large ZIPs.
 
-1. Right-click `Hackmanite-1.4.0-win.zip` → **7-Zip → Extract Here**
+1. Right-click `Hackmanite-1.0.0-win.zip` → **7-Zip → Extract Here**
 2. Double-click **`Hackmanite.exe`** inside the extracted folder
 3. Done
 
@@ -190,7 +190,7 @@ cd ../desktop
 npm run dist
 ```
 
-Output: `apps/desktop/dist/Hackmanite-1.4.0-win.zip`
+Output: `apps/desktop/dist/Hackmanite-1.0.0-win.zip`
 
 ### Partial rebuilds
 
@@ -254,7 +254,7 @@ To release a new version, update the version field in [`apps/desktop/package.jso
 
 ```json
 {
-  "version": "1.4.0"
+  "version": "1.0.0"
 }
 ```
 

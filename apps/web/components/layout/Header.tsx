@@ -136,7 +136,7 @@ export default function Header() {
             fontFamily: 'var(--font-mono)',
           }}
         >
-          v1.4.0
+          v1.0.0
         </span>
       </Link>
 

@@ -50,6 +50,7 @@
       "AppImage",
       "deb"
     ],
-    "category": "Utility"
+    "category": "Utility",
+    "maintainer": "maxence.ambert@etu.univ-savoie.fr"
   }
 }

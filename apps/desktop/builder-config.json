@@ -44,5 +44,12 @@
       }
     ],
     "icon": "hackmanite_main_icon.ico"
+  },
+  "linux": {
+    "target": [
+      "AppImage",
+      "deb"
+    ],
+    "category": "Utility"
   }
 }

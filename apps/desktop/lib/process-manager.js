@@ -38,6 +38,9 @@ function killSubprocesses() {
       }
     } else {
       nextProcess.kill();
+      try {
+        execSync('fuser -k 3000/tcp || true');
+      } catch (e) {}
     }
     nextProcess = null;
   }
@@ -51,6 +54,9 @@ function killSubprocesses() {
       }
     } else {
       pythonProcess.kill();
+      try {
+        execSync('pkill -f hackmanite-nlp || fuser -k 8000/tcp || true');
+      } catch (e) {}
     }
     pythonProcess = null;
   }

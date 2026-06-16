@@ -225,6 +225,20 @@ npm run dist -- --linux
 
 Output: `apps/desktop/dist/Hackmanite-1.0.0.AppImage` & `apps/desktop/dist/Hackmanite_1.0.0_amd64.deb`
 
+### Installing & Running on Linux
+
+To install the generated Debian (`.deb`) package:
+```bash
+sudo apt update
+sudo apt install ./apps/desktop/dist/Hackmanite_1.0.0_amd64.deb
+```
+
+To run the standalone `AppImage`:
+```bash
+chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
+./apps/desktop/dist/Hackmanite-1.0.0.AppImage
+```
+
 ### Partial rebuilds
 
 | What changed | Steps needed |

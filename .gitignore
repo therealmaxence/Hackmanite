@@ -5,7 +5,7 @@ node_modules/
 
 # Next.js
 apps/web/.next/
-apps/web/.next-production/
+apps/web/next-production/
 apps/web/out/
 
 # Python

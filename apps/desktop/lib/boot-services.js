@@ -177,7 +177,7 @@ async function bootServices(updateStatus, onReady) {
         env: {
           ...process.env,
           ELECTRON_RUN_AS_NODE: '1',
-          BUILD_DIR: '.next-production',
+          BUILD_DIR: 'next-production',
           SESSION_SECRET: sessionSecret,
           DATABASE_URL: `file:${dbPath}`,
           UPLOAD_DIR: uploadDir,

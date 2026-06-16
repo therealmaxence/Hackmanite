@@ -180,9 +180,9 @@ Run these commands in order after any code change:
 # 1. Build the Next.js frontend (production bundle for Electron)
 cd apps/web
 # In PowerShell:
-$env:BUILD_DIR=".next-production"; npm run build
+$env:BUILD_DIR="next-production"; npm run build
 # In bash/sh:
-# BUILD_DIR=.next-production npm run build
+# BUILD_DIR=next-production npm run build
 
 # 2. Recompile the Python NLP service (only if Python code changed)
 cd ../nlp-service
@@ -206,7 +206,7 @@ sudo apt-get update && sudo apt-get install -y dpkg fakeroot libarchive-tools
 # 2. Build the Next.js production web server
 cd apps/web
 npm install
-BUILD_DIR=".next-production" npm run build
+BUILD_DIR="next-production" npm run build
 
 # 3. Compile the Python NLP service (produces Linux ELF binary)
 cd ../nlp-service
@@ -229,7 +229,7 @@ Output: `apps/desktop/dist/Hackmanite-1.0.0.AppImage` & `apps/desktop/dist/Hackm
 
 | What changed | Steps needed |
 |---|---|
-| Frontend only (UI, pages) | `apps/web: $env:BUILD_DIR=".next-production"; npm run build` → `apps/desktop: npm run dist` |
+| Frontend only (UI, pages) | `apps/web: $env:BUILD_DIR="next-production"; npm run build` → `apps/desktop: npm run dist` |
 | Python NLP only (extraction, OCR, graph DB) | `apps/nlp-service: pyinstaller hackmanite-nlp.spec --noconfirm` → `apps/desktop: npm run dist` |
 | Electron only (window, splash) | `apps/desktop: npm run dist` only |
 

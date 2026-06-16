@@ -269,7 +269,7 @@ export default function SettingsClient() {
                   </option>
                   {sessions.map((s) => (
                     <option key={s.id} value={s.id} style={{ background: 'var(--color-surface)' }}>
-                     {s.fileNames.join(', ') || 'New Session'} ({s.id.slice(0, 8)}...) {s.id === activeSessionId ? '[Active]' : ''}
+                      {s.fileNames.join(', ') || t('settings.new_session_placeholder')} ({s.id.slice(0, 8)}...) {s.id === activeSessionId ? ` ${t('settings.active_tag')}` : ''}
                     </option>
                   ))}
                 </select>

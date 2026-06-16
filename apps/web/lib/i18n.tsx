@@ -122,6 +122,8 @@ export const TRANSLATIONS = {
     'settings.save_btn_saving': 'Saving session settings…',
     'settings.save_btn_idle': 'Save Session Settings',
     'settings.loading_settings': 'Fetching settings for selected session...',
+    'settings.new_session_placeholder': 'New Session',
+    'settings.active_tag': '[Active]',
 
     // Settings Sliders / Controls
     'settings.tuning_title': 'Extraction Console Tuning',
@@ -589,6 +591,8 @@ export const TRANSLATIONS = {
     'settings.save_btn_saving': 'Enregistrement des paramètres…',
     'settings.save_btn_idle': 'Enregistrer les paramètres',
     'settings.loading_settings': 'Récupération des paramètres pour la session sélectionnée...',
+    'settings.new_session_placeholder': 'Nouvelle session',
+    'settings.active_tag': '[Active]',
 
     // Settings Sliders / Controls
     'settings.tuning_title': 'Ajustement de la console d\'extraction',

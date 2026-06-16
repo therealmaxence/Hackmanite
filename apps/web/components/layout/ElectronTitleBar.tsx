@@ -52,7 +52,6 @@ export default function ElectronTitleBar() {
     >
       {/* Title */}
       <div className="flex items-center gap-2">
-        <span className="text-sm">🕸️</span>
         <span className="font-medium tracking-tight">Hackmanite</span>
       </div>
 

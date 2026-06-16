@@ -177,9 +177,12 @@ You can generate executive intelligence briefings based on your session's entity
 Run these commands in order after any code change:
 
 ```powershell
-# 1. Build the Next.js frontend
+# 1. Build the Next.js frontend (production bundle for Electron)
 cd apps/web
-npm run build
+# In PowerShell:
+$env:BUILD_DIR=".next-production"; npm run build
+# In bash/sh:
+# BUILD_DIR=.next-production npm run build
 
 # 2. Recompile the Python NLP service (only if Python code changed)
 cd ../nlp-service
@@ -196,7 +199,7 @@ Output: `apps/desktop/dist/Hackmanite-1.0.0-win.zip`
 
 | What changed | Steps needed |
 |---|---|
-| Frontend only (UI, pages) | `apps/web: npm run build` → `apps/desktop: npm run dist` |
+| Frontend only (UI, pages) | `apps/web: $env:BUILD_DIR=".next-production"; npm run build` → `apps/desktop: npm run dist` |
 | Python NLP only (extraction, OCR, graph DB) | `apps/nlp-service: pyinstaller hackmanite-nlp.spec --noconfirm` → `apps/desktop: npm run dist` |
 | Electron only (window, splash) | `apps/desktop: npm run dist` only |
 

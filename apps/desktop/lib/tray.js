@@ -6,8 +6,17 @@ let tray = null;
 
 function createTray(isPackaged, createMainWindow, getMainWindow, onRestart, onStop) {
   const icoPath = path.join(__dirname, '../hackmanite_main_icon.ico');
-  const pngPath = path.resolve(__dirname, '../../web/public/dagex_app.png');
-  const iconPath = (!isPackaged && fs.existsSync(pngPath)) ? pngPath : icoPath;
+  const pngPackagedPath = path.join(__dirname, '../hackmanite_main_nobg.png');
+  const pngDevPath = path.resolve(__dirname, '../../web/public/dagex_app.png');
+
+  let iconPath;
+  if (!isPackaged && fs.existsSync(pngDevPath)) {
+    iconPath = pngDevPath;
+  } else if (process.platform === 'win32') {
+    iconPath = icoPath;
+  } else {
+    iconPath = pngPackagedPath;
+  }
 
   tray = new Tray(iconPath);
   tray.setToolTip('Hackmanite');

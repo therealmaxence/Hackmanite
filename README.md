@@ -195,6 +195,36 @@ npm run dist
 
 Output: `apps/desktop/dist/Hackmanite-1.0.0-win.zip`
 
+### Building for Linux/Ubuntu
+
+Because native Node modules (Prisma, KuzuDB) and Python executables must be compiled for the target platform, cross-compilation from Windows is not supported. To build a Linux AppImage or deb package, run the following steps on an Ubuntu system or WSL:
+
+```bash
+# 1. Install packaging dependencies
+sudo apt-get update && sudo apt-get install -y dpkg fakeroot libarchive-tools
+
+# 2. Build the Next.js production web server
+cd apps/web
+npm install
+BUILD_DIR=".next-production" npm run build
+
+# 3. Compile the Python NLP service (produces Linux ELF binary)
+cd ../nlp-service
+pip install -r requirements.txt
+python -m spacy download en_core_web_lg
+python -m spacy download fr_core_news_lg
+python -m spacy download ru_core_news_lg
+pip install pyinstaller
+pyinstaller hackmanite-nlp.spec --noconfirm
+
+# 4. Package Electron app for Linux (AppImage & deb)
+cd ../desktop
+npm install
+npm run dist -- --linux
+```
+
+Output: `apps/desktop/dist/Hackmanite-1.0.0.AppImage` & `apps/desktop/dist/Hackmanite_1.0.0_amd64.deb`
+
 ### Partial rebuilds
 
 | What changed | Steps needed |

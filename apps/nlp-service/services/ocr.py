@@ -26,6 +26,17 @@ if sys.platform == "win32":
             pytesseract.pytesseract.tesseract_cmd = p
             tesseract_found = True
             break
+else:
+    for p in [
+        "/usr/bin/tesseract",
+        "/usr/local/bin/tesseract",
+        "/opt/homebrew/bin/tesseract",
+        "/usr/sbin/tesseract",
+    ]:
+        if os.path.exists(p):
+            pytesseract.pytesseract.tesseract_cmd = p
+            tesseract_found = True
+            break
 
 if not tesseract_found:
     which = shutil.which("tesseract")

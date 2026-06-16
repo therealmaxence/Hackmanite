@@ -51,6 +51,7 @@
       "deb"
     ],
     "category": "Utility",
-    "maintainer": "maxence.ambert@etu.univ-savoie.fr"
+    "maintainer": "maxence.ambert@etu.univ-savoie.fr",
+    "icon": "hackmanite_main_nobg.png"
   }
 }

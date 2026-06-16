@@ -61,23 +61,10 @@ function killSubprocesses() {
     pythonProcess = null;
   }
 
-  // Clear out log files in appData (next-server.log and python-server.log)
+  // Keep log files for debugging
   try {
-    const logDir = app.getPath('userData');
-    const nextLogPath = path.join(logDir, 'next-server.log');
-    const pythonLogPath = path.join(logDir, 'python-server.log');
-
-    if (fs.existsSync(nextLogPath)) {
-      fs.unlinkSync(nextLogPath);
-      log("Deleted next-server.log");
-    }
-    if (fs.existsSync(pythonLogPath)) {
-      fs.unlinkSync(pythonLogPath);
-      log("Deleted python-server.log");
-    }
-  } catch (err) {
-    log("Failed to delete server logs", { error: err.message });
-  }
+    log("Log files preserved in appData for troubleshooting.");
+  } catch (err) {}
 
   // Clear out Winston log files in apps/web/logs/
   try {

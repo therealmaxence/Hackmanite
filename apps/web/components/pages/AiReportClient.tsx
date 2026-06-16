@@ -185,14 +185,15 @@ export default function AiReportClient() {
         }
       `}} />
 
-      <main className="flex-1 overflow-y-auto custom-scrollbar">
+      <main className="flex-1 overflow-y-auto custom-scrollbar" style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div
-          className="w-full mx-auto flex flex-col"
+          className="w-full flex flex-col"
           style={{
             gap: '3.5rem',
             padding: '4rem 2rem 6rem 2rem',
             maxWidth: '1280px',
             width: '100%',
+            margin: '0 auto',
           }}
         >
           <header className="space-y-4 no-print">

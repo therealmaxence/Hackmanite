@@ -34,8 +34,9 @@ if not tesseract_found:
         tesseract_found = True
 
 if not tesseract_found:
-    raise EnvironmentError(
-        "Tesseract OCR not found.\n"
+    logger.warning(
+        "Tesseract OCR not found. OCR extraction on images will be disabled.\n"
+        "To enable OCR, please install Tesseract on your system:\n"
         "  Mac:     brew install tesseract\n"
         "  Windows: https://github.com/UB-Mannheim/tesseract/wiki\n"
         "  Linux:   sudo apt install tesseract-ocr"
@@ -49,6 +50,9 @@ def image_to_text(image_data: str | bytes | Image.Image, lang: str = DEFAULT_OCR
     Extract text from an image using Tesseract.
     image_data can be a base64 string, raw bytes, or a PIL Image.
     """
+    if not tesseract_found:
+        logger.error("OCR requested but Tesseract is not installed on this system.")
+        return ""
     try:
         img = _to_pil(image_data)
         img = _preprocess(img)

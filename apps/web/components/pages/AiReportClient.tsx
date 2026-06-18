@@ -43,6 +43,8 @@ export default function AiReportClient() {
     selectedWeakSignals,
     weakSignalsData,
     handleToggleWeakSignal,
+    handleToggleCategoryWeakSignals,
+    handleToggleAllWeakSignals,
     handleSaveKey,
     handleSaveModel,
     handleSaveLanguage,
@@ -136,6 +138,8 @@ export default function AiReportClient() {
                 <WeakSignalsSelectorCard
                   selectedWeakSignals={selectedWeakSignals}
                   onToggleWeakSignal={handleToggleWeakSignal}
+                  onToggleCategoryWeakSignals={handleToggleCategoryWeakSignals}
+                  onToggleAllWeakSignals={handleToggleAllWeakSignals}
                   weakSignalsData={weakSignalsData}
                   isOpen={showWeakSignalsSelector}
                   onToggle={() => setShowWeakSignalsSelector(!showWeakSignalsSelector)}

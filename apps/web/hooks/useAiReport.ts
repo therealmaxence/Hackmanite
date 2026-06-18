@@ -67,6 +67,42 @@ export function useAiReport() {
     });
   };
 
+  const handleToggleCategoryWeakSignals = (items: WeakSignalItem[], methodology: string, checked: boolean) => {
+    setSelectedWeakSignals((prev) => {
+      const filtered = prev.filter((x) => !items.some((item) => item.id === x.id));
+      if (checked) {
+        const added = items.map((item) => ({
+          id: item.id,
+          label: item.label,
+          type: item.type,
+          score: item.score,
+          methodology,
+        }));
+        return [...filtered, ...added];
+      }
+      return filtered;
+    });
+  };
+
+  const handleToggleAllWeakSignals = (checked: boolean) => {
+    if (!weakSignalsData) return;
+    if (checked) {
+      const allSelected: SelectedWeakSignal[] = [];
+      weakSignalsData.bridgeSignals?.forEach((ws) => {
+        allSelected.push({ id: ws.id, label: ws.label, type: ws.type, score: ws.score, methodology: 'Bridge' });
+      });
+      weakSignalsData.nicheSignals?.forEach((ws) => {
+        allSelected.push({ id: ws.id, label: ws.label, type: ws.type, score: ws.score, methodology: 'Niche' });
+      });
+      weakSignalsData.emergingSignals?.forEach((ws) => {
+        allSelected.push({ id: ws.id, label: ws.label, type: ws.type, score: ws.score, methodology: 'Emerging' });
+      });
+      setSelectedWeakSignals(allSelected);
+    } else {
+      setSelectedWeakSignals([]);
+    }
+  };
+
   useEffect(() => {
     const savedKey = localStorage.getItem('entitygraph_mistral_api_key');
     const savedModel = localStorage.getItem('entitygraph_mistral_model');
@@ -251,6 +287,8 @@ export function useAiReport() {
     selectedWeakSignals,
     weakSignalsData,
     handleToggleWeakSignal,
+    handleToggleCategoryWeakSignals,
+    handleToggleAllWeakSignals,
     handleSaveKey,
     handleSaveModel,
     handleSaveLanguage,

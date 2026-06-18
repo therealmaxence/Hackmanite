@@ -13,6 +13,8 @@ export default function AiReportClient() {
   const { t } = useTranslation();
   const {
     sessionId,
+    apiProvider,
+    apiEndpoint,
     apiKey,
     showKey,
     setShowKey,
@@ -45,6 +47,8 @@ export default function AiReportClient() {
     handleToggleWeakSignal,
     handleToggleCategoryWeakSignals,
     handleToggleAllWeakSignals,
+    handleSaveProvider,
+    handleSaveEndpoint,
     handleSaveKey,
     handleSaveModel,
     handleSaveLanguage,
@@ -102,6 +106,10 @@ export default function AiReportClient() {
             <div className="flex flex-col gap-12">
               <div className="flex flex-col no-print" style={{ gap: '2.5rem' }}>
                 <ApiSetupCard
+                  apiProvider={apiProvider}
+                  onSaveProvider={handleSaveProvider}
+                  apiEndpoint={apiEndpoint}
+                  onSaveEndpoint={handleSaveEndpoint}
                   apiKey={apiKey}
                   showKey={showKey}
                   setShowKey={setShowKey}

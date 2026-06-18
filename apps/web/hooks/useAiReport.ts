@@ -26,6 +26,8 @@ export interface SelectedWeakSignal {
 
 export function useAiReport() {
   const { sessionId } = useUploadStore();
+  const [apiProvider, setApiProvider] = useState('mistral');
+  const [apiEndpoint, setApiEndpoint] = useState('https://api.mistral.ai/v1');
   const [apiKey, setApiKey] = useState('');
   const [showKey, setShowKey] = useState(false);
   const [model, setModel] = useState('mistral-large-latest');
@@ -104,12 +106,16 @@ export function useAiReport() {
   };
 
   useEffect(() => {
+    const savedProvider = localStorage.getItem('entitygraph_ai_provider');
+    const savedEndpoint = localStorage.getItem('entitygraph_ai_endpoint');
     const savedKey = localStorage.getItem('entitygraph_mistral_api_key');
     const savedModel = localStorage.getItem('entitygraph_mistral_model');
     const savedLang = localStorage.getItem('entitygraph_mistral_language');
     const savedTopEnts = localStorage.getItem('entitygraph_mistral_top_entities_limit');
     const savedTopTfidf = localStorage.getItem('entitygraph_mistral_top_tfidf_limit');
     const savedBridges = localStorage.getItem('entitygraph_mistral_bridges_limit');
+    if (savedProvider) setApiProvider(savedProvider);
+    if (savedEndpoint) setApiEndpoint(savedEndpoint);
     if (savedKey) setApiKey(savedKey);
     if (savedModel) setModel(savedModel);
     if (savedLang) setLanguage(savedLang);
@@ -128,6 +134,8 @@ export function useAiReport() {
           body: JSON.stringify({
             sessionId,
             focusType,
+            apiProvider,
+            apiEndpoint,
             apiKey: 'dummy_key',
             model,
             customInstructions,
@@ -153,6 +161,8 @@ export function useAiReport() {
   }, [
     sessionId,
     focusType,
+    apiProvider,
+    apiEndpoint,
     model,
     customInstructions,
     language,
@@ -209,6 +219,8 @@ export function useAiReport() {
         body: JSON.stringify({
           sessionId,
           focusType,
+          apiProvider,
+          apiEndpoint,
           apiKey,
           model,
           customInstructions,
@@ -255,8 +267,20 @@ export function useAiReport() {
     URL.revokeObjectURL(url);
   };
 
+  const handleSaveProvider = (provider: string) => {
+    setApiProvider(provider);
+    localStorage.setItem('entitygraph_ai_provider', provider);
+  };
+
+  const handleSaveEndpoint = (endpoint: string) => {
+    setApiEndpoint(endpoint);
+    localStorage.setItem('entitygraph_ai_endpoint', endpoint);
+  };
+
   return {
     sessionId,
+    apiProvider,
+    apiEndpoint,
     apiKey,
     showKey,
     setShowKey,
@@ -289,6 +313,8 @@ export function useAiReport() {
     handleToggleWeakSignal,
     handleToggleCategoryWeakSignals,
     handleToggleAllWeakSignals,
+    handleSaveProvider,
+    handleSaveEndpoint,
     handleSaveKey,
     handleSaveModel,
     handleSaveLanguage,

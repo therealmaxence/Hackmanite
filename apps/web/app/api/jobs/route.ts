@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
+import { extractionQueue } from '@/lib/queue';
 
 export const runtime = 'nodejs';
 
@@ -15,6 +16,11 @@ export async function GET(req: NextRequest) {
         { status: 400 }
       );
     }
+
+    // Trigger memory queue processing in background if Redis is not used
+    extractionQueue.processMemoryQueue?.().catch((err) => {
+      console.error('Failed to trigger background queue:', err);
+    });
 
     const files = await prisma.file.findMany({
       where: { sessionId },

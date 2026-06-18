@@ -51,6 +51,12 @@ class UnifiedQueue {
       return await memoryQueue.getPending();
     }
   }
+
+  async processMemoryQueue(): Promise<void> {
+    if (!isRedisAvailable) {
+      await memoryQueue.processQueue();
+    }
+  }
 }
 
 export const extractionQueue = new UnifiedQueue();
@@ -128,7 +134,7 @@ export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
       error,
     };
   } else {
-    const job = memoryQueue.getJob(jobId);
+    const job = await memoryQueue.getJob(jobId);
     if (!job) return null;
 
     return {

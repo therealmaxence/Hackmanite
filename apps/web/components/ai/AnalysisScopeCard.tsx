@@ -18,12 +18,9 @@ interface AnalysisScopeCardProps {
   onSaveBridgesLimit: (val: number) => void;
   customInstructions: string;
   setCustomInstructions: (val: string) => void;
-  estimatedTokens: number;
   promptPreview: string;
   showPreview: boolean;
   setShowPreview: (val: boolean) => void;
-  isGenerating: boolean;
-  onRunAnalysis: () => void;
   isOpen: boolean;
   onToggle: () => void;
 }
@@ -41,12 +38,9 @@ export default function AnalysisScopeCard({
   onSaveBridgesLimit,
   customInstructions,
   setCustomInstructions,
-  estimatedTokens,
   promptPreview,
   showPreview,
   setShowPreview,
-  isGenerating,
-  onRunAnalysis,
   isOpen,
   onToggle,
 }: AnalysisScopeCardProps) {
@@ -160,20 +154,7 @@ export default function AnalysisScopeCard({
             />
           </div>
 
-          <Button
-            variant="primary"
-            fullWidth
-            loading={isGenerating}
-            onClick={onRunAnalysis}
-            style={{ minHeight: 44, fontSize: '0.875rem', marginTop: '0.5rem' }}
-          >
-            {isGenerating ? t('ai.btn_running') : t('ai.btn_run')}
-          </Button>
 
-          <div className="flex justify-between items-center text-[10px] font-mono text-white/30 px-1 mt-2">
-            <span>{t('ai.est_cost')}</span>
-            <span className="text-white/60 font-semibold">~{estimatedTokens} tokens</span>
-          </div>
 
           <div className="flex flex-col gap-2.5 border-t border-white/5 pt-4 mt-2">
             <button

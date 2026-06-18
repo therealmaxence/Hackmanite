@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Header from '@/components/layout/Header';
+import Button from '@/components/ui/Button';
 import { useTranslation } from '@/lib/i18n';
 import { useAiReport } from '@/hooks/useAiReport';
 import ApiSetupCard from '@/components/ai/ApiSetupCard';
@@ -120,6 +121,16 @@ export default function AiReportClient() {
                   onToggle={() => setShowApiSetup(!showApiSetup)}
                 />
 
+                <WeakSignalsSelectorCard
+                  selectedWeakSignals={selectedWeakSignals}
+                  onToggleWeakSignal={handleToggleWeakSignal}
+                  onToggleCategoryWeakSignals={handleToggleCategoryWeakSignals}
+                  onToggleAllWeakSignals={handleToggleAllWeakSignals}
+                  weakSignalsData={weakSignalsData}
+                  isOpen={showWeakSignalsSelector}
+                  onToggle={() => setShowWeakSignalsSelector(!showWeakSignalsSelector)}
+                />
+
                 <AnalysisScopeCard
                   focusType={focusType}
                   setFocusType={setFocusType}
@@ -133,25 +144,28 @@ export default function AiReportClient() {
                   onSaveBridgesLimit={handleSaveBridgesLimit}
                   customInstructions={customInstructions}
                   setCustomInstructions={setCustomInstructions}
-                  estimatedTokens={estimatedTokens}
                   promptPreview={promptPreview}
                   showPreview={showPreview}
                   setShowPreview={setShowPreview}
-                  isGenerating={isGenerating}
-                  onRunAnalysis={generateReport}
                   isOpen={showAnalysisScope}
                   onToggle={() => setShowAnalysisScope(!showAnalysisScope)}
                 />
 
-                <WeakSignalsSelectorCard
-                  selectedWeakSignals={selectedWeakSignals}
-                  onToggleWeakSignal={handleToggleWeakSignal}
-                  onToggleCategoryWeakSignals={handleToggleCategoryWeakSignals}
-                  onToggleAllWeakSignals={handleToggleAllWeakSignals}
-                  weakSignalsData={weakSignalsData}
-                  isOpen={showWeakSignalsSelector}
-                  onToggle={() => setShowWeakSignalsSelector(!showWeakSignalsSelector)}
-                />
+                <div className="flex flex-col gap-3 pt-2">
+                  <Button
+                    variant="primary"
+                    fullWidth
+                    loading={isGenerating}
+                    onClick={generateReport}
+                    style={{ minHeight: 48, fontSize: '0.95rem' }}
+                  >
+                    {isGenerating ? t('ai.btn_running') : t('ai.btn_run')}
+                  </Button>
+                  <div className="flex justify-between items-center text-[10px] font-mono text-white/30 px-1">
+                    <span>{t('ai.est_cost')}</span>
+                    <span className="text-white/60 font-semibold">~{estimatedTokens} tokens</span>
+                  </div>
+                </div>
               </div>
 
               <ReportDisplayPanel

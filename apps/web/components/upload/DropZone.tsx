@@ -63,7 +63,7 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
         borderRadius: 'var(--radius)',
         background: bgColor,
         boxShadow: isDragActive ? 'var(--glow-modere)' : 'none',
-        padding: 'clamp(1.75rem, 6vw, 5rem) clamp(1rem, 4vw, 3rem)',
+        padding: 'clamp(1.25rem, 4vh, 3.5rem) clamp(1rem, 3vw, 2.5rem)',
         textAlign: 'center',
         cursor: isLoading ? 'not-allowed' : 'pointer',
         transition: 'background-color 80ms ease, box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1)',
@@ -74,7 +74,7 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
       <input {...getInputProps()} id="file-input" />
 
       {isLoading ? (
-        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.5rem' }}>
+        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '1.25rem' }}>
           <Spinner size={32} />
           <p style={{ color: 'var(--color-text-muted)', fontSize: '0.875rem' }}>
             {t('dropzone.uploading')}
@@ -93,7 +93,7 @@ export default function DropZone({ onDrop, isLoading }: DropZoneProps) {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto 1.5rem',
+              margin: '0 auto 1rem',
               transition: 'background-color 80ms ease',
             }}
           >

@@ -14,6 +14,9 @@ interface GraphStore {
   isPanelOpen: boolean;
   refreshTrigger: number;
   layoutTrigger: number;
+  cooccurrenceNodeIds: string[];
+  isCooccurrenceModalOpen: boolean;
+  activeView: 'graph' | 'table';
 
   setNodes: (nodes: GraphNode[]) => void;
   setEdges: (edges: GraphEdge[]) => void;
@@ -28,6 +31,11 @@ interface GraphStore {
   togglePanel: (open: boolean) => void;
   triggerRefresh: () => void;
   triggerLayout: () => void;
+  addCooccurrenceNodeId: (id: string) => void;
+  removeCooccurrenceNodeId: (id: string) => void;
+  clearCooccurrenceNodeIds: () => void;
+  setCooccurrenceModalOpen: (open: boolean) => void;
+  setActiveView: (view: 'graph' | 'table') => void;
 }
 
 const defaultFilters: GraphFilters = {
@@ -61,6 +69,9 @@ export const useGraphStore = create<GraphStore>((set) => ({
   isPanelOpen: false,
   refreshTrigger: 0,
   layoutTrigger: 0,
+  cooccurrenceNodeIds: [],
+  isCooccurrenceModalOpen: false,
+  activeView: 'graph',
 
   setNodes: (nodes) => set({ nodes }),
   setEdges: (edges) => set({ edges }),
@@ -77,6 +88,7 @@ export const useGraphStore = create<GraphStore>((set) => ({
           nodes: s.nodes.filter((n) => n.id !== id),
           edges: s.edges.filter((e) => e.source !== id && e.target !== id),
           selectedNodeIds: s.selectedNodeIds.filter((x) => x !== id),
+          cooccurrenceNodeIds: s.cooccurrenceNodeIds.filter((x) => x !== id),
         }))
       : undefined,
   clearGraph: () =>
@@ -89,8 +101,24 @@ export const useGraphStore = create<GraphStore>((set) => ({
       filters: defaultFilters,
       refreshTrigger: 0,
       layoutTrigger: 0,
+      cooccurrenceNodeIds: [],
+      isCooccurrenceModalOpen: false,
+      activeView: 'graph',
     }),
   togglePanel: (open) => set({ isPanelOpen: open }),
   triggerRefresh: () => set((s) => ({ refreshTrigger: s.refreshTrigger + 1 })),
   triggerLayout: () => set((s) => ({ layoutTrigger: s.layoutTrigger + 1 })),
+  addCooccurrenceNodeId: (id) =>
+    set((s) => ({
+      cooccurrenceNodeIds: s.cooccurrenceNodeIds.includes(id)
+        ? s.cooccurrenceNodeIds
+        : [...s.cooccurrenceNodeIds, id],
+    })),
+  removeCooccurrenceNodeId: (id) =>
+    set((s) => ({
+      cooccurrenceNodeIds: s.cooccurrenceNodeIds.filter((x) => x !== id),
+    })),
+  clearCooccurrenceNodeIds: () => set({ cooccurrenceNodeIds: [] }),
+  setCooccurrenceModalOpen: (open) => set({ isCooccurrenceModalOpen: open }),
+  setActiveView: (view) => set({ activeView: view }),
 }));

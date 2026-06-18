@@ -59,12 +59,12 @@ export default function HomeClient() {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            justifyContent: 'center',
-            padding: 'clamp(1.5rem, 4vw, 5rem)',
+            padding: 'clamp(1rem, 3vh, 3.5rem) 1.5rem',
             position: 'relative',
+            overflowY: 'auto',
           }}
         >
-          <div className="home-hero" style={{ width: '100%', maxWidth: '540px', position: 'relative' }}>
+          <div className="home-hero" style={{ width: '100%', maxWidth: '540px', position: 'relative', margin: 'auto 0' }}>
             <p
               className="home-kicker"
               style={{
@@ -72,7 +72,7 @@ export default function HomeClient() {
                 fontSize: '0.75rem',
                 letterSpacing: '0.04em',
                 color: 'var(--color-primary)',
-                marginBottom: '1.25rem',
+                marginBottom: '1rem',
                 fontWeight: 500,
               }}
             >
@@ -84,7 +84,7 @@ export default function HomeClient() {
                 fontSize: '1.75rem',
                 fontWeight: 500,
                 color: 'var(--text-primary)',
-                marginBottom: '1rem',
+                marginBottom: '0.75rem',
                 lineHeight: 1.25,
               }}
             >
@@ -97,7 +97,7 @@ export default function HomeClient() {
               style={{
                 color: 'var(--text-secondary)',
                 fontSize: '0.875rem',
-                marginBottom: '2rem',
+                marginBottom: '1.5rem',
                 lineHeight: 1.7,
               }}
             >
@@ -107,7 +107,7 @@ export default function HomeClient() {
             <DropZone onDrop={handleDrop} isLoading={isUploading} />
 
             {canExplore && (
-              <div style={{ marginTop: '2.5rem' }}>
+              <div style={{ marginTop: '1.5rem' }}>
                 <Button
                   id="explore-graph-btn"
                   variant="primary"
@@ -124,7 +124,7 @@ export default function HomeClient() {
                     textAlign: 'center',
                     fontSize: '0.75rem',
                     color: 'var(--text-muted)',
-                    marginTop: '1rem',
+                    marginTop: '0.75rem',
                   }}
                 >
                   {t('home.files_processed', {

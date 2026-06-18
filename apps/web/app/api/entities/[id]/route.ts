@@ -113,3 +113,224 @@ export async function DELETE(
     return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }
+
+export async function PATCH(
+  req: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const { type: newType, sessionId } = await req.json();
+
+  if (!sessionId || !newType) {
+    return NextResponse.json(
+      { error: 'sessionId and type are required', code: ErrorCodes.VALIDATION_ERROR },
+      { status: 400 }
+    );
+  }
+
+  try {
+    const resolvedId = await resolveEntityId(id);
+    const entity = await prisma.entity.findUnique({
+      where: { id: resolvedId },
+    });
+
+    if (!entity) {
+      return NextResponse.json(
+        { error: 'Entity not found', code: ErrorCodes.NOT_FOUND },
+        { status: 404 }
+      );
+    }
+
+    const { uuid5 } = await import('@/lib/uuid5');
+    const newId = uuid5(`${newType}:${entity.canonical}`);
+
+    if (resolvedId === newId) {
+      return NextResponse.json({ success: true });
+    }
+
+    const files = await prisma.file.findMany({ where: { sessionId }, select: { id: true } });
+    const fileIds = files.map((f) => f.id);
+
+    await prisma.$transaction(async (tx) => {
+      let targetEntity = await tx.entity.findUnique({
+        where: { id: newId },
+      });
+
+      if (!targetEntity) {
+        targetEntity = await tx.entity.create({
+          data: {
+            id: newId,
+            canonical: entity.canonical,
+            displayName: entity.displayName,
+            type: newType,
+            metadata: entity.metadata,
+          },
+        });
+      }
+
+      const oldOccurrences = await tx.occurrence.findMany({
+        where: { entityId: resolvedId, fileId: { in: fileIds } },
+      });
+
+      for (const oldOcc of oldOccurrences) {
+        const targetOcc = await tx.occurrence.findUnique({
+          where: {
+            fileId_entityId: {
+              fileId: oldOcc.fileId,
+              entityId: newId,
+            },
+          },
+        });
+
+        if (targetOcc) {
+          const mergedCount = targetOcc.count + oldOcc.count;
+          let mergedExcerptsStr: string | null = null;
+          try {
+            const targetEx = targetOcc.excerpts ? JSON.parse(targetOcc.excerpts) : [];
+            const oldEx = oldOcc.excerpts ? JSON.parse(oldOcc.excerpts) : [];
+            mergedExcerptsStr = JSON.stringify([...targetEx, ...oldEx]);
+          } catch (e) {
+            mergedExcerptsStr = targetOcc.excerpts || oldOcc.excerpts || null;
+          }
+
+          await tx.occurrence.update({
+            where: { id: targetOcc.id },
+            data: {
+              count: mergedCount,
+              excerpts: mergedExcerptsStr,
+            },
+          });
+
+          await tx.occurrence.delete({
+            where: { id: oldOcc.id },
+          });
+        } else {
+          await tx.occurrence.update({
+            where: { id: oldOcc.id },
+            data: { entityId: newId },
+          });
+        }
+      }
+
+      const sourceNeighborhoods = await tx.entityNeighborhood.findMany({
+        where: { sourceEntityId: resolvedId, fileId: { in: fileIds } },
+      });
+      for (const nb of sourceNeighborhoods) {
+        const [src, tgt] = newId < nb.targetEntityId ? [newId, nb.targetEntityId] : [nb.targetEntityId, newId];
+        const isSwapped = newId > nb.targetEntityId;
+
+        const existingNb = await tx.entityNeighborhood.findUnique({
+          where: {
+            fileId_sourceEntityId_targetEntityId: {
+              fileId: nb.fileId,
+              sourceEntityId: src,
+              targetEntityId: tgt,
+            },
+          },
+        });
+
+        if (existingNb) {
+          if (nb.weight > existingNb.weight) {
+            await tx.entityNeighborhood.update({
+              where: { id: existingNb.id },
+              data: {
+                weight: nb.weight,
+                distance: nb.distance,
+                snippet: nb.snippet,
+                sourceOffset: isSwapped ? nb.targetOffset : nb.sourceOffset,
+                targetOffset: isSwapped ? nb.sourceOffset : nb.targetOffset,
+              },
+            });
+          }
+          await tx.entityNeighborhood.delete({ where: { id: nb.id } });
+        } else {
+          await tx.entityNeighborhood.update({
+            where: { id: nb.id },
+            data: {
+              sourceEntityId: src,
+              targetEntityId: tgt,
+              sourceOffset: isSwapped ? nb.targetOffset : nb.sourceOffset,
+              targetOffset: isSwapped ? nb.sourceOffset : nb.targetOffset,
+            },
+          });
+        }
+      }
+
+      const targetNeighborhoods = await tx.entityNeighborhood.findMany({
+        where: { targetEntityId: resolvedId, fileId: { in: fileIds } },
+      });
+      for (const nb of targetNeighborhoods) {
+        const [src, tgt] = nb.sourceEntityId < newId ? [nb.sourceEntityId, newId] : [newId, nb.sourceEntityId];
+        const isSwapped = nb.sourceEntityId > newId;
+
+        const existingNb = await tx.entityNeighborhood.findUnique({
+          where: {
+            fileId_sourceEntityId_targetEntityId: {
+              fileId: nb.fileId,
+              sourceEntityId: src,
+              targetEntityId: tgt,
+            },
+          },
+        });
+
+        if (existingNb) {
+          if (nb.weight > existingNb.weight) {
+            await tx.entityNeighborhood.update({
+              where: { id: existingNb.id },
+              data: {
+                weight: nb.weight,
+                distance: nb.distance,
+                snippet: nb.snippet,
+                sourceOffset: isSwapped ? nb.targetOffset : nb.sourceOffset,
+                targetOffset: isSwapped ? nb.sourceOffset : nb.targetOffset,
+              },
+            });
+          }
+          await tx.entityNeighborhood.delete({ where: { id: nb.id } });
+        } else {
+          await tx.entityNeighborhood.update({
+            where: { id: nb.id },
+            data: {
+              sourceEntityId: src,
+              targetEntityId: tgt,
+              sourceOffset: isSwapped ? nb.targetOffset : nb.sourceOffset,
+              targetOffset: isSwapped ? nb.sourceOffset : nb.targetOffset,
+            },
+          });
+        }
+      }
+
+      const remainingOccurrences = await tx.occurrence.count({
+        where: { entityId: resolvedId },
+      });
+      if (remainingOccurrences === 0) {
+        await tx.entity.delete({
+          where: { id: resolvedId },
+        });
+      }
+    });
+
+    try {
+      await fetch(`${NLP_URL}/graph/node/${resolvedId}?file_ids=${fileIds.join(',')}`, {
+        method: 'DELETE',
+      });
+    } catch (err) {
+      console.error('[PATCH entity] Could not delete old node in Kuzu:', err);
+    }
+
+    try {
+      const { syncSessionToKuzu } = await import('@/lib/api/sync');
+      await syncSessionToKuzu(sessionId);
+    } catch (err) {
+      console.error('[PATCH entity] Sync to Kuzu failed:', err);
+    }
+
+    await clearSessionGraphCache(sessionId);
+
+    return NextResponse.json({ success: true });
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unknown error';
+    console.error('[PATCH entity] Unexpected error:', msg);
+    return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
+  }
+}

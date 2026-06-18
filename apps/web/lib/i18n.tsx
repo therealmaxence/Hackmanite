@@ -220,6 +220,17 @@ export const TRANSLATIONS = {
     'graph.controls.err_invalid_structure': 'Invalid graph structure. The JSON must contain "nodes" and "edges" arrays.',
     'graph.controls.err_import_failed': 'Failed to import JSON graph.',
     'graph.controls.err_unknown_import': 'An unknown error occurred during import.',
+    'graph.controls.view_mode': 'Visualization Mode',
+    'graph.controls.view_graph': 'Graph Network',
+    'graph.controls.view_table': 'Entity Table',
+    'graph.table.ledger': 'Entity Record Ledger',
+    'graph.table.matching_records': '{count} entity/entities matching filters',
+    'graph.table.col_name': 'Name',
+    'graph.table.col_type': 'Type',
+    'graph.table.col_occurrences': 'Occurrences',
+    'graph.table.col_files': 'Files',
+    'graph.table.col_tfidf': 'TF-IDF',
+    'graph.table.col_actions': 'Actions',
 
     // Graph Panel Details (Single & Multi)
     'graph.panel.entity_not_found': 'Entity not found',
@@ -293,6 +304,20 @@ export const TRANSLATIONS = {
     'graph.hidden.keep_all': 'Keep All Hidden',
     'graph.hidden.btn_save': 'Save Changes',
     'graph.hidden.btn_cancel': 'Cancel',
+
+    // Co-occurrence Search Modal
+    'graph.cooccurrence.title': 'Co-occurrence Search',
+    'graph.cooccurrence.subtitle': 'Select nodes to find snippets where they co-occur.',
+    'graph.cooccurrence.loading': 'Searching for co-occurrences...',
+    'graph.cooccurrence.no_results': 'No snippets found where all selected nodes co-occur.',
+    'graph.cooccurrence.btn_search': 'Search',
+    'graph.cooccurrence.btn_close': 'Close',
+    'graph.cooccurrence.btn_back': 'Back',
+    'graph.cooccurrence.selected_nodes': 'Selected Nodes',
+    'graph.cooccurrence.results_title': 'Co-occurrence Results',
+    'graph.cooccurrence.results_subtitle': 'Showing snippets containing all selected nodes',
+    'graph.cooccurrence.add_more_tip': 'Right click other nodes on the graph to add them to this search.',
+    'graph.cooccurrence.need_more_nodes': 'Select at least 2 nodes to search for co-occurrences.',
 
 
     // Emails Page
@@ -480,6 +505,8 @@ export const TRANSLATIONS = {
     'graph.canvas.copy_name': 'Copy Name',
     'graph.canvas.hide_node': 'Hide Node',
     'graph.canvas.delete_node': 'Delete Node',
+    'graph.canvas.search_cooccurrence': 'Search for co-occurrence',
+    'graph.canvas.type_label': 'Type:',
     'graph.canvas.fullscreen': 'Full Screen',
     'graph.canvas.exit_fullscreen': 'Exit Full Screen',
 
@@ -724,6 +751,17 @@ export const TRANSLATIONS = {
     'graph.controls.err_invalid_structure': 'Structure de graphe invalide. Le JSON doit contenir les tableaux "nodes" et "edges".',
     'graph.controls.err_import_failed': 'Échec de l\'importation du graphe JSON.',
     'graph.controls.err_unknown_import': 'Une erreur inconnue est survenue lors de l\'importation.',
+    'graph.controls.view_mode': 'Mode de visualisation',
+    'graph.controls.view_graph': 'Réseau Graphe',
+    'graph.controls.view_table': 'Tableau Entités',
+    'graph.table.ledger': 'Registre des entités',
+    'graph.table.matching_records': '{count} entité(s) correspondant aux filtres',
+    'graph.table.col_name': 'Nom',
+    'graph.table.col_type': 'Type',
+    'graph.table.col_occurrences': 'Occurrences',
+    'graph.table.col_files': 'Fichiers',
+    'graph.table.col_tfidf': 'TF-IDF',
+    'graph.table.col_actions': 'Actions',
 
     // Graph Panel Details (Single & Multi)
     'graph.panel.entity_not_found': 'Entité non trouvée',
@@ -797,6 +835,20 @@ export const TRANSLATIONS = {
     'graph.hidden.keep_all': 'Conserver tout masqué',
     'graph.hidden.btn_save': 'Enregistrer les modifications',
     'graph.hidden.btn_cancel': 'Annuler',
+
+    // Co-occurrence Search Modal
+    'graph.cooccurrence.title': 'Recherche de co-occurrence',
+    'graph.cooccurrence.subtitle': 'Sélectionnez des nœuds pour trouver les extraits où ils co-apparaissent.',
+    'graph.cooccurrence.loading': 'Recherche des co-occurrences...',
+    'graph.cooccurrence.no_results': 'Aucun extrait trouvé où tous les nœuds sélectionnés co-apparaissent.',
+    'graph.cooccurrence.btn_search': 'Rechercher',
+    'graph.cooccurrence.btn_close': 'Fermer',
+    'graph.cooccurrence.btn_back': 'Retour',
+    'graph.cooccurrence.selected_nodes': 'Nœuds sélectionnés',
+    'graph.cooccurrence.results_title': 'Résultats de co-occurrence',
+    'graph.cooccurrence.results_subtitle': 'Affichage des extraits contenant tous les nœuds sélectionnés',
+    'graph.cooccurrence.add_more_tip': 'Faites un clic droit sur d\'autres nœuds du graphe pour les ajouter à cette recherche.',
+    'graph.cooccurrence.need_more_nodes': 'Sélectionnez au moins 2 nœuds pour rechercher les co-occurrences.',
 
 
     // Emails Page
@@ -983,6 +1035,8 @@ export const TRANSLATIONS = {
     'graph.canvas.copy_name': 'Copier le nom',
     'graph.canvas.hide_node': 'Masquer le nœud',
     'graph.canvas.delete_node': 'Supprimer le nœud',
+    'graph.canvas.search_cooccurrence': 'Rechercher la co-occurrence',
+    'graph.canvas.type_label': 'Type :',
     'graph.canvas.fullscreen': 'Plein écran',
     'graph.canvas.exit_fullscreen': 'Quitter le plein écran',
 

@@ -5,8 +5,10 @@ import Header from '@/components/layout/Header';
 import GraphControls from '@/components/graph/GraphControls';
 import LegendBar from '@/components/graph/LegendBar';
 import GraphCanvas from '@/components/graph/GraphCanvas';
+import EntityTableView from '@/components/graph/EntityTableView';
 import NodePanel from '@/components/graph/NodePanel';
 import MultiNodePanel from '@/components/graph/MultiNodePanel';
+import CooccurrenceModal from '@/components/graph/CooccurrenceModal';
 import Spinner from '@/components/ui/Spinner';
 import { useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
@@ -16,7 +18,7 @@ import { useTranslation } from '@/lib/i18n';
 
 export default function GraphClient() {
   const { sessionId } = useUploadStore();
-  const { setFilter } = useGraphStore();
+  const { setFilter, isCooccurrenceModalOpen, activeView } = useGraphStore();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -86,7 +88,7 @@ export default function GraphClient() {
                 {t('graph.empty_state')}
               </p>
             </div>
-          ) : (
+          ) : activeView === 'graph' ? (
             /* Graph canvas — always mounted once nodes exist, batches are added incrementally */
             <div style={{ flex: 1, position: 'relative' }}>
               <GraphCanvas
@@ -95,10 +97,13 @@ export default function GraphClient() {
                 onNodeExpand={expandNode}
               />
             </div>
+          ) : (
+            <EntityTableView nodes={loadedNodes} />
           )}
 
           <NodePanel />
           <MultiNodePanel />
+          {isCooccurrenceModalOpen && <CooccurrenceModal />}
         </div>
       </div>
 

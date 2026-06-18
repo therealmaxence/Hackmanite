@@ -11,7 +11,7 @@ import GraphFilterSliders from './GraphFilterSliders';
 import GraphActions from './GraphActions';
 
 export default function GraphControls() {
-  const { setFilter, filters, resetFilters, clearGraph, nodes, edges, triggerRefresh, triggerLayout } = useGraphStore();
+  const { setFilter, filters, resetFilters, clearGraph, nodes, edges, triggerRefresh, triggerLayout, activeView, setActiveView } = useGraphStore();
   const { sessionId, resetSession, setSessionId, addFiles } = useUploadStore();
   const { mutate } = useSWRConfig();
   const { t } = useTranslation();
@@ -49,6 +49,29 @@ export default function GraphControls() {
     <div className="graph-controls signature-panel" style={{ width: 360, maxWidth: '100%', display: 'flex', flexDirection: 'column', padding: '1.5rem 1.25rem 1.25rem', gap: '1.25rem', overflowY: 'auto' }}>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
         <span style={{ fontSize: '0.92rem', color: 'var(--color-text)', fontWeight: 600 }}>{t('graph.controls.title')}</span>
+      </div>
+
+      <div style={{ display: 'flex', background: 'var(--color-surface-input)', padding: '3px', borderRadius: 'var(--radius)', border: 'none', marginBottom: '0.25rem' }}>
+        {(['graph', 'table'] as const).map((view) => (
+          <button
+            key={view}
+            onClick={() => setActiveView(view)}
+            style={{
+              flex: 1,
+              padding: '0.375rem 0',
+              fontSize: '0.8125rem',
+              background: activeView === view ? 'var(--color-primary)' : 'transparent',
+              color: activeView === view ? 'var(--color-on-primary)' : 'var(--color-text)',
+              border: 'none',
+              borderRadius: 'var(--radius-sm)',
+              cursor: 'pointer',
+              fontWeight: 500,
+              transition: 'background 0.15s ease-in-out',
+            }}
+          >
+            {view === 'graph' ? t('graph.controls.view_graph') : t('graph.controls.view_table')}
+          </button>
+        ))}
       </div>
 
       <GraphSearch value={localSearch} onChange={handleSearch} />

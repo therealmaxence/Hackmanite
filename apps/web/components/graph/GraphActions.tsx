@@ -8,6 +8,8 @@ import HiddenNodesModal from '@/components/graph/HiddenNodesModal';
 import { useSWRConfig } from 'swr';
 import { useTranslation } from '@/lib/i18n';
 
+import { useGraphStore } from '@/store/graphStore';
+
 interface Props {
   sessionId: string | null;
   onResetFilters: () => void;
@@ -23,6 +25,7 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
   const { mutate } = useSWRConfig();
+  const activeView = useGraphStore((s) => s.activeView);
 
   const handleSave = () => {
     setExportModalType('json');
@@ -83,25 +86,27 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
       </div>
       <input id="import-graph-file-input" type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
       {importError && <span style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: 4, display: 'block', textAlign: 'center' }}>{importError}</span>}
-      <Button
-        id="explode-graph"
-        variant="primary"
-        size="xs"
-        onClick={onExplodeGraph}
-        leftIcon={
-          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
-            <circle cx="12" cy="12" r="3" />
-            <circle cx="3" cy="16" r="2" />
-            <circle cx="21" cy="8" r="2" />
-            <circle cx="18" cy="19" r="2" />
-            <circle cx="6" cy="6" r="2" />
-            <path d="M5 15l4.5-2M19 9l-4.5 2M16.5 17.5L13.5 14M7.5 7.5L10.5 10" />
-          </svg>
-        }
-        style={{ width: '100%', marginTop: 4 }}
-      >
-        {t('graph.controls.btn_explode_graph')}
-      </Button>
+      {activeView === 'graph' && (
+        <Button
+          id="explode-graph"
+          variant="primary"
+          size="xs"
+          onClick={onExplodeGraph}
+          leftIcon={
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="3" />
+              <circle cx="3" cy="16" r="2" />
+              <circle cx="21" cy="8" r="2" />
+              <circle cx="18" cy="19" r="2" />
+              <circle cx="6" cy="6" r="2" />
+              <path d="M5 15l4.5-2M19 9l-4.5 2M16.5 17.5L13.5 14M7.5 7.5L10.5 10" />
+            </svg>
+          }
+          style={{ width: '100%', marginTop: 4 }}
+        >
+          {t('graph.controls.btn_explode_graph')}
+        </Button>
+      )}
       <Button id="reset-graph-filters" variant="ghost" size="xs" onClick={onResetFilters}>{t('graph.controls.btn_reset_view')}</Button>
       <Button id="reset-graph-data" variant="ghost" size="xs" onClick={onResetGraph} style={{ color: 'var(--error)' }}>{t('graph.controls.btn_reset_graph')}</Button>
 

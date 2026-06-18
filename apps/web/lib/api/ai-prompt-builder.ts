@@ -19,30 +19,39 @@ export function buildPrompt(
 
   const fileTypesText = data.fileTypes.map((ft: any) => `- ${ft.mimeType}: ${ft.count}`).join('\n');
   const entityTypesText = data.entityTypes.map((et: any) => `- ${et.type}: ${et.count}`).join('\n');
-  
+
   const topEntitiesText = data.topEntities
     .slice(0, topEntitiesLimit)
     .map((te: any) => `- ${te.label} (${te.type}): count ${te.count}`)
     .join('\n');
 
-  const topTfidfText = data.topTfidfEntities
-    .slice(0, topTfidfLimit)
+  const tfidfSlice = data.topTfidfEntities.slice(0, topTfidfLimit);
+  const tfidfMin = tfidfSlice.length > 0 ? Math.min(...tfidfSlice.map((t: any) => t.tfidf)).toFixed(2) : '—';
+  const tfidfMax = tfidfSlice.length > 0 ? Math.max(...tfidfSlice.map((t: any) => t.tfidf)).toFixed(2) : '—';
+  const topTfidfText = tfidfSlice
     .map((te: any) => `- ${te.label} (${te.type}): TF-IDF ${te.tfidf.toFixed(2)}`)
     .join('\n');
 
-  const bridgesText = data.bridges.length > 0
-    ? data.bridges.slice(0, bridgesLimit).map((b: any) => `- ${b.label} (${b.type}): Centrality Score ${b.score.toFixed(4)}`).join('\n')
+  const bridgesSlice = data.bridges.slice(0, bridgesLimit);
+  const bridgeMin = bridgesSlice.length > 0 ? Math.min(...bridgesSlice.map((b: any) => b.score)).toFixed(4) : '—';
+  const bridgeMax = bridgesSlice.length > 0 ? Math.max(...bridgesSlice.map((b: any) => b.score)).toFixed(4) : '—';
+  const bridgesText = bridgesSlice.length > 0
+    ? bridgesSlice.map((b: any) => `- ${b.label} (${b.type}): Centrality Score ${b.score.toFixed(4)}`).join('\n')
     : 'No significant bridge entities detected.';
 
+  const weakSignalNote = isFrench
+    ? `Note : les signaux faibles sont des entités statistiquement rares ou structurellement atypiques dans le corpus. Ils ne sont pas intrinsèquement suspects — ils sont simplement remarquables d'un point de vue topologique ou statistique. Les méthodes sont : "bridging" (pont structurel rare), "niche" (entité très locale à fort TF-IDF), "emerging" (entité apparaissant principalement dans les documents récents).`
+    : `Note: weak signals are statistically rare or structurally atypical entities in the corpus. They are not inherently suspicious — they are simply noteworthy from a graph topology or statistical standpoint. Methods: "bridging" (rare structural bridge), "niche" (highly localized entity with high TF-IDF), "emerging" (entity appearing predominantly in recent documents).`;
+
   const weakSignalsText = selectedWeakSignals.length > 0
-    ? selectedWeakSignals.map((ws: any) => `- ${ws.label} (${ws.type}): Score ${ws.score.toFixed(3)} [Method: ${ws.methodology}]`).join('\n')
-    : 'No weak signals selected.';
+    ? `${weakSignalNote}\n${selectedWeakSignals.map((ws: any) => `- ${ws.label} (${ws.type}): Score ${ws.score.toFixed(3)} [Method: ${ws.methodology}]`).join('\n')}`
+    : (isFrench ? 'Aucun signal faible sélectionné.' : 'No weak signals selected.');
 
   const cooccurText = data.cooccurrences.map((co: any) => `- ${co.typeA} <=> ${co.typeB}: count ${co.count}`).join('\n');
 
   let focusDesc = '';
   if (isFrench) {
-    if (focusType === 'threats') {
+    if (focusType === 'actors') {
       focusDesc = 'Focus sur les Acteurs & Identifiants Clés (mettre en évidence les entités PERSON, ORG, EMAIL, IP_ADDRESS et les nœuds de communication/infrastructure les plus saillants).';
     } else if (focusType === 'networks') {
       focusDesc = 'Focus sur les Liaisons & Clusters (mettre en évidence les nœuds structurels centraux, les co-occurrences fréquentes et les groupes topologiques).';
@@ -52,7 +61,7 @@ export function buildPrompt(
       focusDesc = 'Analyse Générale (vue d\'ensemble complète des entités, relations et tendances du corpus).';
     }
   } else {
-    if (focusType === 'threats') {
+    if (focusType === 'actors') {
       focusDesc = 'Key Actors & Identifiers Focus (highlight PERSON, ORG, EMAIL, IP_ADDRESS, and the most salient communication/infrastructure nodes).';
     } else if (focusType === 'networks') {
       focusDesc = 'Linkage & Cluster Focus (highlight central structural nodes, frequent co-occurrences, and topological groups).';
@@ -89,14 +98,17 @@ export function buildPrompt(
 - If selected weak signals suggest an unusual linkage, frame it as a lead for further investigation rather than a certainty.
 - Adapt the tone to what the data actually shows — the corpus may be academic, professional, journalistic, or any other nature.`;
 
+  const audience = isFrench
+    ? 'Public cible : professionnels généralistes (managers, chercheurs, analystes). Évitez le jargon technique excessif ; utilisez un langage clair et précis.'
+    : 'Intended audience: general professionals (managers, researchers, analysts). Avoid excessive technical jargon; use clear and precise language.';
+
   return `
 Write a detailed Analysis Report based on this preprocessed entity relationship graph extracted from a document corpus:
 
 Focus Area: ${focusDesc}
 ${customInstructions ? `Custom Instructions: ${customInstructions}` : ''}
 Output Language: ${isFrench ? 'French (Français)' : 'English'}
-
-${objectivityGuidelines}
+${audience}
 
 === DATASET METRICS ===
 ${generalText}
@@ -111,9 +123,11 @@ ${entityTypesText}
 ${topEntitiesText}
 
 === TOP ENTITIES BY TF-IDF IMPORTANCE (SALIENT ENTITIES) ===
+(TF-IDF range in this corpus: ${tfidfMin} – ${tfidfMax}. Higher values indicate entities that are locally prominent but rare globally.)
 ${topTfidfText}
 
 === CENTRAL BRIDGING NODES (BETWEENNESS CENTRALITY) ===
+(Centrality score range: ${bridgeMin} – ${bridgeMax}. Higher scores indicate entities connecting otherwise separate groups.)
 ${bridgesText}
 
 === SELECTED WEAK SIGNALS (EMERGING, BRIDGING, AND NICHE ENTITIES) ===
@@ -122,9 +136,11 @@ ${weakSignalsText}
 === FREQUENT CO-OCCURRING CATEGORIES ===
 ${cooccurText}
 
+${objectivityGuidelines}
+
 === REPORT OUTLINE ===
 ${outline}
 
-Make it sound highly professional. Use strict markdown headers and lists. The entire report output MUST be in ${isFrench ? 'French (Français)' : 'English'}.
+Write in clear, precise, professional language. Avoid jargon when plain language suffices. Use strict markdown headers and lists. The entire report output MUST be in ${isFrench ? 'French (Français)' : 'English'}.
 `;
 }

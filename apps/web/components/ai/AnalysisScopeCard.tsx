@@ -80,7 +80,7 @@ export default function AnalysisScopeCard({
                 style={{ padding: '0.75rem 1.25rem', paddingRight: '2.5rem' }}
               >
                 <option value="general">{t('ai.focus.general')}</option>
-                <option value="threats">{t('ai.focus.threats')}</option>
+                <option value="actors">{t('ai.focus.actors')}</option>
                 <option value="networks">{t('ai.focus.networks')}</option>
                 <option value="timeline">{t('ai.focus.timeline')}</option>
               </select>

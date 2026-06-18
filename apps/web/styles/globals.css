@@ -486,3 +486,11 @@ body.is-electron .page-container > div {
   overflow: hidden;
 }
 
+/* ─── Electron Home Panel Scroll Fix ─────────────────────────────────────── */
+/* home-left uses justify-content:center which clips bottom content in the
+   fixed-height Electron window. Switch to top-aligned + scrollable instead. */
+body.is-electron .home-left {
+  justify-content: flex-start !important;
+  overflow-y: auto !important;
+  padding-top: clamp(2rem, 5vh, 5rem) !important;
+}

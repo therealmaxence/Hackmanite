@@ -1,7 +1,7 @@
 'use client';
 
 import Header from '@/components/layout/Header';
-import Image from 'next/image';
+import NoActiveSessionPanel from '@/components/ui/NoActiveSessionPanel';
 import { useUploadStore } from '@/store/uploadStore';
 import { motion } from 'framer-motion';
 import useSWR from 'swr';
@@ -59,17 +59,7 @@ export default function WeakSignalsClient() {
           </header>
 
           {!sessionId ? (
-            <div className="h-[400px] signature-card flex flex-col items-center justify-center gap-6">
-              <Image
-                src="/hackmanite_main_nobg.png"
-                alt="Hackmanite"
-                width={180}
-                height={180}
-                style={{ objectFit: 'contain', opacity: 0.15, userSelect: 'none', pointerEvents: 'none' }}
-                draggable={false}
-              />
-              <p className="text-sm text-white/40 font-mono font-medium">{t('stats.no_active_session')}</p>
-            </div>
+            <NoActiveSessionPanel message={t('stats.no_active_session')} />
           ) : isLoading ? (
             <div className="h-[400px] flex flex-col items-center justify-center gap-6">
               <Spinner size={32} />

@@ -43,55 +43,57 @@ export function buildPrompt(
   let focusDesc = '';
   if (isFrench) {
     if (focusType === 'threats') {
-      focusDesc = 'Focus sur les Acteurs de Menace & Identifiants Critiques (Mettre en évidence les entités PERSON, ORG, EMAIL, IP_ADDRESS et les nœuds de communication/infrastructure de haute importance).';
+      focusDesc = 'Focus sur les Acteurs & Identifiants Clés (mettre en évidence les entités PERSON, ORG, EMAIL, IP_ADDRESS et les nœuds de communication/infrastructure les plus saillants).';
     } else if (focusType === 'networks') {
-      focusDesc = 'Focus sur les Liaisons & Groupes de Réseau (Mettre en évidence les ponts structurels, les co-occurrences et les clusters topologiques).';
+      focusDesc = 'Focus sur les Liaisons & Clusters (mettre en évidence les nœuds structurels centraux, les co-occurrences fréquentes et les groupes topologiques).';
     } else if (focusType === 'timeline') {
-      focusDesc = 'Focus sur la Chronologie Temporelle & Opérationnelle (Synthétiser les dates, les pics d\'activité et les séquences opérationnelles).';
+      focusDesc = 'Focus sur la Chronologie (synthétiser les dates, les périodes d\'activité et les séquences temporelles).';
     } else {
-      focusDesc = 'Synthèse de Renseignement Exécutive (Analyse complète de l\'ensemble des données).';
+      focusDesc = 'Analyse Générale (vue d\'ensemble complète des entités, relations et tendances du corpus).';
     }
   } else {
     if (focusType === 'threats') {
-      focusDesc = 'Threat Actor & Critical Identifiers Focus (Highlight PERSON, ORG, EMAIL, IP_ADDRESS, and high-importance communication/infrastructure nodes).';
+      focusDesc = 'Key Actors & Identifiers Focus (highlight PERSON, ORG, EMAIL, IP_ADDRESS, and the most salient communication/infrastructure nodes).';
     } else if (focusType === 'networks') {
-      focusDesc = 'Linkage & Network Cluster Focus (Focus on structural bridges, co-occurrences, and topological clusters).';
+      focusDesc = 'Linkage & Cluster Focus (highlight central structural nodes, frequent co-occurrences, and topological groups).';
     } else if (focusType === 'timeline') {
-      focusDesc = 'Temporal & Operational Timeline Focus (Synthesize dates, activity peaks, and operational sequences).';
+      focusDesc = 'Timeline Focus (synthesize dates, activity periods, and temporal sequences).';
     } else {
-      focusDesc = 'Executive Intelligence Briefing (Comprehensive analysis of the entire dataset).';
+      focusDesc = 'General Analysis (comprehensive overview of entities, relationships, and trends across the corpus).';
     }
   }
 
   const outline = isFrench
     ? `Veuillez inclure les sections suivantes rédigées en français :
-1. Synthèse Executive & Objectif Principal
-2. Acteurs Clés, Cibles & Infrastructures (en mettant l'accent sur les nœuds à fort TF-IDF, les nœuds ponts et les signaux faibles sélectionnés)
-3. Clusters de Réseau Opérationnels (analyse des co-occurrences et de la manière dont les nœuds connectent les différents groupes)
-4. Hypothèses Stratégiques (brève évaluation analytique basée sur ces connexions ; évitez le biais de confirmation et énoncez clairement les incertitudes)
-5. Recommandations de Renseignement Actionnables (pistes d'investigation prioritaires, nœuds clés à surveiller)`
+1. Synthèse Générale (vue d'ensemble du corpus et des entités principales)
+2. Entités & Acteurs Principaux (focus sur les entités à fort TF-IDF, les nœuds centraux et les signaux faibles sélectionnés)
+3. Relations & Clusters (analyse des co-occurrences et des groupes d'entités liées)
+4. Observations & Tendances (interprétations analytiques basées sur les connexions ; distinguez clairement faits et suppositions)
+5. Pistes d'Approfondissement (thèmes ou entités qui méritent une investigation complémentaire)`
     : `Please include:
-1. Executive Summary & Core Objective
-2. Key Actors, Targets, & Infrastructure (focused on high TF-IDF, bridge nodes, and selected weak signals)
-3. Operational Network Clusters (discussing co-occurrences and how nodes connect different groups)
-4. Strategic Hypotheses (brief analytical assessment based on these connections; actively guard against confirmation bias and state uncertainties clearly)
-5. Actionable Intelligence Recommendations (what to investigate next, which nodes are high priority)`;
+1. General Summary (overview of the corpus and main entities)
+2. Key Entities & Actors (focused on high TF-IDF, central bridge nodes, and selected weak signals)
+3. Relationships & Clusters (discussing co-occurrences and groups of related entities)
+4. Observations & Trends (analytical interpretations based on the connections; clearly separate facts from assumptions)
+5. Areas for Further Investigation (themes or entities that warrant deeper exploration)`;
 
   const objectivityGuidelines = isFrench
-    ? `=== DIRECTIVES D'OBJECTIVITÉ RIGUREUSES ===
-- Ne tirez pas de conclusions définitives si les données ne les prouvent pas directement.
-- Distinguez explicitement ce qui est un FAIT (ex. co-occurrence avérée dans un document) d'une HYPOTHÈSE (ex. relation de travail possible).
-- Si les signaux faibles sélectionnés suggèrent un lien inhabituel, formulez cela comme une piste d'investigation ("piste potentiel") plutôt que comme une certitude.`
-    : `=== RIGOROUS OBJECTIVITY GUIDELINES ===
-- Do not draw definitive conclusions if the data does not directly prove them.
-- Explicitly distinguish between a FACT (e.g., verified co-occurrence in a document) and a HYPOTHESIS (e.g., possible collaboration).
-- If the selected weak signals suggest an unusual linkage, formulate this as a lead for further investigation ("potential lead") rather than a certainty.`;
+    ? `=== DIRECTIVES D'OBJECTIVITÉ ===
+- Ne présupposez pas que les données sont sensibles, secrètes ou malveillantes.
+- Distinguez explicitement ce qui est un FAIT (co-occurrence avérée dans un document) d'une INTERPRÉTATION (relation supposée).
+- Si les signaux faibles sélectionnés suggèrent un lien inhabituel, formulez cela comme une piste d'investigation plutôt que comme une certitude.
+- Adaptez le ton à ce que les données montrent réellement — le corpus peut être de nature académique, professionnelle, journalistique ou autre.`
+    : `=== OBJECTIVITY GUIDELINES ===
+- Do not presuppose the data is sensitive, secret, or malicious.
+- Explicitly distinguish between a FACT (verified co-occurrence in a document) and an INTERPRETATION (inferred relationship).
+- If selected weak signals suggest an unusual linkage, frame it as a lead for further investigation rather than a certainty.
+- Adapt the tone to what the data actually shows — the corpus may be academic, professional, journalistic, or any other nature.`;
 
   return `
-Write a detailed Intelligence Report based on this preprocessed entity relationship graph:
+Write a detailed Analysis Report based on this preprocessed entity relationship graph extracted from a document corpus:
 
 Focus Area: ${focusDesc}
-${customInstructions ? `Custom Analyst Instructions: ${customInstructions}` : ''}
+${customInstructions ? `Custom Instructions: ${customInstructions}` : ''}
 Output Language: ${isFrench ? 'French (Français)' : 'English'}
 
 ${objectivityGuidelines}
@@ -111,10 +113,10 @@ ${topEntitiesText}
 === TOP ENTITIES BY TF-IDF IMPORTANCE (SALIENT ENTITIES) ===
 ${topTfidfText}
 
-=== CRITICAL BRIDGING NODES (BETWEENNESS CENTRALITY) ===
+=== CENTRAL BRIDGING NODES (BETWEENNESS CENTRALITY) ===
 ${bridgesText}
 
-=== SELECTED WEAK SIGNALS (EMERGING, BRIDGING, AND NICHE RELATIONSHIPS) ===
+=== SELECTED WEAK SIGNALS (EMERGING, BRIDGING, AND NICHE ENTITIES) ===
 ${weakSignalsText}
 
 === FREQUENT CO-OCCURRING CATEGORIES ===

@@ -2,6 +2,7 @@
 
 import React from 'react';
 import Header from '@/components/layout/Header';
+import Image from 'next/image';
 import Button from '@/components/ui/Button';
 import { useTranslation } from '@/lib/i18n';
 import { useAiReport } from '@/hooks/useAiReport';
@@ -98,10 +99,16 @@ export default function AiReportClient() {
           </header>
 
           {!sessionId ? (
-            <div className="h-[300px] signature-card flex flex-col items-center justify-center gap-4 border border-dashed border-white/5">
-              <p className="text-sm font-mono text-white/30 uppercase tracking-wider">
-                {t('ai.no_active_session')}
-              </p>
+            <div className="h-[400px] signature-card flex flex-col items-center justify-center gap-6">
+              <Image
+                src="/hackmanite_main_nobg.png"
+                alt="Hackmanite"
+                width={180}
+                height={180}
+                style={{ objectFit: 'contain', opacity: 0.15, userSelect: 'none', pointerEvents: 'none' }}
+                draggable={false}
+              />
+              <p className="text-sm text-white/40 font-mono font-medium">{t('ai.no_active_session')}</p>
             </div>
           ) : (
             <div className="flex flex-col gap-12">

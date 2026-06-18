@@ -113,6 +113,7 @@ export const cytoscapeStylesheet = [
   {
     selector: "node.weak-signal",
     style: {
+      "background-color": "#ffffff",
       "border-style": "dashed",
       "border-width": 3,
       "border-color": "#a855f7",

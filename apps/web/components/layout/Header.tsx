@@ -76,7 +76,7 @@ export default function Header() {
         justifyContent: 'space-between',
         padding: '0 clamp(0.75rem, 3vw, 1.5rem)',
         position: 'sticky',
-        top: isElectron ? 32 : 0,
+        top: 0,
         zIndex: 10,
       }}
     >

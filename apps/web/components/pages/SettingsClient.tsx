@@ -203,7 +203,7 @@ export default function SettingsClient() {
                   boxShadow: language === 'en' ? 'var(--glow-trace)' : 'none',
                 }}
               >
-                <span>🇺🇸</span> {t('language.en')}
+                {t('language.en')}
               </button>
               <button
                 onClick={() => setLanguage('fr')}
@@ -225,7 +225,7 @@ export default function SettingsClient() {
                   boxShadow: language === 'fr' ? 'var(--glow-trace)' : 'none',
                 }}
               >
-                <span>🇫🇷</span> {t('language.fr')}
+                {t('language.fr')}
               </button>
             </div>
           </div>

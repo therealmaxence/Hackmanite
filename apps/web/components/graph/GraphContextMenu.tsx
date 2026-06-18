@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import { useTranslation } from '@/lib/i18n';
 
 interface GraphContextMenuProps {
@@ -28,6 +29,7 @@ export default function GraphContextMenu({
   onDeleteNode,
 }: GraphContextMenuProps) {
   const { t } = useTranslation();
+  const [showTypeSelector, setShowTypeSelector] = useState(false);
 
   const buttonStyle: React.CSSProperties = {
     background: 'transparent',
@@ -97,44 +99,96 @@ export default function GraphContextMenu({
           <div
             style={{
               display: 'flex',
-              alignItems: 'center',
-              gap: '8px',
+              flexDirection: 'column',
               padding: '6px 12px',
               color: 'var(--color-text)',
               fontSize: '0.8rem',
               fontWeight: 500,
               width: '100%',
+              gap: '4px',
             }}
           >
-            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
-            </svg>
-            <span style={{ flex: 1 }}>{t('graph.canvas.type_label')}</span>
-            <select
-              value={nodeType}
-              onChange={(e) => onChangeType(nodeId, e.target.value)}
+            <div
+              onClick={() => setShowTypeSelector(!showTypeSelector)}
               style={{
-                background: 'var(--color-surface-raised)',
-                border: '1px solid var(--color-border)',
-                color: 'var(--color-text)',
-                borderRadius: '3px',
-                padding: '2px 4px',
-                fontSize: '0.75rem',
-                outline: 'none',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
                 cursor: 'pointer',
-                fontFamily: 'var(--font-body)',
+                userSelect: 'none',
+                width: '100%',
               }}
             >
-              <option value="PERSON">PERSON</option>
-              <option value="ORGANIZATION">ORGANIZATION</option>
-              <option value="LOCATION">LOCATION</option>
-              <option value="EMAIL">EMAIL</option>
-              <option value="PHONE">PHONE</option>
-              <option value="IP_ADDRESS">IP_ADDRESS</option>
-              <option value="URL">URL</option>
-              <option value="DATE">DATE</option>
-              <option value="ADDRESS">ADDRESS</option>
-            </select>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                <path d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z" />
+              </svg>
+              <span style={{ flex: 1 }}>{t('graph.canvas.type_label')}</span>
+              <span
+                style={{
+                  fontSize: '0.72rem',
+                  color: 'var(--color-primary)',
+                  background: 'rgba(255, 255, 255, 0.05)',
+                  padding: '2px 6px',
+                  borderRadius: '4px',
+                  border: '1px solid var(--color-border)',
+                  fontWeight: 600,
+                }}
+              >
+                {nodeType} {showTypeSelector ? '▲' : '▼'}
+              </span>
+            </div>
+
+            {showTypeSelector && (
+              <div
+                style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(2, 1fr)',
+                  gap: '4px',
+                  marginTop: '6px',
+                  padding: '4px',
+                  background: 'var(--color-surface-raised)',
+                  border: '1px solid var(--color-border)',
+                  borderRadius: 'var(--radius-xs)',
+                }}
+              >
+                {[
+                  'PERSON',
+                  'ORGANIZATION',
+                  'LOCATION',
+                  'EMAIL',
+                  'PHONE',
+                  'IP_ADDRESS',
+                  'URL',
+                  'DATE',
+                  'ADDRESS',
+                ].map((typeOption) => (
+                  <button
+                    key={typeOption}
+                    onClick={() => onChangeType(nodeId, typeOption)}
+                    style={{
+                      background: nodeType === typeOption ? 'var(--color-primary)' : 'transparent',
+                      border: 'none',
+                      color: nodeType === typeOption ? '#000' : 'var(--color-text)',
+                      fontSize: '0.65rem',
+                      padding: '4px 6px',
+                      borderRadius: '2px',
+                      cursor: 'pointer',
+                      textAlign: 'center',
+                      fontWeight: 600,
+                      transition: 'all 0.1s ease',
+                    }}
+                    onMouseEnter={(e) => {
+                      if (nodeType !== typeOption) e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                    }}
+                    onMouseLeave={(e) => {
+                      if (nodeType !== typeOption) e.currentTarget.style.background = 'transparent';
+                    }}
+                  >
+                    {typeOption.replace('_', ' ')}
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           <button

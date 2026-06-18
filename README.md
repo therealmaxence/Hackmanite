@@ -155,20 +155,36 @@ You can export your session's entity graph to Obsidian to explore and search nod
 
 ---
 
-## AI Intelligence Report (Mistral AI)
+## Weak Signals Discovery
 
-You can generate executive intelligence briefings based on your session's entity graph and document contents using Mistral AI:
+Analyze early-warning indicators, broker connections, and niche topics across your documents:
+
+- **Methodology A (Rare Bridges)**: Identifies nodes with low global occurrences that act as critical topological links between clusters in the co-occurrence network.
+- **Methodology B (Niche Topics)**: Isolates specific, localized topics appearing in at most 2 files with high local TF-IDF salience.
+- **Methodology C (Spiking Signals)**: Detects temporal spikes anywhere across the timeline using a sliding time window (20% of total duration width, moving in steps of 10%) where $\ge 60\%$ of occurrences are concentrated.
+- **Graph Visual Highlights**: Visualizes weak signals on the interactive graph with a dashed border and a pulsing neon purple shadow/glow.
+
+---
+
+## AI Intelligence Report (LLM Integration)
+
+Generate executive intelligence briefings based on your session's entity graph, document contents, and selected weak signals:
 
 1. Navigate to the **AI Report** page from the header bar.
-2. Enter your **Mistral API Key** (saved securely client-side in `localStorage`) or define it globally in your `.env` configuration.
-3. Select your **Model** (e.g., `Mistral Large` or `Mistral Small`) and select your **Analysis Scope**:
+2. Configure your **AI Connection Setup**:
+   - **Provider**: Choose between **Mistral AI (Cloud)** and **Custom (Ollama/OpenAI compatible)**.
+   - **API Endpoint URL**: For custom configurations, specify any OpenAI-compatible base URL (e.g. local Ollama server at `http://localhost:11434/v1`).
+   - **API Key**: Input your provider credentials (saved securely in client-side `localStorage`).
+   - **Model**: Select pre-defined Mistral models or override with a custom model tag (e.g. `llama3`, `mistral`, `phi3`).
+3. Select **Weak Signals**: Check/uncheck specific rare bridges, niche topics, or emerging signals using the collapsible selection panel (equipped with global and category-level bulk checkboxes) to feed factual context to the analyst prompt.
+4. Select your **Model Focus**:
    - *Executive Summary*: General intelligence analysis of the entire dataset.
    - *Threat Actor Focus*: Focuses on threat actors, targets, emails, organizations, and IP infrastructure.
    - *Network Clusters*: Focuses on graph co-occurrences, bridges, and cluster linkages.
    - *Temporal Timeline*: Focuses on chronologies, Peak Activity hours, and operational sequences.
-4. Tune extraction limits using the custom sliders (Top Entities count, Salient TF-IDF Entities, and Central Bridge Nodes) and add optional analyst directives.
-5. Click **Run AI Analysis** to generate the report.
-6. Use the briefing panel header to **Copy** the report, **Download MD** (save as Markdown file), or **Print PDF** (compiled with a custom printer-friendly stylesheet).
+5. Tune extraction limits using the custom sliders (Top Entities count, Salient TF-IDF Entities, and Central Bridge Nodes) and add optional analyst directives.
+6. Click **Run AI Analysis** (always visible at the bottom of the config column) to generate the briefing.
+7. Use the briefing panel header to **Copy** the report, **Download MD** (save as Markdown file), or **Print PDF** (compiled with a custom printer-friendly stylesheet).
 
 ---
 

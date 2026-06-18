@@ -115,10 +115,10 @@ export const cytoscapeStylesheet = [
     style: {
       "border-style": "dashed",
       "border-width": 3,
-      "border-color": "#eab308",
+      "border-color": "#a855f7",
       "border-opacity": 1.0,
       "shadow-blur": 12,
-      "shadow-color": "#eab308",
+      "shadow-color": "#a855f7",
       "shadow-opacity": 0.9,
       "shadow-offset-x": 0,
       "shadow-offset-y": 0,

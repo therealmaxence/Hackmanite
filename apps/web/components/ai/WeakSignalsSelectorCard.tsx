@@ -64,10 +64,6 @@ export default function WeakSignalsSelectorCard({
 
       {isOpen && (
         <div className="flex flex-col border-t border-white/5" style={{ padding: '1.5rem 2rem 2rem', gap: '2rem' }}>
-          <p className="text-xs text-white/40 leading-relaxed">
-            {t('ai.weak_signals_selection_desc')}
-          </p>
-
           {!weakSignalsData ? (
             <div className="flex items-center gap-2 text-white/40 font-mono text-[10px] uppercase">
               <Spinner size={12} /> Loading signals...

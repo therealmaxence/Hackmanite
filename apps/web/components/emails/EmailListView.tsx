@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { EmailNodeData } from './types';
 import { useTranslation } from '@/lib/i18n';
 
@@ -74,6 +74,9 @@ function EmailRow({ email, isSelected, senderColors, onSelectEmail }: EmailRowPr
   );
 }
 
+type SortField = 'date' | 'from' | 'to' | 'subject' | 'source';
+type SortOrder = 'asc' | 'desc';
+
 export default function EmailListView({
   emails,
   selectedEmail,
@@ -81,6 +84,53 @@ export default function EmailListView({
   onSelectEmail,
 }: EmailListViewProps) {
   const { t } = useTranslation();
+  const [sortField, setSortField] = useState<SortField>('date');
+  const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
+
+  const handleSort = (field: SortField) => {
+    if (sortField === field) {
+      setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc');
+    } else {
+      setSortField(field);
+      setSortOrder('desc');
+    }
+  };
+
+  const sortedEmails = useMemo(() => {
+    const sorted = [...emails];
+    sorted.sort((a, b) => {
+      let valA: string | number = 0;
+      let valB: string | number = 0;
+
+      if (sortField === 'date') {
+        valA = a.date ? new Date(a.date as string).getTime() : 0;
+        valB = b.date ? new Date(b.date as string).getTime() : 0;
+      } else if (sortField === 'from') {
+        valA = ((a.from as string) || '').toLowerCase();
+        valB = ((b.from as string) || '').toLowerCase();
+      } else if (sortField === 'to') {
+        valA = ((a.to as string) || '').toLowerCase();
+        valB = ((b.to as string) || '').toLowerCase();
+      } else if (sortField === 'subject') {
+        valA = ((a.subject as string) || '').toLowerCase();
+        valB = ((b.subject as string) || '').toLowerCase();
+      } else if (sortField === 'source') {
+        valA = (((a as any).file?.originalName || 'pst_source') as string).toLowerCase();
+        valB = (((b as any).file?.originalName || 'pst_source') as string).toLowerCase();
+      }
+
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [emails, sortField, sortOrder]);
+
+  const renderSortIndicator = (field: SortField) => {
+    if (sortField !== field) return null;
+    return sortOrder === 'asc' ? ' ▲' : ' ▼';
+  };
+
   return (
     <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-base)' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
@@ -88,7 +138,7 @@ export default function EmailListView({
           {t('emails.list.ledger')}
         </h3>
         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-raised)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}>
-          {t('emails.list.matching_records', { count: emails.length })}
+          {t('emails.list.matching_records', { count: sortedEmails.length })}
         </span>
       </div>
 
@@ -97,18 +147,31 @@ export default function EmailListView({
           <thead>
             <tr style={{ background: 'var(--color-surface-raised)', borderBottom: 'none' }}>
               {[
-                t('emails.list.col_date'),
-                t('emails.list.col_from'),
-                t('emails.list.col_to'),
-                t('emails.list.col_subject'),
-                t('emails.list.col_source'),
+                { label: t('emails.list.col_date'), field: 'date' as SortField },
+                { label: t('emails.list.col_from'), field: 'from' as SortField },
+                { label: t('emails.list.col_to'), field: 'to' as SortField },
+                { label: t('emails.list.col_subject'), field: 'subject' as SortField },
+                { label: t('emails.list.col_source'), field: 'source' as SortField },
               ].map((col) => (
-                <th key={col} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{col}</th>
+                <th
+                  key={col.field}
+                  onClick={() => handleSort(col.field)}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    color: 'var(--color-text-muted)',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    userSelect: 'none',
+                  }}
+                >
+                  {col.label}
+                  {renderSortIndicator(col.field)}
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {emails.map((email) => {
+            {sortedEmails.map((email) => {
               const msgId = email.messageId as string;
               const isSelected = selectedEmail?.messageId === msgId;
               return (

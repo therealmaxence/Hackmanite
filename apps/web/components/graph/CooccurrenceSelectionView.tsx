@@ -27,7 +27,7 @@ export default function CooccurrenceSelectionView({ nodes, onRemove, onClear, t 
           style={{
             background: 'none',
             border: 'none',
-            color: 'var(--color-error)',
+            color: 'var(--color-primary)',
             fontSize: '0.72rem',
             cursor: 'pointer',
             fontWeight: 500,
@@ -111,7 +111,7 @@ export default function CooccurrenceSelectionView({ nodes, onRemove, onClear, t 
           lineHeight: '1.4',
         }}
       >
-        💡 {t('graph.cooccurrence.add_more_tip')}
+        {t('graph.cooccurrence.add_more_tip')}
       </div>
     </>
   );

@@ -65,19 +65,6 @@ export default function HomeClient() {
           }}
         >
           <div className="home-hero" style={{ width: '100%', maxWidth: '540px', position: 'relative', margin: 'auto 0' }}>
-            <p
-              className="home-kicker"
-              style={{
-                fontFamily: 'var(--font-display)',
-                fontSize: '0.75rem',
-                letterSpacing: '0.04em',
-                color: 'var(--color-primary)',
-                marginBottom: '1rem',
-                fontWeight: 500,
-              }}
-            >
-              {t('home.hero_kicker')}
-            </p>
             <h1
               className="home-title"
               style={{
@@ -92,17 +79,6 @@ export default function HomeClient() {
               <br />
               <span style={{ color: 'var(--text-secondary)' }}>{t('home.hero_title_2')}</span>
             </h1>
-            <p
-              className="home-copy"
-              style={{
-                color: 'var(--text-secondary)',
-                fontSize: '0.875rem',
-                marginBottom: '1.5rem',
-                lineHeight: 1.7,
-              }}
-            >
-              {t('home.hero_copy')}
-            </p>
 
             <DropZone onDrop={handleDrop} isLoading={isUploading} />
 

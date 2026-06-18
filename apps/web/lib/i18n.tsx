@@ -52,10 +52,8 @@ export const TRANSLATIONS = {
     'statusbar.failed': 'failed',
 
     // Home / Upload
-    'home.hero_kicker': 'Data Graph Explorer',
     'home.hero_title_1': 'Upload files.',
     'home.hero_title_2': 'Discover entities.',
-    'home.hero_copy': 'Drop any file or click to upload ...',
     'home.explore_btn': 'Explore Graph →',
     'home.files_processed': '{count} file{plural} processed',
     'home.files_failed': ', {count} failed',
@@ -583,10 +581,8 @@ export const TRANSLATIONS = {
     'statusbar.failed': 'échoués',
 
     // Home / Upload
-    'home.hero_kicker': 'Explorateur de graphes de données',
     'home.hero_title_1': 'Importez des fichiers.',
     'home.hero_title_2': 'Découvrez les entités.',
-    'home.hero_copy': 'Déposez n\'importe quel fichier ou cliquez pour importer...',
     'home.explore_btn': 'Explorer le graphe →',
     'home.files_processed': '{count} fichier{plural} traité{plural}',
     'home.files_failed': ', {count} échoué{plural}',

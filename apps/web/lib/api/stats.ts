@@ -6,12 +6,13 @@ interface StatsOptions {
   types: string[];
   search: string;
   limit: number;
+  tfidfLimit?: number;
 }
 
 const serialize = (obj: unknown) =>
   JSON.parse(JSON.stringify(obj, (_k, v) => (typeof v === 'bigint' ? Number(v) : v)));
 
-export async function getSessionStats({ sessionId, types, search, limit }: StatsOptions) {
+export async function getSessionStats({ sessionId, types, search, limit, tfidfLimit }: StatsOptions) {
   const typeFilter = types.length > 0 ? types : undefined;
   const searchFilter = search ? { contains: search } : undefined;
 
@@ -97,7 +98,7 @@ export async function getSessionStats({ sessionId, types, search, limit }: Stats
       ${hiddenNodeIdsSql}
       GROUP BY e.id, e.displayName, e.type
       ORDER BY tfidf DESC
-      LIMIT ${limit}
+      LIMIT ${tfidfLimit ?? limit}
     `,
     prisma.$queryRaw<any[]>`
       SELECT e.type, COUNT(DISTINCT e.id) as count

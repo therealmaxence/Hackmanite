@@ -12,6 +12,7 @@ export interface GraphFilters {
   minEdgeWeight: number;
   crossDocumentOnly: boolean;
   hiddenCommunities: string[];
+  showWeakSignals: boolean;
 }
 
 export interface GraphState {

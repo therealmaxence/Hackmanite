@@ -134,7 +134,35 @@ export function useProgressiveGraph(): ProgressiveGraphState {
       if (!res.ok) return;
       const data = await res.json();
 
-      const newNodes: GraphNode[] = (data.nodes ?? [])
+      let weakNodes: GraphNode[] = [];
+      if (offset === 0 && filtersRef.current.showWeakSignals) {
+        try {
+          const wsRes = await fetch(`/api/stats/weak-signals?sessionId=${sid}`);
+          if (wsRes.ok) {
+            const wsData = await wsRes.json();
+            const rawWeak = [
+              ...(wsData.bridgeSignals || []),
+              ...(wsData.nicheSignals || []),
+              ...(wsData.emergingSignals || []),
+            ];
+            const uniqueWeak = Array.from(new Map(rawWeak.map(w => [w.id, w])).values());
+            weakNodes = uniqueWeak.map(w => ({
+              id: w.id,
+              label: w.label,
+              type: w.type as EntityType,
+              fileCount: w.fileCount,
+              totalOccurrences: w.totalCount,
+              tfidf: w.score,
+              color: ENTITY_COLORS[w.type as EntityType] || '#6b7280',
+              isWeakSignal: true,
+            }));
+          }
+        } catch (wsErr) {
+          console.error('[useProgressiveGraph] failed to fetch weak signals:', wsErr);
+        }
+      }
+
+      const standardNodes: GraphNode[] = (data.nodes ?? [])
         .filter((n: any) => n.label && n.label.trim() !== '' && n.type && n.type.trim() !== '')
         .map(
           (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; tfidf?: number; color: string }) => ({
@@ -147,6 +175,15 @@ export function useProgressiveGraph(): ProgressiveGraphState {
             color: ENTITY_COLORS[n.type] || '#6b7280',
           })
         );
+
+      const seenIds = new Set<string>();
+      const newNodes: GraphNode[] = [];
+      for (const n of [...weakNodes, ...standardNodes]) {
+        if (!seenIds.has(n.id)) {
+          seenIds.add(n.id);
+          newNodes.push(n);
+        }
+      }
 
       if (newNodes.length === 0) {
         setHasMore(false);
@@ -240,7 +277,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     return () => {
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     };
-  }, [sessionId, typeParam, fromParam, toParam, refreshTrigger]);
+  }, [sessionId, typeParam, fromParam, toParam, refreshTrigger, filters.showWeakSignals]);
 
   const loadMore = useCallback(() => {
     if (isLoadingBatch || !hasMore) return;

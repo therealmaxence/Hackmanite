@@ -10,6 +10,7 @@ export async function GET(req: NextRequest) {
   const session = await getServerSession();
   const sessionId = searchParams.get('sessionId') || session?.sessionId;
   const limit = Math.min(Number(searchParams.get('limit') || 15), 100);
+  const tfidfLimit = Math.min(Number(searchParams.get('tfidfLimit') || limit), 100);
   const types = (searchParams.get('types')?.split(',').filter(Boolean) || []).filter(
     (t) => t !== 'FILE'
   );
@@ -23,7 +24,7 @@ export async function GET(req: NextRequest) {
   }
 
   try {
-    const stats = await getSessionStats({ sessionId, types, search, limit });
+    const stats = await getSessionStats({ sessionId, types, search, limit, tfidfLimit });
     return NextResponse.json(stats);
   } catch (err: unknown) {
     console.error('Stats API Error:', err);

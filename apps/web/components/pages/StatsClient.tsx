@@ -137,7 +137,7 @@ export default function StatsClient() {
   // 1. General SWR Query (Fast)
   const { data: generalData, error: generalError, isLoading: generalLoading } = useSWR<StatsData>(
     sessionId
-      ? `/api/stats?sessionId=${sessionId}&types=${filters.entityTypes.join(',')}&limit=${displayLimit}`
+      ? `/api/stats?sessionId=${sessionId}&types=${filters.entityTypes.join(',')}&limit=${displayLimit}&tfidfLimit=${tfidfDisplayLimit}`
       : null,
     fetcher,
     { 

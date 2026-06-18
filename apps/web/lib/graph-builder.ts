@@ -11,6 +11,7 @@ export interface GraphNode {
   totalOccurrences: number;
   tfidf?: number;
   color: string;
+  isWeakSignal?: boolean;
 }
 
 export interface GraphEdge {
@@ -72,6 +73,7 @@ export function buildCytoscapeElements(
         tfidf: n.tfidf ?? n.totalOccurrences,
         ...(bgImage ? { bgImage } : {}),
       },
+      classes: n.isWeakSignal ? "weak-signal" : undefined,
     };
   });
 
@@ -106,6 +108,20 @@ export const cytoscapeStylesheet = [
       "border-color": "data(color)",
       "border-opacity": 0.5,
       shape: "ellipse",
+    },
+  },
+  {
+    selector: "node.weak-signal",
+    style: {
+      "border-style": "dashed",
+      "border-width": 3,
+      "border-color": "#eab308",
+      "border-opacity": 1.0,
+      "shadow-blur": 12,
+      "shadow-color": "#eab308",
+      "shadow-opacity": 0.9,
+      "shadow-offset-x": 0,
+      "shadow-offset-y": 0,
     },
   },
   {

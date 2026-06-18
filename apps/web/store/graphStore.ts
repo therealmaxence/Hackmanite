@@ -47,6 +47,7 @@ const defaultFilters: GraphFilters = {
   minEdgeWeight: 0.0,
   crossDocumentOnly: false,
   hiddenCommunities: [],
+  showWeakSignals: false,
 };
 
 export const useGraphStore = create<GraphStore>((set) => ({

@@ -13,9 +13,12 @@ export default function ElectronTitleBar() {
     const isApp = userAgent.includes('electron');
     setIsElectron(isApp);
 
-    if (isApp && (window as any).electronAPI) {
-      // Check initial maximized state
-      (window as any).electronAPI.isMaximized().then(setIsMaximized);
+    if (isApp) {
+      document.body.classList.add('is-electron');
+      if ((window as any).electronAPI) {
+        // Check initial maximized state
+        (window as any).electronAPI.isMaximized().then(setIsMaximized);
+      }
     }
   }, []);
 
@@ -47,7 +50,8 @@ export default function ElectronTitleBar() {
         color: 'var(--color-text)',
         WebkitAppRegion: 'drag' as any,
         zIndex: 9999,
-        position: 'relative'
+        position: 'sticky',
+        top: 0
       } as any}
     >
       {/* Title */}

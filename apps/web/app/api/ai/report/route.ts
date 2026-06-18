@@ -17,6 +17,7 @@ export async function POST(req: NextRequest) {
       topTfidfLimit = 30,
       bridgesLimit = 10,
       previewOnly = false,
+      selectedWeakSignals = [],
     } = await req.json();
 
     if (!sessionId) {
@@ -27,7 +28,16 @@ export async function POST(req: NextRequest) {
     }
 
     const data = await getAiReportData(sessionId);
-    const prompt = buildPrompt(data, focusType, customInstructions, language, topEntitiesLimit, topTfidfLimit, bridgesLimit);
+    const prompt = buildPrompt(
+      data,
+      focusType,
+      customInstructions,
+      language,
+      topEntitiesLimit,
+      topTfidfLimit,
+      bridgesLimit,
+      selectedWeakSignals
+    );
 
     if (previewOnly) {
       const estimatedTokens = Math.ceil(prompt.length / 4);
@@ -48,8 +58,8 @@ export async function POST(req: NextRequest) {
 
     const mistralModel = model || 'mistral-large-latest';
     const systemPrompt = language === 'fr'
-      ? 'Vous êtes un analyste d\'élite en cyber-renseignement sur les menaces (Cyber Threat Intelligence) et en OSINT. Rédigez des rapports de renseignement professionnels en utilisant Markdown. Soyez analytique, précis et objectif. Évitez les formules d\'introduction inutiles et allez directement aux conclusions. Le rapport DOIT être entièrement rédigé en français.'
-      : 'You are an elite cyber threat intelligence and OSINT analyst. Write professional intelligence reports using Markdown. Be analytical, precise, and objective. Avoid introductory fluff and dive straight into the findings. The report MUST be written in English.';
+      ? 'Vous êtes un analyste d\'élite en cyber-renseignement sur les menaces (Cyber Threat Intelligence) et en OSINT. Rédigez des rapports de renseignement professionnels en utilisant Markdown. Soyez analytique, précis et objectif. Gardez-vous activement du biais de confirmation : n\'inventez pas de connexions, distinguez clairement les faits établis (co-occurrences vérifiées) des hypothèses spéculatives, énoncez explicitement toute incertitude et évitez d\'être trop affirmatif sans preuve textuelle solide. Le rapport DOIT être entièrement rédigé en français.'
+      : 'You are an elite cyber threat intelligence and OSINT analyst. Write professional intelligence reports using Markdown. Be analytical, precise, and objective. Actively guard against confirmation bias: do not invent connections, clearly distinguish established facts (verified co-occurrences in the text) from speculative hypotheses, explicitly state any uncertainty, and avoid overconfidence without solid textual evidence. The report MUST be written in English.';
 
     const response = await fetch('https://api.mistral.ai/v1/chat/completions', {
       method: 'POST',
@@ -103,7 +113,8 @@ function buildPrompt(
   language: string = 'en',
   topEntitiesLimit: number = 30,
   topTfidfLimit: number = 30,
-  bridgesLimit: number = 10
+  bridgesLimit: number = 10,
+  selectedWeakSignals: any[] = []
 ): string {
   const isFrench = language === 'fr';
 
@@ -130,6 +141,10 @@ function buildPrompt(
   const bridgesText = data.bridges.length > 0
     ? data.bridges.slice(0, bridgesLimit).map((b: any) => `- ${b.label} (${b.type}): Centrality Score ${b.score.toFixed(4)}`).join('\n')
     : 'No significant bridge entities detected.';
+
+  const weakSignalsText = selectedWeakSignals.length > 0
+    ? selectedWeakSignals.map((ws: any) => `- ${ws.label} (${ws.type}): Score ${ws.score.toFixed(3)} [Method: ${ws.methodology}]`).join('\n')
+    : 'No weak signals selected.';
 
   const cooccurText = data.cooccurrences.map((co: any) => `- ${co.typeA} <=> ${co.typeB}: count ${co.count}`).join('\n');
 
@@ -159,16 +174,26 @@ function buildPrompt(
   const outline = isFrench
     ? `Veuillez inclure les sections suivantes rédigées en français :
 1. Synthèse Executive & Objectif Principal
-2. Acteurs Clés, Cibles & Infrastructures (en mettant l'accent sur les nœuds à fort TF-IDF et les nœuds ponts)
-3. Clusters de Réseau Opérationnels (analyse des co-occurrences et de la manière dont les nœuds de pont connectent les différents groupes)
-4. Hypothèses Stratégiques (brève évaluation analytique basée sur ces connexions)
+2. Acteurs Clés, Cibles & Infrastructures (en mettant l'accent sur les nœuds à fort TF-IDF, les nœuds ponts et les signaux faibles sélectionnés)
+3. Clusters de Réseau Opérationnels (analyse des co-occurrences et de la manière dont les nœuds connectent les différents groupes)
+4. Hypothèses Stratégiques (brève évaluation analytique basée sur ces connexions ; évitez le biais de confirmation et énoncez clairement les incertitudes)
 5. Recommandations de Renseignement Actionnables (pistes d'investigation prioritaires, nœuds clés à surveiller)`
     : `Please include:
 1. Executive Summary & Core Objective
-2. Key Actors, Targets, & Infrastructure (focused on high TF-IDF and bridge nodes)
-3. Operational Network Clusters (discussing co-occurrences and how bridge nodes connect different groups)
-4. Strategic Hypotheses (brief analytical assessment based on these connections)
+2. Key Actors, Targets, & Infrastructure (focused on high TF-IDF, bridge nodes, and selected weak signals)
+3. Operational Network Clusters (discussing co-occurrences and how nodes connect different groups)
+4. Strategic Hypotheses (brief analytical assessment based on these connections; actively guard against confirmation bias and state uncertainties clearly)
 5. Actionable Intelligence Recommendations (what to investigate next, which nodes are high priority)`;
+
+  const objectivityGuidelines = isFrench
+    ? `=== DIRECTIVES D'OBJECTIVITÉ RIGUREUSES ===
+- Ne tirez pas de conclusions définitives si les données ne les prouvent pas directement.
+- Distinguez explicitement ce qui est un FAIT (ex. co-occurrence avérée dans un document) d'une HYPOTHÈSE (ex. relation de travail possible).
+- Si les signaux faibles sélectionnés suggèrent un lien inhabituel, formulez cela comme une piste d'investigation ("piste potentielle") plutôt que comme une certitude.`
+    : `=== RIGOROUS OBJECTIVITY GUIDELINES ===
+- Do not draw definitive conclusions if the data does not directly prove them.
+- Explicitly distinguish between a FACT (e.g., verified co-occurrence in a document) and a HYPOTHESIS (e.g., possible collaboration).
+- If the selected weak signals suggest an unusual linkage, formulate this as a lead for further investigation ("potential lead") rather than a certainty.`;
 
   return `
 Write a detailed Intelligence Report based on this preprocessed entity relationship graph:
@@ -176,6 +201,8 @@ Write a detailed Intelligence Report based on this preprocessed entity relations
 Focus Area: ${focusDesc}
 ${customInstructions ? `Custom Analyst Instructions: ${customInstructions}` : ''}
 Output Language: ${isFrench ? 'French (Français)' : 'English'}
+
+${objectivityGuidelines}
 
 === DATASET METRICS ===
 ${generalText}
@@ -194,6 +221,9 @@ ${topTfidfText}
 
 === CRITICAL BRIDGING NODES (BETWEENNESS CENTRALITY) ===
 ${bridgesText}
+
+=== SELECTED WEAK SIGNALS (EMERGING, BRIDGING, AND NICHE RELATIONSHIPS) ===
+${weakSignalsText}
 
 === FREQUENT CO-OCCURRING CATEGORIES ===
 ${cooccurText}

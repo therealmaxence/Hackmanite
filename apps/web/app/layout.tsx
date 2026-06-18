@@ -39,7 +39,9 @@ export default function RootLayout({
       <body className="antialiased">
         <I18nProvider>
           <ElectronTitleBar />
-          {children}
+          <div className="page-container">
+            {children}
+          </div>
         </I18nProvider>
       </body>
     </html>

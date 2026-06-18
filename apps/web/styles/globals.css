@@ -460,3 +460,29 @@ button:not(:disabled):hover,
   transition: filter 80ms ease, background-color 80ms ease, box-shadow 240ms ease;
 }
 
+/* ─── Electron Window Layout & Scroll Fixes ─────────────────────────────────── */
+body.is-electron {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.is-electron .page-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+body.is-electron .page-container > div {
+  height: 100% !important;
+  min-height: 100% !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+

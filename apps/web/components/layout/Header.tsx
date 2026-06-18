@@ -11,6 +11,7 @@ const NAV_ITEMS = [
   { href: '/graph', labelKey: 'nav.graph', id: 'nav-graph' },
   { href: '/emails', labelKey: 'nav.emails', id: 'nav-emails' },
   { href: '/stats', labelKey: 'nav.stats', id: 'nav-stats' },
+  { href: '/weak-signals', labelKey: 'nav.weak_signals', id: 'nav-weak-signals' },
   { href: '/ai-report', labelKey: 'nav.ai_report', id: 'nav-ai-report' },
   { href: '/session', labelKey: 'nav.session', id: 'nav-session' },
   { href: '/settings', labelKey: 'nav.settings', id: 'nav-settings' },
@@ -22,6 +23,12 @@ export default function Header() {
   const [logoHovered, setLogoHovered] = useState(false);
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, height: 0, top: 0 });
   const { t } = useTranslation();
+  const [isElectron, setIsElectron] = useState(false);
+
+  useEffect(() => {
+    const userAgent = window.navigator.userAgent.toLowerCase();
+    setIsElectron(userAgent.includes('electron'));
+  }, []);
 
   useEffect(() => {
     const activeItem = NAV_ITEMS.find((item) => pathname === item.href);
@@ -69,7 +76,7 @@ export default function Header() {
         justifyContent: 'space-between',
         padding: '0 clamp(0.75rem, 3vw, 1.5rem)',
         position: 'sticky',
-        top: 0,
+        top: isElectron ? 32 : 0,
         zIndex: 10,
       }}
     >

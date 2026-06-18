@@ -103,6 +103,18 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
         </div>
       </div>
 
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
+        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.weak_signals')}</span>
+        <div
+          id="graph-weak-signals-toggle"
+          onClick={() => onFilterChange('showWeakSignals', !filters.showWeakSignals)}
+          style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(16,0,43,0.4)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '0.5rem 0.875rem', cursor: 'pointer', userSelect: 'none' }}
+        >
+          <input type="checkbox" checked={filters.showWeakSignals} readOnly style={{ accentColor: 'var(--color-primary)', cursor: 'pointer', width: 14, height: 14 }} />
+          <span style={{ fontSize: '0.78rem', color: filters.showWeakSignals ? 'var(--color-text)' : 'var(--color-text-muted)', fontWeight: 600 }}>{filters.showWeakSignals ? t('graph.controls.on') : t('graph.controls.off')}</span>
+        </div>
+      </div>
+
       {sortedCommunities.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
           <label style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.community_filter')}</label>

@@ -10,7 +10,11 @@ import FileNodePanel from './FileNodePanel';
 import EntityNodePanel from './EntityNodePanel';
 import { useTranslation } from '@/lib/i18n';
 
-const fetcher = (url: string) => fetch(url).then((r) => r.json());
+const fetcher = (url: string) =>
+  fetch(url).then((r) => {
+    if (!r.ok) throw new Error('Failed to fetch');
+    return r.json();
+  });
 
 export default function NodePanel() {
   const { selectedNodeId, isPanelOpen, togglePanel, nodes, selectNode, removeNode } = useGraphStore();

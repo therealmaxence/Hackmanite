@@ -9,6 +9,8 @@ import {
   buildCoOccurring,
   fetchNeighborhoods,
 } from '@/lib/api/entity';
+import { uuid5 } from '@/lib/uuid5';
+import { syncSessionToKuzu } from '@/lib/api/sync';
 
 export const runtime = 'nodejs';
 
@@ -141,7 +143,6 @@ export async function PATCH(
       );
     }
 
-    const { uuid5 } = await import('@/lib/uuid5');
     const newId = uuid5(`${newType}:${entity.canonical}`);
 
     if (resolvedId === newId) {
@@ -311,7 +312,6 @@ export async function PATCH(
     }
 
     try {
-      const { syncSessionToKuzu } = await import('@/lib/api/sync');
       await syncSessionToKuzu(sessionId);
     } catch (err) {
       console.error('[PATCH entity] Sync to Kuzu failed:', err);

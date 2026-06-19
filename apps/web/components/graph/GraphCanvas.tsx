@@ -266,7 +266,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
         id="cy"
         style={{ width: '100%', height: '100%', background: 'var(--bg-base)' }}
       />
-      {!isPanelOpen && (
+      {(!isPanelOpen || isFullscreen) && (
         <button
           onClick={toggleFullscreen}
           title={isFullscreen ? t('graph.canvas.exit_fullscreen') : t('graph.canvas.fullscreen')}

@@ -27,6 +27,7 @@ interface GraphStore {
   setFilter: <K extends keyof GraphFilters>(key: K, val: GraphFilters[K]) => void;
   resetFilters: () => void;
   removeNode: (id: string | null) => void;
+  changeNodeType: (oldId: string, newId: string, newType: EntityType, newColor: string) => void;
   clearGraph: () => void;
   togglePanel: (open: boolean) => void;
   triggerRefresh: () => void;
@@ -91,6 +92,20 @@ export const useGraphStore = create<GraphStore>((set) => ({
           cooccurrenceNodeIds: s.cooccurrenceNodeIds.filter((x) => x !== id),
         }))
       : undefined,
+  changeNodeType: (oldId, newId, newType, newColor) =>
+    set((s) => ({
+      nodes: s.nodes.map((n) =>
+        n.id === oldId ? { ...n, id: newId, type: newType, color: newColor } : n
+      ),
+      edges: s.edges.map((e) => ({
+        ...e,
+        source: e.source === oldId ? newId : e.source,
+        target: e.target === oldId ? newId : e.target,
+      })),
+      selectedNodeId: s.selectedNodeId === oldId ? newId : s.selectedNodeId,
+      selectedNodeIds: s.selectedNodeIds.map((x) => (x === oldId ? newId : x)),
+      cooccurrenceNodeIds: s.cooccurrenceNodeIds.map((x) => (x === oldId ? newId : x)),
+    })),
   clearGraph: () =>
     set({
       nodes: [],

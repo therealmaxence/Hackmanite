@@ -18,7 +18,18 @@ export async function syncSessionToKuzu(sessionId: string): Promise<void> {
 
     const fileIds = files.map((f) => f.id);
 
-    let upstream = await fetch(`${NLP_URL}/graph/import`, {
+    let upstream = await fetch(`${NLP_URL}/graph/files/delete`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ file_ids: fileIds }),
+    });
+
+    if (!upstream.ok) {
+      const text = await upstream.text();
+      throw new Error(`Failed to delete existing file references: ${upstream.status} - ${text}`);
+    }
+
+    upstream = await fetch(`${NLP_URL}/graph/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ file_ids: fileIds, nodes: [], edges: [] }),

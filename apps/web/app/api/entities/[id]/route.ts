@@ -216,19 +216,15 @@ export async function PATCH(
         where: { sourceEntityId: resolvedId, fileId: { in: fileIds } },
       });
       for (const nb of sourceNeighborhoods) {
+        if (newId === nb.targetEntityId) {
+          await tx.entityNeighborhood.delete({ where: { id: nb.id } });
+          continue;
+        }
         const [src, tgt] = newId < nb.targetEntityId ? [newId, nb.targetEntityId] : [nb.targetEntityId, newId];
         const isSwapped = newId > nb.targetEntityId;
-
         const existingNb = await tx.entityNeighborhood.findUnique({
-          where: {
-            fileId_sourceEntityId_targetEntityId: {
-              fileId: nb.fileId,
-              sourceEntityId: src,
-              targetEntityId: tgt,
-            },
-          },
+          where: { fileId_sourceEntityId_targetEntityId: { fileId: nb.fileId, sourceEntityId: src, targetEntityId: tgt } },
         });
-
         if (existingNb) {
           if (nb.weight > existingNb.weight) {
             await tx.entityNeighborhood.update({
@@ -260,19 +256,15 @@ export async function PATCH(
         where: { targetEntityId: resolvedId, fileId: { in: fileIds } },
       });
       for (const nb of targetNeighborhoods) {
+        if (newId === nb.sourceEntityId) {
+          await tx.entityNeighborhood.delete({ where: { id: nb.id } });
+          continue;
+        }
         const [src, tgt] = nb.sourceEntityId < newId ? [nb.sourceEntityId, newId] : [newId, nb.sourceEntityId];
         const isSwapped = nb.sourceEntityId > newId;
-
         const existingNb = await tx.entityNeighborhood.findUnique({
-          where: {
-            fileId_sourceEntityId_targetEntityId: {
-              fileId: nb.fileId,
-              sourceEntityId: src,
-              targetEntityId: tgt,
-            },
-          },
+          where: { fileId_sourceEntityId_targetEntityId: { fileId: nb.fileId, sourceEntityId: src, targetEntityId: tgt } },
         });
-
         if (existingNb) {
           if (nb.weight > existingNb.weight) {
             await tx.entityNeighborhood.update({
@@ -327,7 +319,7 @@ export async function PATCH(
 
     await clearSessionGraphCache(sessionId);
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, newId });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     console.error('[PATCH entity] Unexpected error:', msg);

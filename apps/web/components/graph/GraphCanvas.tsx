@@ -10,6 +10,7 @@ import { useSWRConfig } from 'swr';
 import { useTranslation } from '@/lib/i18n';
 import { GraphNode, GraphEdge } from '@/lib/graph-builder';
 import { computeGraphCommunities } from '@/lib/graphCommunities';
+import { ENTITY_COLORS, EntityType } from '@/types/entities';
 
 import { useCytoscapeInit } from './hooks/useCytoscapeInit';
 import { useCytoscapeElements } from './hooks/useCytoscapeElements';
@@ -55,6 +56,8 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     selectNode,
     addCooccurrenceNodeId,
     setCooccurrenceModalOpen,
+    changeNodeType,
+    isPanelOpen,
   } = useGraphStore();
 
   const { sessionId } = useUploadStore();
@@ -101,12 +104,14 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   });
 
   useEffect(() => {
-    if (cyInstance) {
-      setTimeout(() => {
+    if (!cyInstance) return;
+    const timer = setTimeout(() => {
+      if (cyInstance && !cyInstance.destroyed()) {
         cyInstance.resize();
         cyInstance.fit();
-      }, 150);
-    }
+      }
+    }, 150);
+    return () => clearTimeout(timer);
   }, [isFullscreen, cyInstance]);
 
   useCytoscapeElements({
@@ -227,10 +232,10 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: newType, sessionId }),
       });
-      if (!res.ok) {
-        console.error('Failed to change node type');
-        return;
-      }
+      if (!res.ok) throw new Error('Failed to update node type on server');
+      const data = await res.json();
+      const newColor = ENTITY_COLORS[newType as EntityType] || '#6b7280';
+      changeNodeType(id, data.newId, newType as EntityType, newColor);
       mutate((key: unknown) => typeof key === 'string' && (key.includes('/api/graph/') || key.includes('/api/stats')));
     } catch (err) {
       console.error('Failed to change node type', err);
@@ -261,40 +266,42 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
         id="cy"
         style={{ width: '100%', height: '100%', background: 'var(--bg-base)' }}
       />
-      <button
-        onClick={toggleFullscreen}
-        title={isFullscreen ? t('graph.canvas.exit_fullscreen') : t('graph.canvas.fullscreen')}
-        style={{
-          position: 'absolute',
-          top: '1rem',
-          right: '1rem',
-          zIndex: 50,
-          width: '40px',
-          height: '40px',
-          borderRadius: 'var(--radius)',
-          background: 'var(--color-surface-raised) var(--noise-bg)',
-          border: 'none',
-          color: 'var(--color-text)',
-          cursor: 'pointer',
-          display: 'flex',
-          alignItems: 'center',
-          justifyContent: 'center',
-          boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-          transition: 'all 0.15s ease',
-        }}
-        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
-        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-      >
-        {isFullscreen ? (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
-          </svg>
-        ) : (
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-            <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
-          </svg>
-        )}
-      </button>
+      {!isPanelOpen && (
+        <button
+          onClick={toggleFullscreen}
+          title={isFullscreen ? t('graph.canvas.exit_fullscreen') : t('graph.canvas.fullscreen')}
+          style={{
+            position: 'absolute',
+            top: '1rem',
+            right: '1rem',
+            zIndex: 50,
+            width: '40px',
+            height: '40px',
+            borderRadius: 'var(--radius)',
+            background: 'var(--color-surface-raised) var(--noise-bg)',
+            border: 'none',
+            color: 'var(--color-text)',
+            cursor: 'pointer',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+            transition: 'all 0.15s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
+        >
+          {isFullscreen ? (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
+            </svg>
+          ) : (
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
+            </svg>
+          )}
+        </button>
+      )}
       <GraphSelectionTip />
       {contextMenu && contextMenu.visible && (
         <GraphContextMenu

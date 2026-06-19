@@ -6,20 +6,11 @@ import { useGraphStore } from '@/store/graphStore';
 import { ENTITY_COLORS } from '@/types/entities';
 import type { EntityType } from '@/types/entities';
 import type { GraphNode, GraphEdge } from '@/lib/graph-builder';
+import { useSyncGraphStore } from './useSyncGraphStore';
 
-
-/** Number of nodes fetched per HTTP request */
 const BATCH_SIZE = 100;
-
-/** Delay between automatic batch loads (ms). Gives the layout engine time to settle. */
 const AUTO_LOAD_DELAY_MS = 300;
-
-/**
- * After this many auto-loaded batches we stop and show a "Load more" button
- * rather than flooding the browser with 50k nodes automatically.
- */
 const AUTO_STOP_AFTER_BATCHES = 1;
-
 
 export interface ProgressiveGraphState {
   loadedNodes: GraphNode[];
@@ -44,30 +35,6 @@ export function useProgressiveGraph(): ProgressiveGraphState {
   const [isLoadingBatch, setIsLoadingBatch] = useState(false);
   const [autoLoadDone, setAutoLoadDone] = useState(false);
 
-  useEffect(() => {
-    setNodes(loadedNodes);
-  }, [loadedNodes, setNodes]);
-
-  useEffect(() => {
-    setEdges(loadedEdges);
-  }, [loadedEdges, setEdges]);
-
-  const graphNodes = useGraphStore((s) => s.nodes);
-  useEffect(() => {
-    const graphNodeIds = new Set(graphNodes.map((n) => n.id));
-    const removed = Array.from(loadedNodeIdsRef.current).filter((id) => !graphNodeIds.has(id));
-    if (removed.length === 0) return;
-    for (const id of removed) loadedNodeIdsRef.current.delete(id);
-    for (const key of Array.from(loadedEdgeKeysRef.current)) {
-      const [src, tgt] = key.split('|');
-      if (removed.includes(src) || removed.includes(tgt)) {
-        loadedEdgeKeysRef.current.delete(key);
-      }
-    }
-    setLoadedNodes((prev) => prev.filter((n) => !removed.includes(n.id)));
-    setLoadedEdges((prev) => prev.filter((e) => !removed.includes(e.source) && !removed.includes(e.target)));
-  }, [graphNodes]);
-
   const offsetRef = useRef(0);
   const batchCountRef = useRef(0);
   const loadedNodeIdsRef = useRef<Set<string>>(new Set());
@@ -78,6 +45,28 @@ export function useProgressiveGraph(): ProgressiveGraphState {
 
   sessionIdRef.current = sessionId;
   filtersRef.current = filters;
+
+  const loadedNodesRef = useRef(loadedNodes);
+  const loadedEdgesRef = useRef(loadedEdges);
+  loadedNodesRef.current = loadedNodes;
+  loadedEdgesRef.current = loadedEdges;
+
+  useEffect(() => {
+    setNodes(loadedNodes);
+  }, [loadedNodes, setNodes]);
+
+  useEffect(() => {
+    setEdges(loadedEdges);
+  }, [loadedEdges, setEdges]);
+
+  useSyncGraphStore({
+    loadedNodesRef,
+    setLoadedNodes,
+    loadedEdgesRef,
+    setLoadedEdges,
+    loadedNodeIdsRef,
+    loadedEdgeKeysRef,
+  });
 
   const typeParam = filters.entityTypes.join(',');
 
@@ -101,12 +90,8 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         }
       }
 
-      if (addedNodes.length > 0) {
-        setLoadedNodes((prev) => [...prev, ...addedNodes]);
-      }
-      if (addedEdges.length > 0) {
-        setLoadedEdges((prev) => [...prev, ...addedEdges]);
-      }
+      if (addedNodes.length > 0) setLoadedNodes((prev) => [...prev, ...addedNodes]);
+      if (addedEdges.length > 0) setLoadedEdges((prev) => [...prev, ...addedEdges]);
     },
     []
   );
@@ -128,6 +113,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         types: filtersRef.current.entityTypes.join(','),
         ...(from ? { from } : {}),
         ...(to ? { to } : {}),
+        _t: String(Date.now()),
       });
 
       const res = await fetch(`/api/graph/nodes?${params}`);
@@ -137,7 +123,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
       let weakNodes: GraphNode[] = [];
       if (offset === 0 && filtersRef.current.showWeakSignals) {
         try {
-          const wsRes = await fetch(`/api/stats/weak-signals?sessionId=${sid}`);
+          const wsRes = await fetch(`/api/stats/weak-signals?sessionId=${sid}&_t=${Date.now()}`);
           if (wsRes.ok) {
             const wsData = await wsRes.json();
             const rawWeak = [
@@ -258,6 +244,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         types: filtersRef.current.entityTypes.join(','),
         ...(from ? { from } : {}),
         ...(to ? { to } : {}),
+        _t: String(Date.now()),
       });
       const res = await fetch(`/api/graph/count?${params}`);
       const data = res.ok ? await res.json() : { count: 0 };
@@ -277,7 +264,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     return () => {
       if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     };
-  }, [sessionId, typeParam, fromParam, toParam, refreshTrigger, filters.showWeakSignals]);
+  }, [sessionId, typeParam, fromParam, toParam, refreshTrigger, filters.showWeakSignals, resetAndStart]);
 
   const loadMore = useCallback(() => {
     if (isLoadingBatch || !hasMore) return;

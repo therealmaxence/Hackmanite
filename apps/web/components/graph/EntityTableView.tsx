@@ -26,6 +26,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
     togglePanel,
     addCooccurrenceNodeId,
     setCooccurrenceModalOpen,
+    changeNodeType,
   } = useGraphStore();
 
   const [sortField, setSortField] = useState<SortField>('totalOccurrences');
@@ -130,10 +131,10 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ type: newType, sessionId }),
       });
-      if (!res.ok) {
-        console.error('Failed to change node type');
-        return;
-      }
+      if (!res.ok) throw new Error('Failed to update node type on server');
+      const data = await res.json();
+      const newColor = ENTITY_COLORS[newType as EntityType] || '#6b7280';
+      changeNodeType(id, data.newId, newType as EntityType, newColor);
       mutate((key: unknown) => typeof key === 'string' && (key.includes('/api/graph/') || key.includes('/api/stats')));
     } catch (err) {
       console.error('Failed to change node type', err);

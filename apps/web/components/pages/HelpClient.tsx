@@ -10,7 +10,7 @@ type TabKey = 'guide' | 'algorithms' | 'filters' | 'weak_signals' | 'ai_report';
 const HELP_TRANSLATIONS = {
   en: {
     title: 'Help Center',
-    subtitle: 'Learn how Hackmanite analyzes documents, manages sessions, and computes intelligence metrics.',
+    subtitle: 'Learn how Hackmanite analyzes documents, manages sessions, and computes metrics.',
     tabs: {
       guide: 'Features Guide',
       algorithms: 'Extraction & Graphs',
@@ -25,23 +25,23 @@ const HELP_TRANSLATIONS = {
         items: [
           {
             title: 'File Ingestion & Dropzone',
-            content: 'Upload plain text, PDFs, Word documents (DOCX), Excel spreadsheets (XLSX), images, emails (EML/PST), and more. Files are queued and processed asynchronously in the background. If a server restart occurs, you can click "Retry Failed" to re-trigger failed extractions.',
+            content: 'Upload plain text, PDFs, Word documents (DOCX), Excel spreadsheets (XLSX), images, emails (EML/PST), and more. Files are queued and processed asynchronously in the background. If an error occurs, you can click "Retry Failed" to re-trigger failed extractions.',
           },
           {
             title: 'Interactive Graph Explorer',
-            content: 'Visualize the connections between entities across your documents. Double-click a node to expand its relations, right-click to view options, or hold Control/Command and click multiple nodes to open the Co-occurrence analysis panel.',
+            content: 'Visualize the connections between entities across your documents. Click on a node to see more details, right-click to view options, or hold Control/Command and click multiple nodes to open the Co-occurrence panel.',
           },
           {
             title: 'Co-occurrence Analysis',
-            content: 'Select two or more entities using Ctrl+Click to find documents or specific snippets where they appear together. Switch between "File Co-occurrence" (to view overlapping files) and "Text Co-occurrence" (to view exact sentences highlighting their proximity).',
+            content: 'Select two or more entities using Ctrl+Click to find documents or specific text snippets where they appear together. Switch between "File Co-occurrence" (to view overlapping files) and "Text Co-occurrence" (to view shared text snippets).',
           },
           {
             title: 'Emails Dashboard',
-            content: 'Dedicated interface to browse and filter extracted email data, metadata (From, To, Subject, Date), and find source documents.',
+            content: 'Dedicated interface to browse, visualize and filter extracted email data, metadata (From, To, Subject, Date), and find source documents.',
           },
           {
-            title: 'Session Management',
-            content: 'Export your entire workspace state (entities, edges, and documents) to a standalone JSON snapshot. Restore it at any time, or switch between different SQLite-backed analysis databases via the Session Manager.',
+            title: 'Session Export (JSON & Obsidian)',
+            content: 'Save your progress or share analysis by exporting sessions in two formats:\n\n- **JSON Snapshot**: A complete, self-contained database backup of all entities, files, and co-occurrences that can be re-imported into any instance of Hackmanite.\n- **Obsidian Vault (ZIP)**: Generates a ZIP archive containing a structured local knowledge base of Markdown files. Every entity and document gets its own page, fully interconnected via wiki-links (`[[Entities/Name]]`), complete with metadata, text snippets, and email headers.',
           },
         ]
       },
@@ -51,7 +51,7 @@ const HELP_TRANSLATIONS = {
         items: [
           {
             title: 'Named Entity Recognition (NER)',
-            content: 'Powered by spaCy language models (large models for English, French, and Russian). Text is tokenized and analyzed using deep learning to locate names of people, locations, organizations, dates, phone numbers, and URLs.',
+            content: 'Powered by spaCy language models (large models for English, French, and Russian). Text is analyzed using spaCy to locate names of people, locations, organizations, dates, phone numbers, and URLs.',
           },
           {
             title: 'Optical Character Recognition (OCR)',
@@ -59,13 +59,13 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Network Construction',
-            content: 'A node represents an entity. An edge represents a co-occurrence link. If two entities appear within the same sentence or paragraph, an edge is created between them. The weight of the edge corresponds to the total number of shared co-occurrences.',
+            content: 'A node represents an entity. An edge represents a co-occurrence link. If two entities appear within the same sentence or paragraph, an edge is created between them. The weight of the edge corresponds to the distance between the entities in the snippet.',
           },
         ]
       },
       filters: {
         title: 'Filters & Network Metrics',
-        desc: 'Control what is visible on the graph using mathematical thresholds.',
+        desc: 'Control what is visible on the graph using filters.',
         items: [
           {
             title: 'TF-IDF (Term Frequency-Inverse Document Frequency)',
@@ -77,26 +77,26 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Betweenness Centrality',
-            content: 'Measures how often a node sits on the shortest path between all other pairs of nodes in the network. Nodes with high betweenness act as bridges or gatekeepers between otherwise disconnected clusters.',
+            content: 'Measures how often a node sits on the shortest path between all other pairs of nodes in the network. Nodes with high betweenness act as bridges between clusters.',
           },
         ]
       },
       weak_signals: {
         title: 'Weak Signals Detection',
-        desc: 'Weak signals are early indicators of emerging topics or hidden brokers. Hackmanite computes three distinct metrics:',
+        desc: 'Weak signals are early indicators of emerging entities. Hackmanite computes three distinct metrics:',
         items: [
           {
-            title: 'Methodology A: Rare Bridges',
+            title: 'Rare Bridges',
             formula: 'Score = Betweenness Centrality / (Total Occurrences + 1)',
             content: 'Identifies entities that have very few occurrences globally but serve as critical topological bridges between different communities in the network. This highlights brokers and intermediaries rather than obvious, highly visible hubs.',
           },
           {
-            title: 'Methodology B: Niche Topics',
+            title: 'Niche Topics',
             formula: 'Score = Maximum TF-IDF in local occurrences',
             content: 'Detects highly specific topics that appear in at most 2 files. By ordering by maximum local TF-IDF, we isolate concentrated local signals that are highly significant inside their specific documents but have not yet spread across the rest of the corpus.',
           },
           {
-            title: 'Methodology C: Spiking Signals',
+            title: 'Spiking Signals',
             formula: 'Score = Peak Window TF-IDF * Concentration Ratio',
             content: 'Identifies isolated bursts of occurrences in the timeline. The session timespan is analyzed using a sliding window of 20% (moving in steps of 10%). If an entity exhibits a concentrated spike inside a window (at least 60% of its total occurrences fall within that window), it is highlighted as an emerging signal.',
           },
@@ -112,11 +112,11 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Prompt Injection',
-            content: 'This raw metadata is structured into a clean JSON/text schema and injected into a system prompt configured to prevent hallucinations and strictly report on factual session data.',
+            content: 'This raw metadata is structured into a clean JSON/text schema and injected into a system prompt configured to prevent hallucinations and report on factual session data. Not that the AI report does not replce human analysis !',
           },
           {
             title: 'LLM Synthesis',
-            content: 'The combined prompt is dispatched to Mistral AI models to synthesize a professional intelligence report, complete with key findings, entity profiles, and strategic summaries.',
+            content: 'The combined prompt is dispatched to Mistral AI models (or other compatible models) to synthesize a professional intelligence report, complete with key findings, entity profiles, and strategic summaries.',
           },
         ]
       },
@@ -124,7 +124,7 @@ const HELP_TRANSLATIONS = {
   },
   fr: {
     title: "Centre d'Aide",
-    subtitle: "Découvrez comment Hackmanite analyse vos documents, gère vos sessions et calcule les métriques d'intelligence.",
+    subtitle: "Découvrez comment Hackmanite analyse vos documents, gère vos sessions et calcule les métriques statistiques d'intelligence.",
     tabs: {
       guide: 'Guide des Fonctionnalités',
       algorithms: 'Extraction & Graphes',
@@ -143,19 +143,19 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Explorateur de Graphe Interactif',
-            content: 'Visualisez les connexions entre entités sous forme de réseau. Double-cliquez sur un nœud pour afficher ses relations, faites un clic droit pour accéder aux actions rapides, ou maintenez Ctrl/Cmd et cliquez sur plusieurs nœuds pour ouvrir le volet d\'analyse de co-occurrence.',
+            content: 'Visualisez les connexions entre entités sous forme de réseau. Cliquez sur un nœud pour afficher ses propriétés, faites un clic droit pour accéder aux actions rapides, ou maintenez Ctrl/Cmd et cliquez sur plusieurs nœuds pour ouvrir le volet d\'analyse de co-occurrence.',
           },
           {
             title: 'Analyse des Co-occurrences',
-            content: 'Sélectionnez deux entités ou plus via Ctrl+Clic pour trouver les documents ou les passages de texte exacts où elles apparaissent ensemble. Basculez entre "Co-occurrence de fichiers" (fichiers partagés) et "Co-occurrence de texte" (phrases exactes surlignant leur proximité).',
+            content: 'Sélectionnez deux entités ou plus via Ctrl + Clic/Command + Clic pour trouver les documents ou les passages de texte exacts où elles apparaissent ensemble. Basculez entre "Co-occurrence de fichiers" (fichiers communs) et "Co-occurrence de texte" (extraits textuels communs).',
           },
           {
             title: 'Registre des E-mails',
-            content: 'Interface dédiée à la consultation et au filtrage des e-mails extraits (Expéditeur, Destinataire, Objet, Date) et à la recherche de leurs documents sources.',
+            content: 'Interface dédiée à la consultation, visualisation et au filtrage des e-mails (Expéditeur, Destinataire, Objet, Date) et à la recherche de leurs documents sources.',
           },
           {
-            title: 'Gestion des Sessions',
-            content: 'Exportez l\'état complet de votre espace de travail (entités, liens et documents) sous forme de fichier JSON autonome. Restaurez-le à tout moment ou changez de base de données d\'analyse SQLite locale via le Gestionnaire de sessions.',
+            title: 'Export de Session (JSON & Obsidian)',
+            content: 'Sauvegardez votre travail ou partagez vos analyses en exportant vos sessions sous deux formats :\n\n- **Instantané JSON** : Une sauvegarde complète contenant toutes les entités, relations et fichiers, prête à être réimportée sur n\'importe quelle instance d\'Hackmanite.\n- **Coffre Obsidian (ZIP)** : Génère une archive ZIP contenant une base de connaissances locale au format Markdown. Chaque entité et document possède sa propre page interconnectée via des liens internes wiki (`[[Entities/Name]]`), complétée par des métadonnées, des extraits de texte et des en-têtes d\'e-mails.',
           },
         ]
       },
@@ -165,7 +165,7 @@ const HELP_TRANSLATIONS = {
         items: [
           {
             title: 'Reconnaissance d\'Entités Nommées (NER)',
-            content: 'Propulsée par les modèles de traitement du langage spaCy (modèles larges pour l\'anglais, le français et le russe). Le texte est découpé et analysé par réseaux de neurones pour identifier les personnes, organisations, lieux, dates, téléphones et adresses URL.',
+            content: 'Sur la base des modèles de traitement du langage spaCy (modèles larges pour l\'anglais, le français et le russe). Le texte est découpé et analysé par spaCy pour identifier les personnes, organisations, lieux, dates, téléphones et adresses URL.',
           },
           {
             title: 'Reconnaissance Optique de Caractères (OCR)',
@@ -173,13 +173,13 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Construction du Réseau',
-            content: 'Chaque entité devient un nœud. Si deux entités co-apparaissent dans la même phrase ou le même paragraphe, un lien (arête) est établi. Le poids de ce lien est proportionnel au nombre total de co-occurrences partagées.',
+            content: 'Chaque entité devient un nœud. Si deux entités apparaissent dans le même extrait textuel, un lien (arête) est établi. Le poids de ce lien est inversement proportionnel à la distance entre les entités.',
           },
         ]
       },
       filters: {
         title: 'Filtres & Métriques de Réseau',
-        desc: 'Contrôlez les éléments affichés sur le graphe à l\'aide de seuils mathématiques.',
+        desc: 'Contrôlez les éléments affichés sur le graphe à l\'aide des paramètres.',
         items: [
           {
             title: 'TF-IDF (Term Frequency-Inverse Document Frequency)',
@@ -187,7 +187,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Centralité de Degré',
-            content: 'Représente le nombre de connexions uniques d\'un nœud. Une centralité de degré élevée met en évidence les "hubs" ou carrefours majeurs de vos documents.',
+            content: 'Représente le nombre de connexions uniques d\'un nœud. Une centralité de degré élevée met en évidence les "hubs" dans vos documents.',
           },
           {
             title: 'Centralité d\'Intermédiarité',
@@ -200,17 +200,17 @@ const HELP_TRANSLATIONS = {
         desc: 'Les signaux faibles sont des indicateurs précoces de sujets émergents ou des passerelles discrètes. Hackmanite calcule trois métriques distinctes :',
         items: [
           {
-            title: 'Méthodologie A : Ponts Rares',
+            title: 'Ponts Rares',
             formula: 'Score = Centralité d\'intermédiarité / (Occurrences totales + 1)',
-            content: 'Identifie les entités peu fréquentes mais stratégiques qui agissent comme ponts topologiques entre différentes communautés. Permet de cibler les intermédiaires discrets plutôt que les hubs évidents.',
+            content: 'Identifie les entités peu fréquentes mais stratégiques qui agissent comme ponts entre différentes communautés. Permet de cibler les intermédiaires discrets plutôt que les hubs évidents.',
           },
           {
-            title: 'Méthodologie B : Sujets de Niche',
+            title: 'Sujets de Niche',
             formula: 'Score = TF-IDF maximum dans les occurrences locales',
             content: 'Détecte les sujets très spécifiques présents dans au plus 2 fichiers. En classant par le TF-IDF local maximal, on isole les signaux locaux très concentrés qui n\'ont pas encore diffusé dans le reste du corpus.',
           },
           {
-            title: 'Méthodologie C : Signaux à Pic',
+            title: 'Pics Temporels',
             formula: 'Score = TF-IDF de la fenêtre de pic * Ratio de concentration',
             content: 'Détecte les sursauts (spikes) temporels isolés. Le temps total de la session est découpé avec une fenêtre glissante de 20 % (pas de 10 %). Si au moins 60 % des occurrences d\'une entité se concentrent dans une seule fenêtre, elle est identifiée comme un signal émergent.',
           },
@@ -218,7 +218,7 @@ const HELP_TRANSLATIONS = {
       },
       ai_report: {
         title: 'Moteur de Rapports d\'Intelligence IA',
-        desc: 'Comment l\'IA synthétise vos données pour rédiger des briefings.',
+        desc: 'Comment l\'IA synthétise vos données pour rédiger un rapport.',
         items: [
           {
             title: 'Rassemblement du Contexte',
@@ -230,7 +230,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Synthèse par LLM',
-            content: 'La requête est transmise aux modèles Mistral AI afin de rédiger une analyse stratégique claire et documentée des événements clés de la session.',
+            content: 'La requête est transmise aux modèles Mistral AI (ou autre modèle compatible) afin de rédiger une analyse stratégique claire et documentée des événements clés de la session. Notez que le rapport IA ne remplace pas l\'analyse humaine !',
           },
         ]
       },

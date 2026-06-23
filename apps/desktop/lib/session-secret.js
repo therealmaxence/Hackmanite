@@ -3,32 +3,24 @@ const path = require('path');
 const fs = require('fs');
 const crypto = require('crypto');
 
-// Logger utility
-const log = (msg, meta = {}) => {
-  console.log(`[Electron Main][SessionSecret] ${msg}`, meta);
-};
+const log = (msg, err) => console.log(`[Electron Main][SessionSecret] ${msg}`, err ? { error: err.message } : {});
 
 function getOrCreateSessionSecret() {
-  const secretPath = path.join(app.getPath('userData'), 'session-secret.json');
+  const file = path.join(app.getPath('userData'), 'session-secret.json');
   try {
-    if (fs.existsSync(secretPath)) {
-      const data = JSON.parse(fs.readFileSync(secretPath, 'utf8'));
-      if (data && data.secret && data.secret.length >= 32) {
-        log("Loaded persistent session secret successfully.");
-        return data.secret;
-      }
+    if (fs.existsSync(file)) {
+      const { secret } = JSON.parse(fs.readFileSync(file, 'utf8'));
+      if (secret && secret.length >= 32) return log("Loaded persistent session secret successfully."), secret;
     }
   } catch (e) {
-    log("Failed to read persistent session secret, generating a new one...", { error: e.message });
+    log("Failed to read persistent session secret, generating a new one...", e);
   }
-
   const secret = crypto.randomBytes(32).toString('hex');
-
   try {
-    fs.writeFileSync(secretPath, JSON.stringify({ secret }, null, 2), 'utf8');
+    fs.writeFileSync(file, JSON.stringify({ secret }), 'utf8');
     log("Created and persisted new session secret.");
   } catch (e) {
-    log("Failed to persist session secret", { error: e.message });
+    log("Failed to persist session secret", e);
   }
   return secret;
 }

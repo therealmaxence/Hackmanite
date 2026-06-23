@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { Prisma } from '@prisma/client';
 import { ErrorCodes } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -22,31 +23,16 @@ export async function GET(req: NextRequest) {
       return NextResponse.json({ files: [] });
     }
 
-    const occurrences = await prisma.occurrence.findMany({
-      where: {
-        entityId: { in: nodeIds },
-        file: { sessionId },
-      },
-      select: {
-        fileId: true,
-        entityId: true,
-      },
-    });
+    const matchingFiles = await prisma.$queryRaw<any[]>`
+      SELECT o.fileId
+      FROM occurrences o
+      JOIN files f ON f.id = o.fileId
+      WHERE f.sessionId = ${sessionId} AND o.entityId IN (${Prisma.join(nodeIds)})
+      GROUP BY o.fileId
+      HAVING COUNT(DISTINCT o.entityId) = ${nodeIds.length}
+    `;
 
-    const fileEntityMap = new Map<string, Set<string>>();
-    for (const occ of occurrences) {
-      if (!fileEntityMap.has(occ.fileId)) {
-        fileEntityMap.set(occ.fileId, new Set());
-      }
-      fileEntityMap.get(occ.fileId)!.add(occ.entityId);
-    }
-
-    const matchingFileIds: string[] = [];
-    for (const [fileId, entities] of fileEntityMap.entries()) {
-      if (entities.size === nodeIds.length) {
-        matchingFileIds.push(fileId);
-      }
-    }
+    const matchingFileIds = matchingFiles.map((f) => f.fileId);
 
     if (matchingFileIds.length === 0) {
       return NextResponse.json({ files: [] });

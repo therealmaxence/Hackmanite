@@ -4,15 +4,10 @@ import { useCallback, useState } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
 import type { UploadResponse } from '@/types/api';
 
-const CONCURRENCY_LIMIT = 5; // Max number of concurrent uploads
+const CONCURRENCY_LIMIT = 5;
 
-const chunkArray = <T,>(arr: T[], size: number): T[][] => {
-  const chunks: T[][] = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-};
+const chunkArray = <T,>(arr: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, (i + 1) * size));
 
 export function useUpload() {
   const { setSessionId, addFiles, setUploading, sessionId } = useUploadStore();
@@ -29,41 +24,31 @@ export function useUpload() {
       const uploadChunk = async (chunk: File[], activeSessionId: string | null): Promise<string | null> => {
         try {
           const form = new FormData();
-          for (const f of chunk) form.append('files', f);
+          chunk.forEach((f) => form.append('files', f));
           if (activeSessionId) form.append('sessionId', activeSessionId);
-          let ws = windowSize;
-          let mc = undefined;
-          let mo = undefined;
-          let mw = undefined;
 
+          let params: Record<string, any> = { windowSize };
           if (!activeSessionId && typeof window !== 'undefined') {
-            const local = localStorage.getItem('entitygraph_default_settings');
-            if (local) {
-              try {
-                const defaults = JSON.parse(local);
-                if (ws === undefined && defaults.windowSize !== undefined) ws = defaults.windowSize;
-                if (defaults.minConnections !== undefined) mc = defaults.minConnections;
-                if (defaults.minOccurrences !== undefined) mo = defaults.minOccurrences;
-                if (defaults.minEdgeWeight !== undefined) mw = defaults.minEdgeWeight;
-              } catch (e) {
-                console.error('Failed to parse default settings from localStorage:', e);
-              }
+            try {
+              const defaults = JSON.parse(localStorage.getItem('entitygraph_default_settings') || '{}');
+              params = {
+                windowSize: windowSize ?? defaults.windowSize,
+                minConnections: defaults.minConnections,
+                minOccurrences: defaults.minOccurrences,
+                minEdgeWeight: defaults.minEdgeWeight,
+              };
+            } catch (e) {
+              console.error('Failed to parse default settings:', e);
             }
           }
-
-          if (ws !== undefined) form.append('windowSize', String(ws));
-          if (mc !== undefined) form.append('minConnections', String(mc));
-          if (mo !== undefined) form.append('minOccurrences', String(mo));
-          if (mw !== undefined) form.append('minEdgeWeight', String(mw));
+          Object.entries(params).forEach(([k, v]) => {
+            if (v !== undefined) form.append(k, String(v));
+          });
 
           const res = await fetch('/api/upload', { method: 'POST', body: form });
-          if (!res.ok) {
-            const err = await res.json();
-            throw new Error(err.error || 'Upload failed');
-          }
+          if (!res.ok) throw new Error((await res.json()).error || 'Upload failed');
 
           const data: UploadResponse = await res.json();
-
           addFiles(
             data.jobs.map((j, i) => {
               const matchedFile = chunk.find((f) => f.name === j.originalName) || chunk[i];
@@ -92,35 +77,25 @@ export function useUpload() {
       try {
         const chunks = chunkArray(files, 10);
 
-        // If we don't have a sessionId yet, upload the first chunk sequentially to initialize the session
         if (!currentSessionId && chunks.length > 0) {
-          const firstChunk = chunks.shift()!;
-          const initializedSessionId = await uploadChunk(firstChunk, null);
+          const initializedSessionId = await uploadChunk(chunks.shift()!, null);
           if (initializedSessionId) {
             currentSessionId = initializedSessionId;
             setSessionId(initializedSessionId);
           }
         }
 
-        // Upload remaining chunks concurrently using a concurrency pool
         if (chunks.length > 0 && currentSessionId) {
           const chunksQueue = [...chunks];
-          const concurrencyLimit = CONCURRENCY_LIMIT;
-
           const worker = async () => {
             while (chunksQueue.length > 0) {
               const nextChunk = chunksQueue.shift();
-              if (!nextChunk) break;
-              await uploadChunk(nextChunk, currentSessionId);
+              if (nextChunk) await uploadChunk(nextChunk, currentSessionId);
             }
           };
-
-          const workers = Array.from(
-            { length: Math.min(CONCURRENCY_LIMIT, chunksQueue.length) },
-            worker
+          await Promise.all(
+            Array.from({ length: Math.min(CONCURRENCY_LIMIT, chunksQueue.length) }, worker)
           );
-
-          await Promise.all(workers);
         }
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : 'Upload batch failed';

@@ -3,7 +3,6 @@ import { Prisma } from '@prisma/client';
 
 const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 
-// Include shape reused in both GET and fallback queries
 const occurrenceInclude = (sessionId: string | null) => ({
   occurrences: {
     include: { file: true },
@@ -12,20 +11,13 @@ const occurrenceInclude = (sessionId: string | null) => ({
   },
 });
 
-// Tries to find entity by Prisma ID; if not found, resolves via KuzuDB UUID5 fallback
 export async function resolveEntity(id: string, sessionId: string | null) {
-  let entity = await prisma.entity.findUnique({
-    where: { id },
-    include: occurrenceInclude(sessionId),
-  });
-
-  if (!entity) {
-    entity = await resolveEntityViaKuzu(id, sessionId);
-  }
-  return entity;
+  return (
+    (await prisma.entity.findUnique({ where: { id }, include: occurrenceInclude(sessionId) })) ||
+    (await resolveEntityViaKuzu(id, sessionId))
+  );
 }
 
-// Resolve entity by querying KuzuDB for canonical/type, then look it up in Prisma
 async function resolveEntityViaKuzu(id: string, sessionId: string | null) {
   try {
     const res = await fetch(`${NLP_URL}/graph/node/${id}`, { cache: 'no-store' });
@@ -42,9 +34,7 @@ async function resolveEntityViaKuzu(id: string, sessionId: string | null) {
 }
 
 export async function resolveEntityId(id: string): Promise<string> {
-  const exists = await prisma.entity.findUnique({ where: { id }, select: { id: true } });
-  if (exists) return id;
-
+  if (await prisma.entity.findUnique({ where: { id }, select: { id: true } })) return id;
   try {
     const res = await fetch(`${NLP_URL}/graph/node/${id}`, { cache: 'no-store' });
     if (!res.ok) return id;
@@ -59,8 +49,6 @@ export async function resolveEntityId(id: string): Promise<string> {
   }
   return id;
 }
-
-// ─── Response builders ─────────────────────────────────────────────────────────
 
 type Neighborhood = Prisma.EntityNeighborhoodGetPayload<{
   include: { file: true; sourceEntity: true; targetEntity: true };
@@ -96,21 +84,16 @@ interface FileEntry {
   }[];
 }
 
-function makeFileEntry(
-  fileId: string,
-  file: OccurrenceWithFile['file']
-): FileEntry {
-  return {
-    fileId,
-    fileName: file.originalName,
-    mimeType: file.mimeType,
-    sizeBytes: Number(file.sizeBytes),
-    uploadedAt: file.uploadedAt.toISOString(),
-    processedAt: file.processedAt ? file.processedAt.toISOString() : null,
-    count: 0,
-    snippets: [],
-  };
-}
+const makeFileEntry = (fileId: string, file: OccurrenceWithFile['file']): FileEntry => ({
+  fileId,
+  fileName: file.originalName,
+  mimeType: file.mimeType,
+  sizeBytes: Number(file.sizeBytes),
+  uploadedAt: file.uploadedAt.toISOString(),
+  processedAt: file.processedAt?.toISOString() || null,
+  count: 0,
+  snippets: [],
+});
 
 export function buildEntityFiles(
   entity: { id: string; displayName: string; type: string; occurrences: OccurrenceWithFile[] },
@@ -119,32 +102,25 @@ export function buildEntityFiles(
   const filesMap = new Map<string, FileEntry>();
 
   for (const occ of entity.occurrences) {
-    const entry = filesMap.get(occ.fileId) ?? makeFileEntry(occ.fileId, occ.file);
+    const entry = filesMap.get(occ.fileId) || makeFileEntry(occ.fileId, occ.file);
     entry.count += occ.count;
 
-    const excerpts: unknown[] =
-      typeof occ.excerpts === 'string'
-        ? JSON.parse(occ.excerpts)
-        : (occ.excerpts as unknown[]) ?? [];
+    const excerpts = typeof occ.excerpts === 'string'
+      ? JSON.parse(occ.excerpts)
+      : (occ.excerpts as any[]) ?? [];
 
     for (const ex of excerpts) {
-      let text = '';
-      let offset = 0;
-      if (typeof ex === 'string') {
-        text = ex;
-      } else if (ex && typeof (ex as { text?: unknown }).text === 'string') {
-        text = (ex as { text: string }).text;
-        offset = typeof (ex as { offset?: unknown }).offset === 'number' ? (ex as { offset: number }).offset : 0;
+      const text = typeof ex === 'string' ? ex : ex?.text;
+      if (text) {
+        entry.snippets.push({
+          text,
+          offset: typeof ex === 'object' && typeof ex?.offset === 'number' ? ex.offset : 0,
+          relatedEntityId: entity.id,
+          relatedEntityName: entity.displayName,
+          relatedEntityType: entity.type,
+          weight: 1.0,
+        });
       }
-      if (!text) continue;
-      entry.snippets.push({
-        text,
-        offset,
-        relatedEntityId: entity.id,
-        relatedEntityName: entity.displayName,
-        relatedEntityType: entity.type,
-        weight: 1.0,
-      });
     }
     filesMap.set(occ.fileId, entry);
   }
@@ -152,7 +128,7 @@ export function buildEntityFiles(
   for (const nb of neighborhoods) {
     const isSource = nb.sourceEntityId === entity.id;
     const related = isSource ? nb.targetEntity : nb.sourceEntity;
-    const entry = filesMap.get(nb.fileId) ?? makeFileEntry(nb.fileId, nb.file as unknown as OccurrenceWithFile['file']);
+    const entry = filesMap.get(nb.fileId) || makeFileEntry(nb.fileId, nb.file as any);
     entry.count += 1;
     entry.snippets.push({
       text: nb.snippet,
@@ -168,14 +144,10 @@ export function buildEntityFiles(
   return Array.from(filesMap.values());
 }
 
-export function buildCoOccurring(
-  entity: { id: string },
-  neighborhoods: Neighborhood[]
-) {
+export function buildCoOccurring(entity: { id: string }, neighborhoods: Neighborhood[]) {
   const map = new Map<string, { id: string; displayName: string; type: string; weight: number }>();
   for (const nb of neighborhoods) {
-    const isSource = nb.sourceEntityId === entity.id;
-    const related = isSource ? nb.targetEntity : nb.sourceEntity;
+    const related = nb.sourceEntityId === entity.id ? nb.targetEntity : nb.sourceEntity;
     const current = map.get(related.id);
     if (!current || nb.weight > current.weight) {
       map.set(related.id, {
@@ -189,7 +161,6 @@ export function buildCoOccurring(
   return Array.from(map.values());
 }
 
-// Fetch neighborhoods for a given entity scoped to a session
 export async function fetchNeighborhoods(entityId: string, sessionId: string) {
   return prisma.entityNeighborhood.findMany({
     where: {

@@ -1,22 +1,9 @@
 'use client';
 
-import React from 'react';
-
-interface SpinnerProps {
-  size?: number;
-  color?: string;
-}
-
-export default function Spinner({ size = 20, color = 'var(--color-text-muted)' }: SpinnerProps) {
+export default function Spinner({ size = 20, color = 'var(--color-text-muted)' }: { size?: number; color?: string }) {
   return (
     <svg
-      width={size}
-      height={size}
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke={color}
-      strokeWidth="2.5"
-      strokeLinecap="round"
+      width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2.5" strokeLinecap="round"
       style={{ animation: 'spin 0.7s linear infinite', flexShrink: 0 }}
     >
       <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>

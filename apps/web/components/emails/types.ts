@@ -1,12 +1,7 @@
-// Shared types for the Emails feature
-
 export interface Attachment {
   filename: string;
   size: number;
-  entities?: {
-    canonical: string;
-    type: string;
-  }[];
+  entities?: { canonical: string; type: string }[];
 }
 
 export interface EmailNodeData {
@@ -43,3 +38,4 @@ export interface EmailStats {
 
 export type LayoutType = 'breadthfirst' | 'cose-bilkent';
 export type ActiveTab = 'graph' | 'list';
+

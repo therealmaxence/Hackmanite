@@ -3,19 +3,13 @@ import { randomUUID } from 'crypto';
 
 const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
-function serializeToString(val: any): string | null {
-  if (val === null || val === undefined) return null;
-  if (typeof val === 'object') return JSON.stringify(val);
-  return String(val);
-}
+const serializeToString = (val: any): string | null => {
+  if (val == null) return null;
+  return typeof val === 'object' ? JSON.stringify(val) : String(val);
+};
 
-function chunkArray<T>(arr: T[], size: number): T[][] {
-  const chunks = [];
-  for (let i = 0; i < arr.length; i += size) {
-    chunks.push(arr.slice(i, i + size));
-  }
-  return chunks;
-}
+const chunkArray = <T>(arr: T[], size: number): T[][] =>
+  Array.from({ length: Math.ceil(arr.length / size) }, (_, i) => arr.slice(i * size, (i + 1) * size));
 
 export interface ImportInput {
   sessionId?: string;
@@ -48,12 +42,7 @@ function extractFilesMap(nodes: any[], edges: any[], emails?: any[]) {
 
   for (const edge of edges) {
     if (edge.fileId && !filesMap.has(edge.fileId)) {
-      filesMap.set(edge.fileId, {
-        fileName: edge.fileName || 'unknown.txt',
-        mimeType: 'text/plain',
-        sizeBytes: 0,
-        originalCreatedAt: null,
-      });
+      filesMap.set(edge.fileId, { fileName: edge.fileName || 'unknown.txt', mimeType: 'text/plain', sizeBytes: 0, originalCreatedAt: null });
     }
   }
 
@@ -73,43 +62,23 @@ function extractFilesMap(nodes: any[], edges: any[], emails?: any[]) {
   return filesMap;
 }
 
+const CODE_KEYWORDS = new Set(['let', 'const', 'var', 'function', 'import', 'class', 'return', 'null', 'undefined', 'true', 'false']);
+
 function isValidEntity(text: string, type: string): boolean {
-  if (type === 'PERSON' || type === 'ORGANIZATION') {
-    if (text.length < 2) {
-      return false;
-    }
-    if (/[=+(){}[\]/\\;<>*!|%?^$@#"]/.test(text)) {
-      return false;
-    }
-    if (text.includes('.') && /\.[a-zA-Z]/.test(text)) {
-      return false;
-    }
-    if (/^\d|\d$/.test(text)) {
-      return false;
-    }
-    if (/[a-z]+[A-Z]/.test(text)) {
-      if (!/^(mc|mac)[A-Z]/i.test(text)) {
-        return false;
-      }
-    }
-    const keywords = new Set(['let', 'const', 'var', 'function', 'import', 'class', 'return', 'null', 'undefined', 'true', 'false']);
-    const words = text.toLowerCase().split(/\s+/);
-    for (const word of words) {
-      if (keywords.has(word)) {
-        return false;
-      }
-    }
-  }
+  if (type !== 'PERSON' && type !== 'ORGANIZATION') return true;
+  if (text.length < 2) return false;
+  if (/[=+(){}[\]/\\;<>*!|%?^$@#"]/.test(text)) return false;
+  if (text.includes('.') && /\.[a-zA-Z]/.test(text)) return false;
+  if (/^\d|\d$/.test(text)) return false;
+  if (/[a-z]+[A-Z]/.test(text) && !/^(mc|mac)[A-Z]/i.test(text)) return false;
+  if (text.toLowerCase().split(/\s+/).some((w) => CODE_KEYWORDS.has(w))) return false;
   return true;
 }
 
 function extractEntities(nodes: any[]) {
   const entities = new Map<string, { oldId: string; canonical: string; displayName: string; type: string; metadata: any }>();
   for (const node of nodes) {
-    if (node.canonical && node.type) {
-      if (!isValidEntity(node.canonical, node.type)) {
-        continue;
-      }
+    if (node.canonical && node.type && isValidEntity(node.canonical, node.type)) {
       const key = `${node.canonical}:${node.type}`;
       if (!entities.has(key)) {
         entities.set(key, {
@@ -134,27 +103,17 @@ async function createOrUpdateSession(tx: any, sessionId: string | undefined, bod
     minEdgeWeight: typeof body.minEdgeWeight === 'number' ? body.minEdgeWeight : undefined,
   };
 
-  if (sessionId) {
-    const exists = await tx.session.findUnique({ where: { id: sessionId } });
-    if (exists) {
-      return tx.session.update({ where: { id: sessionId }, data });
-    }
+  if (sessionId && await tx.session.findUnique({ where: { id: sessionId } })) {
+    return tx.session.update({ where: { id: sessionId }, data });
   }
-
-  return tx.session.create({
-    data: {
-      id: sessionId || undefined,
-      ...data,
-    },
-  });
+  return tx.session.create({ data: { id: sessionId || undefined, ...data } });
 }
 
 async function insertFiles(tx: any, filesMap: Map<string, any>, sessionId: string, fileIdMap: Map<string, string>) {
-  const filesData = [];
-  for (const [oldFileId, fileInfo] of filesMap.entries()) {
+  const filesData = Array.from(filesMap.entries()).map(([oldFileId, fileInfo]) => {
     const newFileId = randomUUID();
     fileIdMap.set(oldFileId, newFileId);
-    filesData.push({
+    return {
       id: newFileId,
       sessionId,
       originalName: fileInfo.fileName,
@@ -165,8 +124,8 @@ async function insertFiles(tx: any, filesMap: Map<string, any>, sessionId: strin
       originalCreatedAt: fileInfo.originalCreatedAt ? new Date(fileInfo.originalCreatedAt) : new Date(),
       processedAt: new Date(),
       uploadedAt: new Date(),
-    });
-  }
+    };
+  });
 
   for (const chunk of chunkArray(filesData, 80)) {
     await tx.file.createMany({ data: chunk });
@@ -181,12 +140,9 @@ async function insertEntities(tx: any, entitiesMap: Map<string, any>, entityIdMa
     select: { id: true, canonical: true, type: true },
   });
 
-  const existingMap = new Map<string, string>();
-  for (const ent of existing) {
-    existingMap.set(`${ent.canonical}:${ent.type}`, ent.id);
-  }
+  const existingMap = new Map<string, string>(existing.map((e: any) => [`${e.canonical}:${e.type}`, e.id]));
 
-  const toCreate = [];
+  const toCreate: any[] = [];
   for (const [key, ent] of entitiesMap.entries()) {
     const existingId = existingMap.get(key);
     if (existingId) {
@@ -210,21 +166,18 @@ async function insertEntities(tx: any, entitiesMap: Map<string, any>, entityIdMa
 }
 
 async function insertOccurrences(tx: any, nodes: any[], fileIdMap: Map<string, string>, entityIdMap: Map<string, string>) {
-  const toCreate = [];
+  const toCreate: any[] = [];
   const seen = new Set<string>();
 
   for (const node of nodes) {
     const newEntityId = entityIdMap.get(node.id);
     if (!newEntityId || !Array.isArray(node.occurrences)) continue;
-
     for (const occ of node.occurrences) {
       const newFileId = fileIdMap.get(occ.fileId);
       if (!newFileId) continue;
-
       const key = `${newFileId}:${newEntityId}`;
       if (seen.has(key)) continue;
       seen.add(key);
-
       toCreate.push({
         id: randomUUID(),
         entityId: newEntityId,
@@ -242,19 +195,17 @@ async function insertOccurrences(tx: any, nodes: any[], fileIdMap: Map<string, s
 }
 
 async function insertNeighborhoods(tx: any, edges: any[], fileIdMap: Map<string, string>, entityIdMap: Map<string, string>) {
-  const toCreate = [];
+  const toCreate: any[] = [];
   const seen = new Set<string>();
 
   for (const edge of edges) {
     const newSource = entityIdMap.get(edge.source);
     const newTarget = entityIdMap.get(edge.target);
     const newFileId = fileIdMap.get(edge.fileId);
-
     if (!newSource || !newTarget || !newFileId) continue;
 
     const [sourceEntityId, targetEntityId] = newSource < newTarget ? [newSource, newTarget] : [newTarget, newSource];
     const isSwapped = newSource > newTarget;
-
     const key = `${newFileId}:${sourceEntityId}:${targetEntityId}`;
     if (seen.has(key)) continue;
     seen.add(key);
@@ -280,30 +231,22 @@ async function insertNeighborhoods(tx: any, edges: any[], fileIdMap: Map<string,
 async function insertEmails(tx: any, emails: any[] | undefined, fileIdMap: Map<string, string>) {
   if (!Array.isArray(emails) || emails.length === 0) return 0;
 
-  const toCreate = [];
-  for (const email of emails) {
-    const newFileId = email.fileId ? fileIdMap.get(email.fileId) : null;
-    toCreate.push({
-      id: email.id || randomUUID(),
-      fileId: newFileId || null,
-      messageId: email.messageId,
-      inReplyTo: email.inReplyTo || null,
-      references: email.references || null,
-      subject: email.subject || '',
-      from: email.from || '',
-      to: email.to || '',
-      cc: email.cc || null,
-      date: email.date ? new Date(email.date) : null,
-      body: email.body || '',
-      attachments: email.attachments ? serializeToString(email.attachments) : null,
-    });
-  }
+  const toCreate = emails.map((email) => ({
+    id: email.id || randomUUID(),
+    fileId: email.fileId ? fileIdMap.get(email.fileId) || null : null,
+    messageId: email.messageId,
+    inReplyTo: email.inReplyTo || null,
+    references: email.references || null,
+    subject: email.subject || '',
+    from: email.from || '',
+    to: email.to || '',
+    cc: email.cc || null,
+    date: email.date ? new Date(email.date) : null,
+    body: email.body || '',
+    attachments: email.attachments ? serializeToString(email.attachments) : null,
+  }));
 
-  const messageIds = toCreate.map((e) => e.messageId);
-  await tx.email.deleteMany({
-    where: { messageId: { in: messageIds } },
-  });
-
+  await tx.email.deleteMany({ where: { messageId: { in: toCreate.map((e) => e.messageId) } } });
   for (const chunk of chunkArray(toCreate, 70)) {
     await tx.email.createMany({ data: chunk });
   }
@@ -313,7 +256,6 @@ async function insertEmails(tx: any, emails: any[] | undefined, fileIdMap: Map<s
 export async function importSessionData(body: ImportInput) {
   const filesMap = extractFilesMap(body.nodes, body.edges, body.emails);
   const entitiesMap = extractEntities(body.nodes);
-
   const fileIdMap = new Map<string, string>();
   const entityIdMap = new Map<string, string>();
 
@@ -324,15 +266,6 @@ export async function importSessionData(body: ImportInput) {
     const occurrencesCreated = await insertOccurrences(tx, body.nodes, fileIdMap, entityIdMap);
     await insertNeighborhoods(tx, body.edges, fileIdMap, entityIdMap);
     const emailsRestoredCount = await insertEmails(tx, body.emails, fileIdMap);
-
-    return {
-      session,
-      filesCreated,
-      occurrencesCreated,
-      emailsRestoredCount,
-    };
-  }, {
-    maxWait: 60000,
-    timeout: 1800000,
-  });
+    return { session, filesCreated, occurrencesCreated, emailsRestoredCount };
+  }, { maxWait: 60000, timeout: 1800000 });
 }

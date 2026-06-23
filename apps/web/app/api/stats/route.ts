@@ -11,26 +11,17 @@ export async function GET(req: NextRequest) {
   const sessionId = searchParams.get('sessionId') || session?.sessionId;
   const limit = Math.min(Number(searchParams.get('limit') || 15), 100);
   const tfidfLimit = Math.min(Number(searchParams.get('tfidfLimit') || limit), 100);
-  const types = (searchParams.get('types')?.split(',').filter(Boolean) || []).filter(
-    (t) => t !== 'FILE'
-  );
+  const types = (searchParams.get('types')?.split(',').filter(Boolean) || []).filter((t) => t !== 'FILE');
   const search = searchParams.get('search') || '';
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: 'Session not found', code: ErrorCodes.VALIDATION_ERROR },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'Session not found', code: ErrorCodes.VALIDATION_ERROR }, { status: 400 });
   }
 
   try {
-    const stats = await getSessionStats({ sessionId, types, search, limit, tfidfLimit });
-    return NextResponse.json(stats);
+    return NextResponse.json(await getSessionStats({ sessionId, types, search, limit, tfidfLimit }));
   } catch (err: unknown) {
     console.error('Stats API Error:', err);
-    return NextResponse.json(
-      { error: 'Internal Server Error', code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error', code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

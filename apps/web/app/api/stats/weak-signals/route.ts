@@ -4,29 +4,64 @@ import { ErrorCodes } from '@/types/api';
 
 export const runtime = 'nodejs';
 
+function buildAdj(nodes: Set<string>, neighborhoods: { sourceEntityId: string; targetEntityId: string }[]) {
+  const adj = new Map<string, Set<string>>();
+  const seen = new Set<string>();
+  for (const { sourceEntityId: s, targetEntityId: t } of neighborhoods) {
+    if (s === t || !nodes.has(s) || !nodes.has(t)) continue;
+    const key = s < t ? `${s}:${t}` : `${t}:${s}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    if (!adj.has(s)) adj.set(s, new Set());
+    if (!adj.has(t)) adj.set(t, new Set());
+    adj.get(s)!.add(t);
+    adj.get(t)!.add(s);
+  }
+  return adj;
+}
+
+function brandes(nodes: string[], adj: Map<string, Set<string>>) {
+  const centrality = new Map<string, number>(nodes.map((v) => [v, 0]));
+  for (const s of nodes) {
+    const S: string[] = [];
+    const P = new Map<string, string[]>(nodes.map((w) => [w, []]));
+    const sigma = new Map<string, number>(nodes.map((w) => [w, 0]));
+    const d = new Map<string, number>(nodes.map((w) => [w, -1]));
+    sigma.set(s, 1); d.set(s, 0);
+    const Q: string[] = [s];
+    while (Q.length) {
+      const v = Q.shift()!;
+      S.push(v);
+      const dv = d.get(v)!;
+      for (const w of (adj.get(v) ?? [])) {
+        if (d.get(w)! < 0) { d.set(w, dv + 1); Q.push(w); }
+        if (d.get(w)! === dv + 1) { sigma.set(w, sigma.get(w)! + sigma.get(v)!); P.get(w)!.push(v); }
+      }
+    }
+    const delta = new Map<string, number>(nodes.map((w) => [w, 0]));
+    while (S.length) {
+      const w = S.pop()!;
+      const coeff = (1 + delta.get(w)!) / sigma.get(w)!;
+      for (const v of P.get(w)!) delta.set(v, delta.get(v)! + sigma.get(v)! * coeff);
+      if (w !== s) centrality.set(w, centrality.get(w)! + delta.get(w)!);
+    }
+  }
+  return centrality;
+}
+
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
   const sessionId = searchParams.get('sessionId');
 
   if (!sessionId) {
-    return NextResponse.json(
-      { error: 'sessionId required', code: ErrorCodes.VALIDATION_ERROR },
-      { status: 400 }
-    );
+    return NextResponse.json({ error: 'sessionId required', code: ErrorCodes.VALIDATION_ERROR }, { status: 400 });
   }
 
   try {
-    const files = await prisma.file.findMany({
-      where: { sessionId, status: 'DONE' },
-      select: { id: true, originalCreatedAt: true },
-    });
+    const files = await prisma.file.findMany({ where: { sessionId, status: 'DONE' }, select: { id: true, originalCreatedAt: true } });
+    const fileIds = files.map((f) => f.id);
+    if (!fileIds.length) return NextResponse.json({ bridgeSignals: [], nicheSignals: [], emergingSignals: [] });
 
-    const fileIds = files.map(f => f.id);
-    if (fileIds.length === 0) {
-      return NextResponse.json({ bridgeSignals: [], nicheSignals: [], emergingSignals: [] });
-    }
-
-    // --- 1. Get occurrences and count distributions ---
     const occurrences = await prisma.occurrence.findMany({
       where: { fileId: { in: fileIds } },
       select: { entityId: true, fileId: true, count: true, tfidf: true },
@@ -34,164 +69,69 @@ export async function GET(req: NextRequest) {
 
     const entityStats = new Map<string, { totalCount: number; fileCount: number; maxTfidf: number }>();
     for (const occ of occurrences) {
-      const current = entityStats.get(occ.entityId) || { totalCount: 0, fileCount: 0, maxTfidf: 0 };
-      current.totalCount += occ.count;
-      current.fileCount += 1;
-      current.maxTfidf = Math.max(current.maxTfidf, occ.tfidf);
-      entityStats.set(occ.entityId, current);
+      const cur = entityStats.get(occ.entityId) ?? { totalCount: 0, fileCount: 0, maxTfidf: 0 };
+      cur.totalCount += occ.count;
+      cur.fileCount += 1;
+      cur.maxTfidf = Math.max(cur.maxTfidf, occ.tfidf);
+      entityStats.set(occ.entityId, cur);
     }
 
-    const allEntityIds = Array.from(entityStats.keys());
-
-    // --- 2. Methodology A: Rare Bridges (Betweenness Centrality & degree on SQLite) ---
-    // Select top 500 entities (to keep Brandes performance-reasonable)
-    const sortedEntityIds = [...allEntityIds].sort((a, b) => {
-      return (entityStats.get(b)?.totalCount || 0) - (entityStats.get(a)?.totalCount || 0);
-    }).slice(0, 500);
-
+    // --- Methodology A: Rare Bridges (Betweenness Centrality) ---
+    const sortedEntityIds = [...entityStats.keys()]
+      .sort((a, b) => (entityStats.get(b)!.totalCount) - (entityStats.get(a)!.totalCount))
+      .slice(0, 500);
     const V = new Set<string>(sortedEntityIds);
-    const adj = new Map<string, Set<string>>();
-    const edgeKeys = new Set<string>();
 
     const neighborhoods = await prisma.entityNeighborhood.findMany({
-      where: {
-        fileId: { in: fileIds },
-        sourceEntityId: { in: Array.from(V) },
-        targetEntityId: { in: Array.from(V) },
-      },
+      where: { fileId: { in: fileIds }, sourceEntityId: { in: sortedEntityIds }, targetEntityId: { in: sortedEntityIds } },
       select: { sourceEntityId: true, targetEntityId: true },
     });
+    const adj = buildAdj(V, neighborhoods);
+    const centrality = brandes(sortedEntityIds, adj);
 
-    for (const edge of neighborhoods) {
-      const s = edge.sourceEntityId;
-      const t = edge.targetEntityId;
-      if (s === t || !V.has(s) || !V.has(t)) continue;
-      const key = s < t ? `${s}:${t}` : `${t}:${s}`;
-      if (!edgeKeys.has(key)) {
-        edgeKeys.add(key);
-        if (!adj.has(s)) adj.set(s, new Set());
-        if (!adj.has(t)) adj.set(t, new Set());
-        adj.get(s)!.add(t);
-        adj.get(t)!.add(s);
-      }
-    }
+    const bridgeSignalsRaw = [...entityStats.entries()]
+      .filter(([, s]) => s.totalCount <= 10)
+      .map(([entityId, s]) => {
+        const rawC = (centrality.get(entityId) ?? 0) / 2;
+        const degree = adj.get(entityId)?.size ?? 0;
+        return { entityId, score: (rawC > 0 ? rawC : degree * 0.1) / (s.totalCount + 1) };
+      })
+      .filter((x) => x.score > 0)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
 
-    // Brandes' betweenness centrality
-    const centrality = new Map<string, number>();
-    for (const v of V) centrality.set(v, 0);
-
-    const nodesList = Array.from(V);
-    for (const s of nodesList) {
-      const S: string[] = [];
-      const P = new Map<string, string[]>();
-      const sigma = new Map<string, number>();
-      const d = new Map<string, number>();
-
-      for (const w of nodesList) {
-        P.set(w, []);
-        sigma.set(w, 0);
-        d.set(w, -1);
-      }
-
-      sigma.set(s, 1);
-      d.set(s, 0);
-      const Q: string[] = [s];
-
-      while (Q.length > 0) {
-        const v = Q.shift()!;
-        S.push(v);
-        const dv = d.get(v)!;
-        const neighbors = adj.get(v) || new Set<string>();
-        for (const w of neighbors) {
-          if (d.get(w)! < 0) {
-            d.set(w, dv + 1);
-            Q.push(w);
-          }
-          if (d.get(w)! === dv + 1) {
-            sigma.set(w, sigma.get(w)! + sigma.get(v)!);
-            P.get(w)!.push(v);
-          }
-        }
-      }
-
-      const delta = new Map<string, number>();
-      for (const w of nodesList) delta.set(w, 0);
-
-      while (S.length > 0) {
-        const w = S.pop()!;
-        const coeff = (1 + delta.get(w)!) / sigma.get(w)!;
-        for (const v of P.get(w)!) {
-          delta.set(v, delta.get(v)! + sigma.get(v)! * coeff);
-        }
-        if (w !== s) {
-          centrality.set(w, centrality.get(w)! + delta.get(w)!);
-        }
-      }
-    }
-
-    const bridgeSignalsRaw: any[] = [];
-    for (const [entityId, stats] of entityStats.entries()) {
-      // Focus on rare entities (totalCount <= 10)
-      if (stats.totalCount <= 10) {
-        const rawCentrality = (centrality.get(entityId) || 0) / 2;
-        const degree = adj.get(entityId)?.size || 0;
-        // Score: prioritizes bridging centrality, falls back to degree connectivity, scaled down by count penalty
-        const score = (rawCentrality > 0 ? rawCentrality : degree * 0.1) / (stats.totalCount + 1);
-        
-        if (score > 0) {
-          bridgeSignalsRaw.push({ entityId, score });
-        }
-      }
-    }
-
-    const sortedBridges = bridgeSignalsRaw.sort((a, b) => b.score - a.score).slice(0, 10);
-    const bridgeEntities = await prisma.entity.findMany({
-      where: { id: { in: sortedBridges.map(b => b.entityId) } },
+    const bridgeEntitiesDb = await prisma.entity.findMany({
+      where: { id: { in: bridgeSignalsRaw.map((b) => b.entityId) } },
       select: { id: true, displayName: true, type: true },
     });
+    const bridgeEntityMap = new Map(bridgeEntitiesDb.map((e) => [e.id, e]));
 
-    const bridgeSignals = sortedBridges.map(sb => {
-      const ent = bridgeEntities.find(e => e.id === sb.entityId);
-      const stats = entityStats.get(sb.entityId);
-      return {
-        id: sb.entityId,
-        label: ent?.displayName || 'Unknown',
-        type: ent?.type || 'OTHER',
-        totalCount: stats?.totalCount || 0,
-        fileCount: stats?.fileCount || 0,
-        score: sb.score,
-      };
+    const bridgeSignals = bridgeSignalsRaw.map(({ entityId, score }) => {
+      const ent = bridgeEntityMap.get(entityId);
+      const s = entityStats.get(entityId)!;
+      return { id: entityId, label: ent?.displayName ?? 'Unknown', type: ent?.type ?? 'OTHER', totalCount: s.totalCount, fileCount: s.fileCount, score };
     });
 
-    // --- 3. Methodology B: Niche Topics (Low Document Frequency, High TF-IDF) ---
-    const nicheSignalsRaw: any[] = [];
-    for (const [entityId, stats] of entityStats.entries()) {
-      if (stats.fileCount <= 2) {
-        nicheSignalsRaw.push({ entityId, ...stats });
-      }
-    }
+    // --- Methodology B: Niche Topics (Low Doc Frequency, High TF-IDF) ---
+    const sortedNiches = [...entityStats.entries()]
+      .filter(([, s]) => s.fileCount <= 2)
+      .sort((a, b) => b[1].maxTfidf - a[1].maxTfidf)
+      .slice(0, 10);
 
-    const sortedNiches = nicheSignalsRaw.sort((a, b) => b.maxTfidf - a.maxTfidf).slice(0, 10);
-    const nicheEntities = await prisma.entity.findMany({
-      where: { id: { in: sortedNiches.map(n => n.entityId) } },
+    const nicheEntitiesDb = await prisma.entity.findMany({
+      where: { id: { in: sortedNiches.map(([id]) => id) } },
       select: { id: true, displayName: true, type: true },
     });
+    const nicheEntityMap = new Map(nicheEntitiesDb.map((e) => [e.id, e]));
 
-    const nicheSignals = sortedNiches.map(sn => {
-      const ent = nicheEntities.find(e => e.id === sn.entityId);
-      return {
-        id: sn.entityId,
-        label: ent?.displayName || 'Unknown',
-        type: ent?.type || 'OTHER',
-        totalCount: sn.totalCount,
-        fileCount: sn.fileCount,
-        score: sn.maxTfidf,
-      };
+    const nicheSignals = sortedNiches.map(([entityId, s]) => {
+      const ent = nicheEntityMap.get(entityId);
+      return { id: entityId, label: ent?.displayName ?? 'Unknown', type: ent?.type ?? 'OTHER', totalCount: s.totalCount, fileCount: s.fileCount, score: s.maxTfidf };
     });
 
-    // --- 4. Methodology C: Spiking Signals (Sliding Time Window) ---
+    // --- Methodology C: Spiking Signals (Sliding Time Window) ---
     const datedFiles = files
-      .filter(f => f.originalCreatedAt !== null)
+      .filter((f) => f.originalCreatedAt)
       .sort((a, b) => new Date(a.originalCreatedAt!).getTime() - new Date(b.originalCreatedAt!).getTime());
 
     let emergingSignals: any[] = [];
@@ -203,78 +143,51 @@ export async function GET(req: NextRequest) {
       if (timespan > 0) {
         const windowWidth = timespan * 0.20;
         const stepSize = timespan * 0.10;
-
-        const windows: Array<{ start: number; end: number }> = [];
+        const windows: { start: number; end: number }[] = [];
         for (let start = minTime; start <= maxTime - windowWidth + 1; start += stepSize) {
           windows.push({ start, end: start + windowWidth });
         }
-        if (windows.length === 0 || windows[windows.length - 1].end < maxTime) {
+        if (!windows.length || windows[windows.length - 1].end < maxTime) {
           windows.push({ start: maxTime - windowWidth, end: maxTime });
         }
 
-        const spikeSignalsRawMap = new Map<string, { maxScore: number; peakCount: number; fileCount: number }>();
+        const winFileIdSets = windows.map((win) =>
+          new Set(datedFiles.filter((f) => { const t = new Date(f.originalCreatedAt!).getTime(); return t >= win.start && t <= win.end; }).map((f) => f.id))
+        );
 
-        for (const win of windows) {
-          const filesInWin = datedFiles.filter(f => {
-            const t = new Date(f.originalCreatedAt!).getTime();
-            return t >= win.start && t <= win.end;
-          });
-          const winFileIds = filesInWin.map(f => f.id);
-          if (winFileIds.length === 0) continue;
+        const spikeMap = new Map<string, { maxScore: number; peakCount: number; fileCount: number }>();
 
-          const winOccurrences = occurrences.filter(o => winFileIds.includes(o.fileId));
+        for (const winFileIds of winFileIdSets) {
+          if (!winFileIds.size) continue;
+          const winOccs = occurrences.filter((o) => winFileIds.has(o.fileId));
           const winStats = new Map<string, { count: number; tfidf: number; fileCount: number }>();
-          for (const occ of winOccurrences) {
-            const curr = winStats.get(occ.entityId) || { count: 0, tfidf: 0, fileCount: 0 };
-            curr.count += occ.count;
-            curr.tfidf += occ.tfidf;
-            curr.fileCount += 1;
-            winStats.set(occ.entityId, curr);
+          for (const occ of winOccs) {
+            const cur = winStats.get(occ.entityId) ?? { count: 0, tfidf: 0, fileCount: 0 };
+            cur.count += occ.count; cur.tfidf += occ.tfidf; cur.fileCount += 1;
+            winStats.set(occ.entityId, cur);
           }
-
-          for (const [entityId, stats] of winStats.entries()) {
-            const globalStats = entityStats.get(entityId);
-            if (!globalStats) continue;
-
-            const ratio = stats.count / globalStats.totalCount;
-
-            // Concentration: at least 60% of occurrences fall inside this 20% time window
+          for (const [entityId, ws] of winStats) {
+            const gs = entityStats.get(entityId);
+            if (!gs || gs.totalCount > 25) continue;
+            const ratio = ws.count / gs.totalCount;
             if (ratio >= 0.6) {
-              // Priority for globally rare/medium entities
-              if (globalStats.totalCount <= 25) {
-                const score = stats.tfidf * ratio;
-                const existing = spikeSignalsRawMap.get(entityId);
-                if (!existing || score > existing.maxScore) {
-                  spikeSignalsRawMap.set(entityId, {
-                    maxScore: score,
-                    peakCount: stats.count,
-                    fileCount: stats.fileCount,
-                  });
-                }
-              }
+              const score = ws.tfidf * ratio;
+              const ex = spikeMap.get(entityId);
+              if (!ex || score > ex.maxScore) spikeMap.set(entityId, { maxScore: score, peakCount: ws.count, fileCount: ws.fileCount });
             }
           }
         }
 
-        const sortedSpikes = Array.from(spikeSignalsRawMap.entries())
-          .sort((a, b) => b[1].maxScore - a[1].maxScore)
-          .slice(0, 10);
-
-        const spikeEntities = await prisma.entity.findMany({
+        const sortedSpikes = [...spikeMap.entries()].sort((a, b) => b[1].maxScore - a[1].maxScore).slice(0, 10);
+        const spikeEntitiesDb = await prisma.entity.findMany({
           where: { id: { in: sortedSpikes.map(([id]) => id) } },
           select: { id: true, displayName: true, type: true },
         });
+        const spikeEntityMap = new Map(spikeEntitiesDb.map((e) => [e.id, e]));
 
-        emergingSignals = sortedSpikes.map(([id, stats]) => {
-          const ent = spikeEntities.find(e => e.id === id);
-          return {
-            id,
-            label: ent?.displayName || 'Unknown',
-            type: ent?.type || 'OTHER',
-            totalCount: stats.peakCount,
-            fileCount: stats.fileCount,
-            score: stats.maxScore,
-          };
+        emergingSignals = sortedSpikes.map(([id, s]) => {
+          const ent = spikeEntityMap.get(id);
+          return { id, label: ent?.displayName ?? 'Unknown', type: ent?.type ?? 'OTHER', totalCount: s.peakCount, fileCount: s.fileCount, score: s.maxScore };
         });
       }
     }
@@ -282,9 +195,6 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ bridgeSignals, nicheSignals, emergingSignals });
   } catch (err: unknown) {
     console.error('Weak Signals API Error:', err);
-    return NextResponse.json(
-      { error: 'Internal Server Error', code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Internal Server Error', code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

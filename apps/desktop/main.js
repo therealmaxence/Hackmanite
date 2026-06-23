@@ -1,58 +1,37 @@
 const { app } = require('electron');
-
 const { killSubprocesses } = require('./lib/process-manager');
 const { bootServices } = require('./lib/boot-services');
-const {
-  createSplashWindow,
-  createMainWindow,
-  getMainWindow,
-  getSplashWindow,
-  updateStatus
-} = require('./lib/window-manager');
+const { createSplashWindow, createMainWindow, getMainWindow, getSplashWindow, updateStatus } = require('./lib/window-manager');
 const { registerIpcHandlers } = require('./lib/ipc-handlers');
 const { createTray } = require('./lib/tray');
 
-const isPackaged = app.isPackaged;
+const boot = () => bootServices(updateStatus, () => {
+  createMainWindow();
+  getSplashWindow()?.close();
+});
 
-function handleRestart() {
+const handleRestart = () => {
   killSubprocesses();
-  const mainWindow = getMainWindow();
-  if (mainWindow) mainWindow.close();
+  getMainWindow()?.close();
   createSplashWindow();
-  bootServices(updateStatus, () => {
-    createMainWindow();
-    const splashWin = getSplashWindow();
-    if (splashWin) splashWin.close();
-  });
-}
+  boot();
+};
 
-function handleStop() {
+const handleStop = () => {
   killSubprocesses();
-  const mainWindow = getMainWindow();
-  if (mainWindow) mainWindow.close();
-}
+  getMainWindow()?.close();
+};
 
 app.on('ready', () => {
   createSplashWindow();
-  createTray(isPackaged, createMainWindow, getMainWindow, handleRestart, handleStop);
-  
-  // Register IPC handlers exactly once using the dynamic getter
+  createTray(app.isPackaged, createMainWindow, getMainWindow, handleRestart, handleStop);
   registerIpcHandlers(getMainWindow);
-
-  bootServices(updateStatus, () => {
-    createMainWindow();
-    const splashWin = getSplashWindow();
-    if (splashWin) splashWin.close();
-  });
+  boot();
 });
 
 app.on('window-all-closed', () => {
   killSubprocesses();
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  if (process.platform !== 'darwin') app.quit();
 });
 
-app.on('will-quit', () => {
-  killSubprocesses();
-});
+app.on('will-quit', killSubprocesses);

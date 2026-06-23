@@ -1,60 +1,21 @@
-"""
-Keyword extraction using token frequency.
-Used by the deterministic extraction tiers.
-"""
-
 import re
-from collections import Counter
-from collections import defaultdict
-
+from collections import Counter, defaultdict
 from services.text_words import STOPWORDS
 
-MIN_KEYWORD_FREQ: int = 2
-MAX_KEYWORDS: int = 100000
+_TOKEN_RE = re.compile(r"\b[a-zA-ZÀ-ÿ][a-zA-ZÀ-ÿ\-]{2,}\b|[А-ЯЁа-яё][А-ЯЁа-яё\-]{2,}")
 
-_TOKEN_RE = re.compile(
-    r"\b[a-zA-ZÀ-ÿ][a-zA-ZÀ-ÿ\-]{2,}\b"
-    r"|"
-    r"[А-ЯЁа-яё][А-ЯЁа-яё\-]{2,}",
-    re.UNICODE,
-)
-
-
-def extract_keywords(text: str, top_n: int = MAX_KEYWORDS) -> list[dict]:
-    """
-    Extract the most frequent meaningful tokens from text with their spans.
-    """
+def extract_keywords(text: str, top_n: int = 100000) -> list[dict]:
     if not text or not text.strip():
         return []
-
-    dynamic_limit = min(500, max(50, len(text) // 300))
-    limit = min(dynamic_limit, top_n)
-
-    counts: Counter[str] = Counter()
-    spans: dict[str, list[dict[str, int | str]]] = defaultdict(list)
-
-    for match in _TOKEN_RE.finditer(text):
-        token = match.group(0).lower()
-        if token in STOPWORDS or len(token) <= 2:
-            continue
-
-        counts[token] += 1
-        spans[token].append({
-            "text": match.group(0),
-            "offset": match.start(),
-            "end": match.end(),
-        })
-
-    if not counts:
-        return []
-
+    limit = min(min(500, max(50, len(text) // 300)), top_n)
+    counts = Counter()
+    spans = defaultdict(list)
+    for m in _TOKEN_RE.finditer(text):
+        tok = m.group(0).lower()
+        if tok not in STOPWORDS and len(tok) > 2:
+            counts[tok] += 1
+            spans[tok].append({"text": m.group(0), "offset": m.start(), "end": m.end()})
     return [
-        {
-            "canonical": word,
-            "display_name": word,
-            "count": freq,
-            "excerpts": spans[word],
-        }
-        for word, freq in counts.most_common(limit)
-        if freq >= MIN_KEYWORD_FREQ
+        {"canonical": w, "display_name": w, "count": f, "excerpts": spans[w]}
+        for w, f in counts.most_common(limit) if f >= 2
     ]

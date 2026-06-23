@@ -1,75 +1,44 @@
 from __future__ import annotations
-
 import structlog
-
-from models.schemas import ExtractedEntity, EntityType
+from models.schemas import ExtractedEntity
 from services.mention_extractor import _extract_mentions
 
 logger = structlog.get_logger()
 
-WINDOW_SIZE: int = 400
-
+def _get_snippet(text: str, start: int, end: int, padding: int) -> str:
+    left, right = max(0, start - padding), min(len(text), end + padding)
+    val = text[left:right].strip()
+    return f"{'…' if left > 0 else ''}{val}{'…' if right < len(text) else ''}"
 
 def extract_entities_and_neighborhoods(text: str, keywords: list[dict], window_size: int = 400) -> tuple[list[ExtractedEntity], list[dict]]:
     mentions = _extract_mentions(text)
-    return _build_entities_and_neighborhoods(text, mentions, keywords, window_size)
-
-
-def _build_entities_and_neighborhoods(text: str, mentions: list[dict], keywords: list[dict], window_size: int = 400) -> tuple[list[ExtractedEntity], list[dict]]:
-    grouped: dict[tuple[str, EntityType], dict] = {}
-
-    def snippet(start: int, end: int) -> str:
-        padding = max(window_size, 500)
-        left = max(0, start - padding)
-        right = min(len(text), end + padding)
-        value = text[left:right].strip()
-        if left > 0:
-            value = f"…{value}"
-        if right < len(text):
-            value = f"{value}…"
-        return value
-
-    for mention in mentions:
-        key = (mention["canonical"], mention["type"])
+    grouped = {}
+    mention_entries = []
+    for m in mentions:
+        snip = _get_snippet(text, m["start"], m["end"], max(window_size, 500))
+        key = (m["canonical"], m["type"])
         bucket = grouped.setdefault(key, {
-            "canonical": mention["canonical"],
-            "display_name": mention["display_name"],
-            "type": mention["type"],
+            "canonical": m["canonical"],
+            "display_name": m["display_name"],
+            "type": m["type"],
             "count": 0,
             "excerpts": [],
         })
         bucket["count"] += 1
-        bucket["excerpts"].append({
-            "text": snippet(mention["start"], mention["end"]),
-            "offset": mention["start"],
-            "end": mention["end"],
+        bucket["excerpts"].append({"text": snip, "offset": m["start"], "end": m["end"]})
+        mention_entries.append({
+            "canonical": m["canonical"],
+            "display_name": m["display_name"],
+            "type": m["type"],
+            "start": int(m["start"]),
+            "end": int(m["end"]),
+            "snippet": snip,
         })
 
-    entities = [
-        ExtractedEntity(
-            canonical=v["canonical"],
-            display_name=v["display_name"],
-            type=v["type"],
-            count=v["count"],
-            excerpts=v["excerpts"],
-        )
-        for v in grouped.values()
-    ]
+    mention_entries.sort(key=lambda x: x["start"])
+    entities = [ExtractedEntity(**v) for v in grouped.values()]
 
-    mention_entries: list[dict] = []
-    for v in grouped.values():
-        for excerpt in v["excerpts"]:
-            mention_entries.append({
-                "canonical": v["canonical"],
-                "display_name": v["display_name"],
-                "type": v["type"],
-                "start": int(excerpt["offset"]),
-                "end": int(excerpt["end"]),
-                "snippet": excerpt["text"],
-            })
-    mention_entries.sort(key=lambda item: item["start"])
-
-    best_pairs: dict[tuple, dict] = {}
+    best_pairs = {}
     for i, source in enumerate(mention_entries):
         for target in mention_entries[i + 1:]:
             if target["start"] - source["start"] > window_size:
@@ -79,31 +48,16 @@ def _build_entities_and_neighborhoods(text: str, mentions: list[dict], keywords:
             if source["canonical"] == target["canonical"] and source["type"] == target["type"]:
                 continue
 
-            # Sort source/target lexicographically to canonicalize the undirected edge key
-            is_swapped = False
-            if source["canonical"] > target["canonical"]:
-                is_swapped = True
-            elif source["canonical"] == target["canonical"] and source["type"].value > target["type"].value:
-                is_swapped = True
-
-            first = target if is_swapped else source
-            second = source if is_swapped else target
-
+            is_swapped = (source["canonical"] > target["canonical"]) or (
+                source["canonical"] == target["canonical"] and source["type"].value > target["type"].value
+            )
+            first, second = (target, source) if is_swapped else (source, target)
             pair_key = (first["canonical"], first["type"], second["canonical"], second["type"])
-            distance_between = target["start"] - source["end"]
-            weight = max(0.0, 1.0 - (max(0, distance_between) / window_size))
+            dist = target["start"] - source["end"]
+            weight = max(0.0, 1.0 - (max(0, dist) / window_size))
 
             if pair_key in best_pairs and weight <= best_pairs[pair_key]["weight"]:
                 continue
-
-            padding = max(window_size // 2, 200)
-            left = max(0, source["start"] - padding)
-            right = min(len(text), target["end"] + padding)
-            edge_snippet = text[left:right].strip()
-            if left > 0:
-                edge_snippet = f"…{edge_snippet}"
-            if right < len(text):
-                edge_snippet = f"{edge_snippet}…"
 
             best_pairs[pair_key] = {
                 "source_canonical": first["canonical"],
@@ -113,8 +67,8 @@ def _build_entities_and_neighborhoods(text: str, mentions: list[dict], keywords:
                 "target_display_name": second["display_name"],
                 "target_type": second["type"],
                 "weight": weight,
-                "distance": distance_between,
-                "snippet": edge_snippet,
+                "distance": dist,
+                "snippet": _get_snippet(text, source["start"], target["end"], max(window_size // 2, 200)),
                 "source_offset": first["start"],
                 "target_offset": second["start"],
             }

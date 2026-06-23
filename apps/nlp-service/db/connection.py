@@ -1,44 +1,33 @@
-from __future__ import annotations
-
 import os
 import threading
 import logging
 from pathlib import Path
-from typing import Optional
-
 import kuzu
 
 logger = logging.getLogger(__name__)
 
-_db: Optional[kuzu.Database] = None
-_write_conn: Optional[kuzu.Connection] = None
-_write_lock = threading.Lock()   # KuzuDB is single-writer;
-
+_db = None
+_write_conn = None
+_write_lock = threading.Lock()
 _DB_PATH = os.environ.get("KUZU_DB_PATH", "./kuzu_data/kuzu.db")
-
 
 def get_db() -> kuzu.Database:
     global _db
     if _db is None:
         db_path = Path(_DB_PATH)
         db_path.parent.mkdir(parents=True, exist_ok=True)
-        
-        # If KUZU_BUFFER_POOL_SIZE is set and valid, else use default
-        buffer_pool_size_str = os.environ.get("KUZU_BUFFER_POOL_SIZE")
-        if buffer_pool_size_str and buffer_pool_size_str.strip() not in ("", "0", "default"):
+        size_str = os.environ.get("KUZU_BUFFER_POOL_SIZE")
+        if size_str and size_str.strip() not in ("", "0", "default"):
             try:
-                buffer_pool_size = int(buffer_pool_size_str)
-                _db = kuzu.Database(str(db_path), buffer_pool_size=buffer_pool_size)
-                logger.info("KuzuDB opened at %s (buffer pool size: %d bytes)", db_path, buffer_pool_size)
+                size = int(size_str)
+                _db = kuzu.Database(str(db_path), buffer_pool_size=size)
+                logger.info(f"KuzuDB opened at {db_path} (buffer pool size: {size} bytes)")
+                return _db
             except ValueError:
-                logger.warning("Invalid KUZU_BUFFER_POOL_SIZE: %s. Using Kùzu default.", buffer_pool_size_str)
-                _db = kuzu.Database(str(db_path))
-                logger.info("KuzuDB opened at %s (Kùzu default buffer pool size)", db_path)
-        else:
-            _db = kuzu.Database(str(db_path))
-            logger.info("KuzuDB opened at %s (Kùzu default buffer pool size)", db_path)
+                logger.warning(f"Invalid KUZU_BUFFER_POOL_SIZE: {size_str}. Using Kùzu default.")
+        _db = kuzu.Database(str(db_path))
+        logger.info(f"KuzuDB opened at {db_path} (Kùzu default buffer pool size)")
     return _db
-
 
 def get_write_conn() -> kuzu.Connection:
     global _write_conn
@@ -46,7 +35,5 @@ def get_write_conn() -> kuzu.Connection:
         _write_conn = kuzu.Connection(get_db())
     return _write_conn
 
-
 def get_read_conn() -> kuzu.Connection:
-    """Return a fresh read connection. (KuzuDB allows concurrent readers.)"""
     return kuzu.Connection(get_db())

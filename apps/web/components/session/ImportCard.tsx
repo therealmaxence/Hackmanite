@@ -40,8 +40,7 @@ export default function ImportCard() {
 
     let body: unknown;
     try {
-      const text = await file.text();
-      body = JSON.parse(text);
+      body = JSON.parse(await file.text());
     } catch {
       setImportError(t('import.invalid_json'));
       setImportState('error');
@@ -61,7 +60,6 @@ export default function ImportCard() {
       clearFiles();
       setSessionId(data.sessionId);
       addFiles(data.files);
-
       setImportResult(data);
       setImportState('done');
     } catch (err) {
@@ -71,19 +69,29 @@ export default function ImportCard() {
   }, [setSessionId, addFiles, clearFiles, t]);
 
   const handleFileInputChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) processImportFile(file);
+    if (e.target.files?.[0]) processImportFile(e.target.files[0]);
     e.target.value = '';
   }, [processImportFile]);
 
   const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
     setDragOver(false);
-    const file = e.dataTransfer.files?.[0];
-    if (file) processImportFile(file);
+    if (e.dataTransfer.files?.[0]) processImportFile(e.dataTransfer.files[0]);
   }, [processImportFile]);
 
   const isImportBusy = importState === 'parsing' || importState === 'uploading';
+
+  const btnBaseStyle = {
+    padding: '0.5rem 1.25rem',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    gap: '6px',
+  };
 
   return (
     <SectionCard
@@ -189,7 +197,7 @@ export default function ImportCard() {
             <button
               id="goto-graph-btn"
               onClick={() => router.push('/graph')}
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-primary)', color: 'var(--color-on-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+              style={{ ...btnBaseStyle, background: 'var(--color-primary)', color: 'var(--color-on-primary)' }}
             >
               {t('import.open_graph')}
             </button>
@@ -197,7 +205,7 @@ export default function ImportCard() {
               <button
                 id="goto-emails-btn"
                 onClick={() => router.push('/emails')}
-                style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-surface-raised)', color: 'var(--color-primary)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '6px' }}
+                style={{ ...btnBaseStyle, background: 'var(--color-surface-raised)', color: 'var(--color-primary)' }}
               >
                 {t('import.open_emails')}
               </button>
@@ -205,7 +213,7 @@ export default function ImportCard() {
             <button
               id="goto-stats-btn"
               onClick={() => router.push('/stats')}
-              style={{ padding: '0.5rem 1.25rem', fontSize: '0.8125rem', fontWeight: 600, background: 'var(--color-surface-raised)', color: 'var(--color-text)', border: 'none', borderRadius: 'var(--radius-sm)', cursor: 'pointer' }}
+              style={{ ...btnBaseStyle, background: 'var(--color-surface-raised)', color: 'var(--color-text)' }}
             >
               {t('import.open_stats')}
             </button>

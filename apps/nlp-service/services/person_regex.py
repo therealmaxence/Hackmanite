@@ -157,11 +157,7 @@ def _run_extraction(
     """
     Shared extraction loop — works for any script given the right regexes and denylist.
     """
-    trigger_ends: set[int] = set()
-    for m in trigger_re.finditer(text):
-        for offset in range(3):
-            trigger_ends.add(m.end() + offset)
-
+    trigger_ends = {m.end() + offset for m in trigger_re.finditer(text) for offset in range(3)}
     cap_tokens = list(token_re.finditer(text))
 
     i = 0
@@ -177,35 +173,22 @@ def _run_extraction(
         j = i + 1
         while j < len(cap_tokens) and len(span_tokens) < 4:
             m_next = cap_tokens[j]
-            m_prev = span_tokens[-1]
-            gap = text[m_prev.end():m_next.start()]
-
-            if not _VALID_GAP_RE.match(gap):
+            if not _VALID_GAP_RE.match(text[span_tokens[-1].end():m_next.start()]) or normalize(m_next.group(1)) in denylist:
                 break
-            if normalize(m_next.group(1)) in denylist:
-                break
-
             span_tokens.append(m_next)
             j += 1
 
         span_start = span_tokens[0].start()
-        is_trigger_boosted = span_start in trigger_ends
-
-        if not is_trigger_boosted:
-            if len(span_tokens) == 1:
-                i += 1
-                continue
+        if span_start not in trigger_ends:
             prefix = text[:span_start].rstrip()
-            is_sentence_start = bool(_SENT_END_RE.search(prefix)) or prefix == ""
-            if is_sentence_start:
+            if len(span_tokens) == 1 or not prefix or _SENT_END_RE.search(prefix):
                 i += 1
                 continue
 
         name = " ".join(t.group(1) for t in span_tokens)
         span_end = span_tokens[-1].end()
-        key = (name, span_start, span_end)
-        if key not in seen:
-            seen.add(key)
+        if (name, span_start, span_end) not in seen:
+            seen.add((name, span_start, span_end))
             results.append({"text": name, "start": span_start, "end": span_end})
 
         i = j if len(span_tokens) > 1 else i + 1

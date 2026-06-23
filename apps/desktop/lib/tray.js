@@ -9,50 +9,27 @@ function createTray(isPackaged, createMainWindow, getMainWindow, onRestart, onSt
   const pngPackagedPath = path.join(__dirname, '../hackmanite_main_nobg.png');
   const pngDevPath = path.resolve(__dirname, '../../web/public/dagex_app.png');
 
-  let iconPath;
-  if (!isPackaged && fs.existsSync(pngDevPath)) {
-    iconPath = pngDevPath;
-  } else if (process.platform === 'win32') {
-    iconPath = icoPath;
-  } else {
-    iconPath = pngPackagedPath;
-  }
+  const iconPath = (!isPackaged && fs.existsSync(pngDevPath))
+    ? pngDevPath
+    : (process.platform === 'win32' ? icoPath : pngPackagedPath);
 
   tray = new Tray(iconPath);
   tray.setToolTip('Hackmanite');
 
-  const contextMenu = Menu.buildFromTemplate([
+  tray.setContextMenu(Menu.buildFromTemplate([
     {
       label: 'Open Client Window',
       click: () => {
-        const mainWindow = getMainWindow();
-        if (!mainWindow) createMainWindow();
-        else mainWindow.show();
+        const win = getMainWindow();
+        win ? win.show() : createMainWindow();
       }
     },
     { type: 'separator' },
-    {
-      label: 'Restart local servers',
-      click: () => {
-        onRestart();
-      }
-    },
-    {
-      label: 'Stop local servers',
-      click: () => {
-        onStop();
-      }
-    },
+    { label: 'Restart local servers', click: onRestart },
+    { label: 'Stop local servers', click: onStop },
     { type: 'separator' },
-    {
-      label: 'Quit Application',
-      click: () => {
-        app.quit();
-      }
-    }
-  ]);
-
-  tray.setContextMenu(contextMenu);
+    { label: 'Quit Application', click: () => app.quit() }
+  ]));
   return tray;
 }
 

@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { redis } from '@/lib/redis';
 import { ErrorCodes } from '@/types/api';
 import { EntityType } from '@/types/entities';
 
 export const runtime = 'nodejs';
+
+const BATCH_SIZE = 100;
 
 export async function GET(
   _req: NextRequest,
@@ -13,96 +14,50 @@ export async function GET(
   const { id: sessionId } = await params;
 
   try {
-    const files = await prisma.file.findMany({
-      where: { sessionId },
-      select: {
-        id: true,
-        originalName: true,
-        mimeType: true,
-        sizeBytes: true,
-        originalCreatedAt: true,
-      },
-    });
-
-    const sessionRecord = await prisma.session.findUnique({
-      where: { id: sessionId },
-      select: {
-        windowSize: true,
-        minConnections: true,
-        minOccurrences: true,
-        minEdgeWeight: true,
-        minTfidf: true,
-        hiddenNodeIds: true,
-      },
-    });
+    const [files, sessionRecord] = await Promise.all([
+      prisma.file.findMany({
+        where: { sessionId },
+        select: { id: true, originalName: true, mimeType: true, sizeBytes: true, originalCreatedAt: true },
+      }),
+      prisma.session.findUnique({
+        where: { id: sessionId },
+        select: { windowSize: true, minConnections: true, minOccurrences: true, minEdgeWeight: true, minTfidf: true, hiddenNodeIds: true },
+      }),
+    ]);
 
     const windowSize = sessionRecord?.windowSize ?? 400;
     const minConnections = sessionRecord?.minConnections ?? 2;
     const minOccurrences = sessionRecord?.minOccurrences ?? 2;
     const minEdgeWeight = sessionRecord?.minEdgeWeight ?? 0.0;
     const minTfidf = sessionRecord?.minTfidf ?? 0.0;
+    const baseResponse = { sessionId, exportedAt: new Date().toISOString(), windowSize, minConnections, minOccurrences, minEdgeWeight, minTfidf };
 
-    if (files.length === 0) {
-      return NextResponse.json({
-        sessionId,
-        exportedAt: new Date().toISOString(),
-        windowSize,
-        minConnections,
-        minOccurrences,
-        minEdgeWeight,
-        nodes: [],
-        edges: [],
-      });
-    }
+    if (files.length === 0)
+      return NextResponse.json({ ...baseResponse, nodes: [], edges: [] });
 
     const filesMap = new Map(files.map((f) => [f.id, f]));
     const fileIds = files.map((f) => f.id);
 
-    const entityOccurrencesMap = new Map<
-      string,
-      {
-        entity: any;
-        occurrences: Array<{
-          fileId: string;
-          fileName: string;
-          mimeType: string;
-          sizeBytes: number;
-          count: number;
-          tfidf: number;
-          excerpts: any;
-          originalCreatedAt: string | null;
-        }>;
-      }
-    >();
-
-    const BATCH_SIZE = 100;
+    const entityOccurrencesMap = new Map<string, { entity: any; occurrences: any[] }>();
     for (let i = 0; i < fileIds.length; i += BATCH_SIZE) {
-      const batchFileIds = fileIds.slice(i, i + BATCH_SIZE);
       const occurrences = await prisma.occurrence.findMany({
-        where: { fileId: { in: batchFileIds } },
+        where: { fileId: { in: fileIds.slice(i, i + BATCH_SIZE) } },
         include: { entity: true },
       });
-
-      for (const occurrence of occurrences) {
-        const entity = occurrence.entity;
-        const file = filesMap.get(occurrence.fileId);
+      for (const occ of occurrences) {
+        const { entity } = occ;
+        const file = filesMap.get(occ.fileId);
         if (!entity || !file) continue;
-
-        const cur = entityOccurrencesMap.get(entity.id) ?? {
-          entity,
-          occurrences: [],
-        };
+        const cur = entityOccurrencesMap.get(entity.id) ?? { entity, occurrences: [] };
         cur.occurrences.push({
           fileId: file.id,
           fileName: file.originalName,
           mimeType: file.mimeType,
           sizeBytes: Number(file.sizeBytes),
-          count: occurrence.count,
-          tfidf: occurrence.tfidf,
-          excerpts: occurrence.excerpts,
-          originalCreatedAt: file.originalCreatedAt
-            ? file.originalCreatedAt.toISOString()
-            : null,
+          count: occ.count,
+          tfidf: occ.tfidf,
+          excerpts: occ.excerpts,
+          originalCreatedAt: file.originalCreatedAt?.toISOString() ?? null,
         });
         entityOccurrencesMap.set(entity.id, cur);
       }
@@ -119,84 +74,42 @@ export async function GET(
 
     const edges: any[] = [];
     for (let i = 0; i < fileIds.length; i += BATCH_SIZE) {
-      const batchFileIds = fileIds.slice(i, i + BATCH_SIZE);
       const neighborhoods = await prisma.entityNeighborhood.findMany({
-        where: { fileId: { in: batchFileIds } },
-        include: {
-          file: {
-            select: {
-              originalName: true,
-            },
-          },
-        },
+        where: { fileId: { in: fileIds.slice(i, i + BATCH_SIZE) } },
+        include: { file: { select: { originalName: true } } },
       });
-
       for (const n of neighborhoods) {
         edges.push({
-          source: n.sourceEntityId,
-          target: n.targetEntityId,
-          weight: n.weight,
-          distance: n.distance,
-          snippet: n.snippet,
-          sourceOffset: n.sourceOffset,
-          targetOffset: n.targetOffset,
-          fileId: n.fileId,
-          fileName: n.file.originalName,
+          source: n.sourceEntityId, target: n.targetEntityId,
+          weight: n.weight, distance: n.distance, snippet: n.snippet,
+          sourceOffset: n.sourceOffset, targetOffset: n.targetOffset,
+          fileId: n.fileId, fileName: n.file.originalName,
         });
       }
     }
 
     const emails = await prisma.email.findMany({
       where: { fileId: { in: fileIds } },
-      include: {
-        file: {
-          select: {
-            originalName: true,
-            mimeType: true,
-            sizeBytes: true,
-            originalCreatedAt: true,
-          },
-        },
-      },
+      include: { file: { select: { originalName: true, mimeType: true, sizeBytes: true, originalCreatedAt: true } } },
     });
 
-    const exportedEmails = emails.map((e) => ({
-      id: e.id,
-      messageId: e.messageId,
-      inReplyTo: e.inReplyTo,
-      references: e.references,
-      subject: e.subject,
-      from: e.from,
-      to: e.to,
-      cc: e.cc,
-      date: e.date ? e.date.toISOString() : null,
-      body: e.body,
-      attachments: e.attachments,
-      fileId: e.fileId,
-      fileName: e.file?.originalName || null,
-      fileMimeType: e.file?.mimeType || null,
-      fileSizeBytes: e.file ? Number(e.file.sizeBytes) : null,
-      fileOriginalCreatedAt: e.file?.originalCreatedAt ? e.file.originalCreatedAt.toISOString() : null,
-    }));
-
     return NextResponse.json({
-      sessionId,
-      exportedAt: new Date().toISOString(),
-      windowSize,
-      minConnections,
-      minOccurrences,
-      minEdgeWeight,
-      minTfidf,
+      ...baseResponse,
       hiddenNodeIds: JSON.parse(sessionRecord?.hiddenNodeIds || '[]'),
       nodes,
       edges,
-      emails: exportedEmails,
+      emails: emails.map((e) => ({
+        id: e.id, messageId: e.messageId, inReplyTo: e.inReplyTo, references: e.references,
+        subject: e.subject, from: e.from, to: e.to, cc: e.cc,
+        date: e.date?.toISOString() ?? null, body: e.body, attachments: e.attachments,
+        fileId: e.fileId, fileName: e.file?.originalName ?? null,
+        fileMimeType: e.file?.mimeType ?? null,
+        fileSizeBytes: e.file ? Number(e.file.sizeBytes) : null,
+        fileOriginalCreatedAt: e.file?.originalCreatedAt?.toISOString() ?? null,
+      })),
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

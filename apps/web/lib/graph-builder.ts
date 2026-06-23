@@ -1,66 +1,26 @@
 import { EntityType, ENTITY_COLORS } from "@/types/entities";
 
-
 const LABEL_MAX_LEN = 20;
 
 export interface GraphNode {
-  id: string;
-  label: string;
-  type: EntityType | "FILE";
-  fileCount: number;
-  totalOccurrences: number;
-  tfidf?: number;
-  color: string;
-  isWeakSignal?: boolean;
+  id: string; label: string; type: EntityType | "FILE"; fileCount: number; totalOccurrences: number; tfidf?: number; color: string; isWeakSignal?: boolean;
 }
-
-export interface GraphEdge {
-  source: string;
-  target: string;
-  weight: number;
-}
-
+export interface GraphEdge { source: string; target: string; weight: number; }
 export interface CytoscapeNodeData {
-  id: string;
-  label: string;
-  fullLabel: string;
-  type: EntityType | "FILE";
-  color: string;
-  fileCount: number;
-  totalOccurrences: number;
-  tfidf?: number;
-  bgImage?: string;
+  id: string; label: string; fullLabel: string; type: EntityType | "FILE"; color: string; fileCount: number; totalOccurrences: number; tfidf?: number; bgImage?: string;
 }
+export interface CytoscapeEdgeData { id: string; source: string; target: string; weight: number; }
+export interface CytoscapeElement { data: CytoscapeNodeData | CytoscapeEdgeData; classes?: string; }
 
-export interface CytoscapeEdgeData {
-  id: string;
-  source: string;
-  target: string;
-  weight: number;
-}
-
-export interface CytoscapeElement {
-  data: CytoscapeNodeData | CytoscapeEdgeData;
-  classes?: string;
-}
-
-
-export function buildCytoscapeElements(
-  nodes: GraphNode[],
-  edges: GraphEdge[]
-): CytoscapeElement[] {
+export function buildCytoscapeElements(nodes: GraphNode[], edges: GraphEdge[]): CytoscapeElement[] {
   const cyNodes: CytoscapeElement[] = nodes.map((n) => {
-    const isFile = n.type === "FILE";
-    let bgImage: string | undefined = undefined;
-
-    if (isFile) {
+    let bgImage: string | undefined;
+    if (n.type === "FILE") {
       const parts = n.label.split('.');
       const ext = parts.length > 1 ? parts[parts.length - 1].toUpperCase() : 'FILE';
-      const displayExt = ext.length > 4 ? ext.slice(0, 4) : ext;
-      const svg = `<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="DM Mono, monospace" font-size="10" font-weight="bold" fill="#0A0C10">${displayExt}</text></svg>`;
-      bgImage = `data:image/svg+xml;utf8,${encodeURIComponent(svg)}`;
+      const disp = ext.length > 4 ? ext.slice(0, 4) : ext;
+      bgImage = `data:image/svg+xml;utf8,${encodeURIComponent(`<svg xmlns="http://www.w3.org/2000/svg" width="40" height="30"><text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" font-family="DM Mono, monospace" font-size="10" font-weight="bold" fill="#0A0C10">${disp}</text></svg>`)}`;
     }
-
     return {
       data: {
         id: n.id,
@@ -71,19 +31,14 @@ export function buildCytoscapeElements(
         fileCount: n.fileCount,
         totalOccurrences: n.totalOccurrences,
         tfidf: n.tfidf ?? n.totalOccurrences,
-        ...(bgImage ? { bgImage } : {}),
+        ...(bgImage && { bgImage }),
       },
       classes: n.isWeakSignal ? "weak-signal" : undefined,
     };
   });
 
   const cyEdges: CytoscapeElement[] = edges.map((e, i) => ({
-    data: {
-      id: `edge-${i}|${e.source}|${e.target}`,
-      source: e.source,
-      target: e.target,
-      weight: e.weight,
-    },
+    data: { id: `edge-${i}|${e.source}|${e.target}`, source: e.source, target: e.target, weight: e.weight },
   }));
 
   return [...cyNodes, ...cyEdges];
@@ -93,132 +48,38 @@ export const cytoscapeStylesheet = [
   {
     selector: "node",
     style: {
-      "background-color": "data(color)",
-      label: "data(label)",
-      color: "#f0f0f4",
-      "font-family": "var(--font-mono, DM Mono, monospace)",
-      "font-size": "11px",
-      "text-valign": "bottom" as const,
-      "text-margin-y": 6,
-      "text-outline-color": "#0e0e10",
-      "text-outline-width": 2,
-      width: "mapData(tfidf, 1, 50, 22, 64)",
-      height: "mapData(tfidf, 1, 50, 22, 64)",
-      "border-width": 2,
-      "border-color": "data(color)",
-      "border-opacity": 0.5,
-      shape: "ellipse",
+      "background-color": "data(color)", label: "data(label)", color: "#f0f0f4", "font-family": "var(--font-mono, DM Mono, monospace)",
+      "font-size": "11px", "text-valign": "bottom" as const, "text-margin-y": 6, "text-outline-color": "#0e0e10", "text-outline-width": 2,
+      width: "mapData(tfidf, 1, 50, 22, 64)", height: "mapData(tfidf, 1, 50, 22, 64)", "border-width": 2, "border-color": "data(color)",
+      "border-opacity": 0.5, shape: "ellipse",
     },
   },
   {
     selector: "node.weak-signal",
     style: {
-      "background-color": "#ffffff",
-      "border-style": "dashed",
-      "border-width": 3,
-      "border-color": "#a855f7",
-      "border-opacity": 1.0,
-      "shadow-blur": 12,
-      "shadow-color": "#a855f7",
-      "shadow-opacity": 0.9,
-      "shadow-offset-x": 0,
-      "shadow-offset-y": 0,
+      "background-color": "#ffffff", "border-style": "dashed", "border-width": 3, "border-color": "#a855f7", "border-opacity": 1.0,
+      "shadow-blur": 12, "shadow-color": "#a855f7", "shadow-opacity": 0.9, "shadow-offset-x": 0, "shadow-offset-y": 0,
     },
   },
   {
     selector: 'node[type="FILE"]',
     style: {
-      shape: "rectangle",
-      "border-width": 3,
-      "border-color": "var(--color-text)",
-      "border-opacity": 0.8,
-      width: 40,
-      height: 30,
-      "background-image": "data(bgImage)",
-      "background-fit": "contain" as const,
-      "background-clip": "node" as const,
+      shape: "rectangle", "border-width": 3, "border-color": "var(--color-text)", "border-opacity": 0.8, width: 40, height: 30,
+      "background-image": "data(bgImage)", "background-fit": "contain" as const, "background-clip": "node" as const,
     },
   },
-  {
-    selector: "node.hide-label",
-    style: {
-      label: "",
-      "text-outline-width": 0,
-    },
-  },
-  {
-    selector: "node.show-hover-label",
-    style: {
-      label: "data(label)",
-      "text-outline-width": 2,
-    },
-  },
-  {
-    selector: "node:selected",
-    style: {
-      "border-width": 3,
-      "border-opacity": 1,
-      "background-opacity": 0.9,
-      "border-color": "var(--color-primary-hover)",
-    },
-  },
-  {
-    selector: "node.highlighted",
-    style: {
-      "border-width": 3,
-      "border-opacity": 1,
-      "opacity": 1,
-      "border-color": "var(--color-secondary)",
-    },
-  },
-  {
-    selector: "node.faded",
-    style: {
-      opacity: 0.15,
-    },
-  },
-  {
-    selector: "edge",
-    style: {
-      width: "mapData(weight, 0, 1, 1, 5)",
-      "line-color": "#242430",
-      opacity: 0.75,
-      "curve-style": "haystack" as const,
-    },
-  },
-  {
-    selector: "edge:selected",
-    style: {
-      "line-color": "var(--color-primary)",
-      opacity: 1,
-    },
-  },
-  {
-    selector: "edge.highlighted",
-    style: {
-      "line-color": "var(--color-primary)",
-      opacity: 0.9,
-    },
-  },
-  {
-    selector: "edge.faded",
-    style: {
-      opacity: 0.05,
-    },
-  },
+  { selector: "node.hide-label", style: { label: "", "text-outline-width": 0 } },
+  { selector: "node.show-hover-label", style: { label: "data(label)", "text-outline-width": 2 } },
+  { selector: "node:selected", style: { "border-width": 3, "border-opacity": 1, "background-opacity": 0.9, "border-color": "var(--color-primary-hover)" } },
+  { selector: "node.highlighted", style: { "border-width": 3, "border-opacity": 1, opacity: 1, "border-color": "var(--color-secondary)" } },
+  { selector: "node.faded", style: { opacity: 0.15 } },
+  { selector: "edge", style: { width: "mapData(weight, 0, 1, 1, 5)", "line-color": "#242430", opacity: 0.75, "curve-style": "haystack" as const } },
+  { selector: "edge:selected", style: { "line-color": "var(--color-primary)", opacity: 1 } },
+  { selector: "edge.highlighted", style: { "line-color": "var(--color-primary)", opacity: 0.9 } },
+  { selector: "edge.faded", style: { opacity: 0.05 } },
 ];
 
 export const cytoscapeLayoutConfig = {
-  name: "cose-bilkent",
-  animate: true,
-  animationDuration: 600,
-  randomize: false,
-  nodeDimensionsIncludeLabels: true,
-  idealEdgeLength: 350,
-  nodeRepulsion: 120000,
-  gravity: 0.05,
-  numIter: 2500,
-  tile: true,
-  tilingPaddingVertical: 25,
-  tilingPaddingHorizontal: 25,
+  name: "cose-bilkent", animate: true, animationDuration: 600, randomize: false, nodeDimensionsIncludeLabels: true,
+  idealEdgeLength: 350, nodeRepulsion: 120000, gravity: 0.05, numIter: 2500, tile: true, tilingPaddingVertical: 25, tilingPaddingHorizontal: 25,
 };

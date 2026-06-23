@@ -6,6 +6,7 @@ import { ErrorCodes } from '@/types/api';
 export const runtime = 'nodejs';
 
 const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
+const errMsg = (err: unknown) => (err instanceof Error ? err.message : 'Unknown error');
 
 async function fetchEdges({
   sessionId,
@@ -18,9 +19,7 @@ async function fetchEdges({
   from?: string | null;
   to?: string | null;
 }) {
-  if (!sessionId && !nodeIds) {
-    throw new Error('sessionId or nodeIds required');
-  }
+  if (!sessionId && !nodeIds) throw new Error('sessionId or nodeIds required');
 
   let hiddenIds = new Set<string>();
   if (sessionId) {
@@ -34,17 +33,11 @@ async function fetchEdges({
   let ids: string[];
 
   if (nodeIds) {
-    if (Array.isArray(nodeIds)) {
-      ids = nodeIds.filter(Boolean);
-    } else {
-      ids = nodeIds.split(',').filter(Boolean);
-    }
+    ids = (Array.isArray(nodeIds) ? nodeIds : nodeIds.split(',')).filter(Boolean);
   } else {
     const cacheKey = `${RedisKeys.sessionGraph(sessionId!)}:edges:d=${from || 'any'}:${to || 'any'}`;
     const cached = await redis.get(cacheKey);
-    if (cached) {
-      return JSON.parse(cached);
-    }
+    if (cached) return JSON.parse(cached);
 
     const fileFrom = from ? new Date(from) : null;
     const fileTo = to ? new Date(to) : null;
@@ -65,51 +58,35 @@ async function fetchEdges({
       select: { id: true },
     });
 
-    if (files.length === 0) {
-      return { edges: [] };
-    }
+    if (files.length === 0) return { edges: [] };
 
     const nodesRes = await fetch(`${NLP_URL}/graph/nodes`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({
-        file_ids: files.map((f) => f.id),
-        limit: 500,
-        offset: 0,
-      }),
-      cache: 'no-store',
+      body: JSON.stringify({ file_ids: files.map((f) => f.id), limit: 500, offset: 0 }),
     });
     const nodesData = await nodesRes.json();
     ids = (nodesData.nodes ?? []).map((n: { id: string }) => n.id);
   }
 
-  // Filter out hidden IDs
   ids = ids.filter((id) => !hiddenIds.has(id));
-
-  if (ids.length < 2) {
-    return { edges: [] };
-  }
+  if (ids.length < 2) return { edges: [] };
 
   const upstream = await fetch(`${NLP_URL}/graph/edges`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ node_ids: ids }),
-    cache: 'no-store',
   });
-  if (!upstream.ok) {
-    throw new Error(`Upstream graph service error ${upstream.status}`);
-  }
+  if (!upstream.ok) throw new Error(`Upstream graph service error ${upstream.status}`);
 
   const data = await upstream.json();
   const edges = (data.edges ?? [])
     .filter((e: { source: string; target: string }) => !hiddenIds.has(e.source) && !hiddenIds.has(e.target))
-    .map(
-      (e: { source: string; target: string; weight: number; distance: number }) => ({
-        source: e.source,
-        target: e.target,
-        weight: e.weight,
-      })
-    );
+    .map((e: { source: string; target: string; weight: number }) => ({
+      source: e.source,
+      target: e.target,
+      weight: e.weight,
+    }));
 
   if (!nodeIds && sessionId) {
     const cacheKey = `${RedisKeys.sessionGraph(sessionId)}:edges:d=${from || 'any'}:${to || 'any'}`;
@@ -121,38 +98,23 @@ async function fetchEdges({
 
 export async function GET(req: NextRequest) {
   const { searchParams } = new URL(req.url);
-  const sessionId = searchParams.get('sessionId');
-  const nodeIds = searchParams.get('nodeIds');
-  const from = searchParams.get('from');
-  const to = searchParams.get('to');
-
   try {
-    const result = await fetchEdges({ sessionId, nodeIds, from, to });
-    return NextResponse.json(result);
-  } catch (err: any) {
-    console.error('Graph Edges GET API Error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Unknown error', code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json(await fetchEdges({
+      sessionId: searchParams.get('sessionId'),
+      nodeIds: searchParams.get('nodeIds'),
+      from: searchParams.get('from'),
+      to: searchParams.get('to'),
+    }));
+  } catch (err: unknown) {
+    return NextResponse.json({ error: errMsg(err), code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }
 
 export async function POST(req: NextRequest) {
   try {
-    const body = await req.json().catch(() => ({}));
-    const result = await fetchEdges({
-      sessionId: body.sessionId,
-      nodeIds: body.nodeIds,
-      from: body.from,
-      to: body.to,
-    });
-    return NextResponse.json(result);
-  } catch (err: any) {
-    console.error('Graph Edges POST API Error:', err);
-    return NextResponse.json(
-      { error: err.message || 'Unknown error', code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    const { sessionId, nodeIds, from, to } = await req.json().catch(() => ({}));
+    return NextResponse.json(await fetchEdges({ sessionId, nodeIds, from, to }));
+  } catch (err: unknown) {
+    return NextResponse.json({ error: errMsg(err), code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

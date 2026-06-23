@@ -1,6 +1,8 @@
-import re
-import logging
+from dataclasses import dataclass
+from datetime import datetime, timedelta
 import hashlib
+import logging
+import re
 from typing import List
 
 from services.email_date import parse_date_to_iso
@@ -8,19 +10,17 @@ from services.email_body import clean_body_text, clean_quoted_lines
 
 logger = logging.getLogger(__name__)
 
-
+@dataclass
 class HeaderMatch:
-    def __init__(self, start_idx, end_idx, header_type, date_str=None, author_str=None, to_str=None, subject_str=None, cc_str=None, is_forward=False):
-        self.start_idx = start_idx
-        self.end_idx = end_idx
-        self.header_type = header_type
-        self.date_str = date_str
-        self.author_str = author_str
-        self.to_str = to_str
-        self.subject_str = subject_str
-        self.cc_str = cc_str
-        self.is_forward = is_forward
-
+    start_idx: int
+    end_idx: int
+    header_type: str
+    date_str: str = None
+    author_str: str = None
+    to_str: str = None
+    subject_str: str = None
+    cc_str: str = None
+    is_forward: bool = False
 
 INLINE_HEADER_PATTERNS = [
     re.compile(r'(?:\r?\n|^)>*\s*(On\s+([\s\S]{1,500}?)\s+wrote\s*:)', re.IGNORECASE),
@@ -28,15 +28,12 @@ INLINE_HEADER_PATTERNS = [
     re.compile(r'(?:\r?\n|^)>*\s*(([\s\S]{1,500}?)\s+(?:пишет|написал\(а\)|написал|написала)\s*:)', re.IGNORECASE),
 ]
 
-
 def find_headers(body: str) -> List[HeaderMatch]:
     matches = []
-
     for pattern in INLINE_HEADER_PATTERNS:
         for m in pattern.finditer(body):
             if any(existing.start_idx <= m.start(1) < existing.end_idx for existing in matches):
                 continue
-
             content = m.group(2)
             author_str = ""
             date_str = ""
@@ -66,18 +63,8 @@ def find_headers(body: str) -> List[HeaderMatch]:
             author_str = re.sub(r'^[,;:\s]+', '', author_str)
             author_str = re.sub(r'^(?:пользователь|user|à|at|to)\s+', '', author_str, flags=re.IGNORECASE)
 
-            author_lines = author_str.splitlines()
-            cleaned_author_lines = []
-            for al in author_lines:
-                al_stripped = al.strip()
-                if al_stripped == '>':
-                    continue
-                if al_stripped.startswith('>'):
-                    al_stripped = al_stripped[1:].strip()
-                if al_stripped:
-                    cleaned_author_lines.append(al_stripped)
-            author_str = " ".join(cleaned_author_lines).strip(" ,;:\r\n\t\xa0")
-
+            author_lines = [al.strip()[1:].strip() if al.strip().startswith('>') else al.strip() for al in author_str.splitlines()]
+            author_str = " ".join(al for al in author_lines if al).strip(" ,;:\r\n\t\xa0")
             date_str = re.sub(r'[,;:\s\(\)]+$', '', date_str.strip())
 
             matches.append(HeaderMatch(
@@ -113,21 +100,15 @@ def find_headers(body: str) -> List[HeaderMatch]:
         for line in lines:
             matched_field = False
             for f_name, pat in field_patterns.items():
-                fl_match = pat.match(line)
-                if fl_match:
+                if fl_match := pat.match(line):
                     fields[f_name] = fl_match.group(1).strip()
-                    current_field = f_name
-                    matched_field = True
+                    current_field, matched_field = f_name, True
                     header_lines_count += 1
                     break
             if not matched_field:
-                stripped_line = line.lstrip('>')
-                if current_field and (
-                    line.startswith(' ') or
-                    line.startswith('\t') or
-                    (line.startswith('>') and (stripped_line.startswith(' ') or stripped_line.startswith('\t') or stripped_line.strip()))
-                ):
-                    fields[current_field] += " " + stripped_line.strip()
+                stripped = line.lstrip('>')
+                if current_field and (line.startswith((' ', '\t')) or (line.startswith('>') and (stripped.startswith((' ', '\t')) or stripped.strip()))):
+                    fields[current_field] += " " + stripped.strip()
                     header_lines_count += 1
                 else:
                     break
@@ -159,9 +140,7 @@ def find_headers(body: str) -> List[HeaderMatch]:
             is_forward=is_fwd,
         ))
 
-    matches.sort(key=lambda x: x.start_idx)
-    return matches
-
+    return sorted(matches, key=lambda x: x.start_idx)
 
 def extract_nested_emails(main_email: dict) -> List[dict]:
     body = main_email.get("body", "")
@@ -174,40 +153,32 @@ def extract_nested_emails(main_email: dict) -> List[dict]:
 
     main_email["body"] = clean_body_text(body[:matches[0].start_idx])
 
-    from datetime import datetime, timedelta
     ref_tz = None
     if main_email.get("date"):
         try:
-            main_dt = datetime.fromisoformat(main_email["date"])
-            if main_dt.tzinfo is not None:
-                ref_tz = main_dt.tzinfo
+            ref_tz = datetime.fromisoformat(main_email["date"]).tzinfo
         except Exception:
             pass
 
     nested_list = []
     for i, match in enumerate(matches):
-        raw_body = body[match.end_idx: matches[i + 1].start_idx if i + 1 < len(matches) else len(body)]
-
+        raw_body = body[match.end_idx : matches[i + 1].start_idx if i + 1 < len(matches) else len(body)]
         parsed_date = parse_date_to_iso(match.date_str, reference_tz=ref_tz)
         if not parsed_date:
-            parent_date_str = main_email["date"] if i == 0 else nested_list[i - 1]["date"]
-            if parent_date_str:
-                try:
-                    parsed_date = (datetime.fromisoformat(parent_date_str) - timedelta(minutes=1)).isoformat()
-                except Exception:
-                    parsed_date = parent_date_str
+            p_date = main_email["date"] if i == 0 else nested_list[i - 1]["date"]
+            try:
+                parsed_date = (datetime.fromisoformat(p_date) - timedelta(minutes=1)).isoformat() if p_date else None
+            except Exception:
+                parsed_date = p_date
 
-        subj = match.subject_str
-        if not subj:
-            parent_subj = main_email["subject"]
-            subj = parent_subj if parent_subj.lower().startswith(("re:", "fwd:")) else "Re: " + parent_subj
+        subj = match.subject_str or (
+            main_email["subject"] if main_email["subject"].lower().startswith(("re:", "fwd:")) else "Re: " + main_email["subject"]
+        )
 
         if match.is_forward:
-            parent_email = main_email if i == 0 else nested_list[i - 1]
-            parent_subj = parent_email["subject"]
-            if not parent_subj.lower().startswith(("fwd:", "fw:", "tr:", "forward:")):
-                clean_parent_subj = re.sub(r'^((re|aw|antw|rif|reply):\s*)+', '', parent_subj, flags=re.IGNORECASE).strip()
-                parent_email["subject"] = "Fwd: " + clean_parent_subj
+            parent = main_email if i == 0 else nested_list[i - 1]
+            if not parent["subject"].lower().startswith(("fwd:", "fw:", "tr:", "forward:")):
+                parent["subject"] = "Fwd: " + re.sub(r'^((re|aw|antw|rif|reply):\s*)+', '', parent["subject"], flags=re.IGNORECASE).strip()
 
         nested_list.append({
             "subject": subj,
@@ -219,12 +190,12 @@ def extract_nested_emails(main_email: dict) -> List[dict]:
             "attachments": [],
         })
 
-    for email_item in nested_list:
-        hash_input = f"{email_item['from_address']}-{email_item['date']}-{email_item['subject']}-{email_item['body']}".encode("utf-8", errors="replace")
-        email_item["message_id"] = f"<{hashlib.sha1(hash_input).hexdigest()}@datalake.local>"
+    for i, item in enumerate(nested_list):
+        h_in = f"{item['from_address']}-{item['date']}-{item['subject']}-{item['body']}".encode("utf-8", errors="replace")
+        item["message_id"] = f"<{hashlib.sha1(h_in).hexdigest()}@datalake.local>"
 
     main_email["in_reply_to"] = nested_list[0]["message_id"]
-    for i in range(len(nested_list)):
-        nested_list[i]["in_reply_to"] = nested_list[i + 1]["message_id"] if i + 1 < len(nested_list) else None
+    for i, item in enumerate(nested_list):
+        item["in_reply_to"] = nested_list[i + 1]["message_id"] if i + 1 < len(nested_list) else None
 
     return [main_email] + nested_list

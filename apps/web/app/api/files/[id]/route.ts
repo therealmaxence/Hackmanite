@@ -1,13 +1,16 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { redis, RedisKeys, clearSessionGraphCache } from '@/lib/redis';
+import { clearSessionGraphCache } from '@/lib/redis';
 import { ErrorCodes } from '@/types/api';
 import { recomputeSessionTfidf } from '@/lib/api/tfidf';
 
 export const runtime = 'nodejs';
 
+const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
+const errMsg = (err: unknown) => (err instanceof Error ? err.message : 'Unknown error');
+
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
@@ -15,20 +18,11 @@ export async function GET(
   try {
     const file = await prisma.file.findUnique({
       where: { id },
-      include: {
-        occurrences: {
-          include: { entity: true },
-          orderBy: { count: 'desc' },
-        },
-      },
+      include: { occurrences: { include: { entity: true }, orderBy: { count: 'desc' } } },
     });
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'File not found', code: ErrorCodes.NOT_FOUND },
-        { status: 404 }
-      );
-    }
+    if (!file)
+      return NextResponse.json({ error: 'File not found', code: ErrorCodes.NOT_FOUND }, { status: 404 });
 
     return NextResponse.json({
       id: file.id,
@@ -38,7 +32,7 @@ export async function GET(
       status: file.status,
       errorMessage: file.errorMessage,
       uploadedAt: file.uploadedAt.toISOString(),
-      processedAt: file.processedAt ? file.processedAt.toISOString() : null,
+      processedAt: file.processedAt?.toISOString() ?? null,
       entities: file.occurrences.map((o) => ({
         id: o.entity.id,
         displayName: o.entity.displayName,
@@ -47,62 +41,36 @@ export async function GET(
       })),
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errMsg(err), code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }
 
 export async function DELETE(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
 
   try {
-    const file = await prisma.file.findUnique({
-      where: { id },
-      select: { sessionId: true },
-    });
+    const file = await prisma.file.findUnique({ where: { id }, select: { sessionId: true } });
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'File not found', code: ErrorCodes.NOT_FOUND },
-        { status: 404 }
-      );
-    }
+    if (!file)
+      return NextResponse.json({ error: 'File not found', code: ErrorCodes.NOT_FOUND }, { status: 404 });
 
-    await prisma.file.delete({
-      where: { id },
-    });
+    await prisma.file.delete({ where: { id } });
 
-    // Delete in KuzuDB
     try {
-      const nlpUrl = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
-      const kuzuFileDeleteRes = await fetch(`${nlpUrl}/graph/file/${id}`, {
-        method: 'DELETE',
-      });
-      if (!kuzuFileDeleteRes.ok) {
-        console.error(`Failed to delete file in KuzuDB, status: ${kuzuFileDeleteRes.status}`);
-      }
+      const res = await fetch(`${NLP_URL}/graph/file/${id}`, { method: 'DELETE' });
+      if (!res.ok) console.error(`Failed to delete file in KuzuDB, status: ${res.status}`);
     } catch (err) {
       console.error('Failed to contact Python service for KuzuDB file delete:', err);
     }
 
-    // Recompute TF-IDF for the session
     await recomputeSessionTfidf(file.sessionId);
-
-    // Clear cache
     await clearSessionGraphCache(file.sessionId);
 
     return NextResponse.json({ success: true });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errMsg(err), code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

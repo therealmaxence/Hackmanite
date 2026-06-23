@@ -17,77 +17,35 @@ export interface GraphExportData {
   [key: string]: any;
 }
 
-export function filterGraphExportData<T extends GraphExportData>(
-  rawData: T,
-  options: ExportFilterOptions
-): T {
-  const {
-    selectedTypes,
-    keepAllNodes,
-    limitNodes,
-    minOccurrences,
-    minTfidf,
-    minConnections,
-    minEdgeWeight,
-    exportHiddenNodes,
-  } = options;
-
-  const hiddenIdsSet = new Set<string>(rawData.hiddenNodeIds || []);
+export function filterGraphExportData<T extends GraphExportData>(rawData: T, options: ExportFilterOptions): T {
+  const { selectedTypes, keepAllNodes, limitNodes, minOccurrences, minTfidf, minConnections, minEdgeWeight, exportHiddenNodes } = options;
+  const hidden = new Set<string>(rawData.hiddenNodeIds || []);
   
-  // 1. Filter Nodes
-  let filteredNodes = (rawData.nodes || []).filter((node: any) => {
-    if (!exportHiddenNodes && hiddenIdsSet.has(node.id)) return false;
-    if (!selectedTypes.has(node.type)) return false;
-    const totalOccs = (node.occurrences || []).reduce((sum: number, o: any) => sum + o.count, 0);
-    if (totalOccs < minOccurrences) return false;
-    const totalTfidf = (node.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
-    if (totalTfidf < minTfidf) return false;
-    return true;
-  });
+  const getSum = (node: any, tfidf: boolean) => (node.occurrences || []).reduce((s: number, o: any) => s + (tfidf ? (o.tfidf ?? o.count) : o.count), 0);
 
-  // 2. Filter Edges by Weight
-  let filteredEdges = (rawData.edges || []).filter((edge: any) => edge.weight >= minEdgeWeight);
+  let nodes = (rawData.nodes || []).filter((n: any) => 
+    (exportHiddenNodes || !hidden.has(n.id)) && selectedTypes.has(n.type) && getSum(n, false) >= minOccurrences && getSum(n, true) >= minTfidf
+  );
 
-  // 3. Count Connections per Node based on filtered edges
-  const connectionCounts = new Map<string, number>();
-  for (const edge of filteredEdges) {
-    connectionCounts.set(edge.source, (connectionCounts.get(edge.source) || 0) + 1);
-    connectionCounts.set(edge.target, (connectionCounts.get(edge.target) || 0) + 1);
+  let edges = (rawData.edges || []).filter((e: any) => e.weight >= minEdgeWeight);
+
+  const conns = new Map<string, number>();
+  for (const e of edges) {
+    conns.set(e.source, (conns.get(e.source) || 0) + 1);
+    conns.set(e.target, (conns.get(e.target) || 0) + 1);
   }
 
-  // 4. Filter Nodes by Connection Count
-  filteredNodes = filteredNodes.filter((node: any) => {
-    const conns = connectionCounts.get(node.id) || 0;
-    return conns >= minConnections;
-  });
+  nodes = nodes.filter((n: any) => (conns.get(n.id) || 0) >= minConnections);
 
-  // 5. Limit Nodes by total TF-IDF if requested
   if (!keepAllNodes && limitNodes > 0) {
-    filteredNodes.sort((a: any, b: any) => {
-      const aVal = (a.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
-      const bVal = (b.occurrences || []).reduce((sum: number, o: any) => sum + (o.tfidf ?? o.count), 0);
-      return bVal - aVal;
-    });
-    filteredNodes = filteredNodes.slice(0, limitNodes);
+    nodes = nodes.sort((a: any, b: any) => getSum(b, true) - getSum(a, true)).slice(0, limitNodes);
   }
 
-  // 6. Keep only edges between the final remaining nodes
-  const keptNodeIds = new Set(filteredNodes.map((n: any) => n.id));
-  filteredEdges = filteredEdges.filter((edge: any) => keptNodeIds.has(edge.source) && keptNodeIds.has(edge.target));
+  const keptNodes = new Set(nodes.map((n: any) => n.id));
+  edges = edges.filter((e: any) => keptNodes.has(e.source) && keptNodes.has(e.target));
 
-  // 7. Keep only emails associated with the files of the remaining nodes
-  const keptFileIds = new Set<string>();
-  for (const node of filteredNodes) {
-    for (const occ of node.occurrences || []) {
-      keptFileIds.add(occ.fileId);
-    }
-  }
-  const filteredEmails = (rawData.emails || []).filter((email: any) => email.fileId && keptFileIds.has(email.fileId));
+  const keptFiles = new Set((nodes.flatMap((n: any) => n.occurrences || [])).map((o: any) => o.fileId));
+  const emails = (rawData.emails || []).filter((em: any) => em.fileId && keptFiles.has(em.fileId));
 
-  return {
-    ...rawData,
-    nodes: filteredNodes,
-    edges: filteredEdges,
-    emails: filteredEmails,
-  } as T;
+  return { ...rawData, nodes, edges, emails };
 }

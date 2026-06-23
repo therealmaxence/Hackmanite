@@ -24,6 +24,19 @@ export interface ProgressiveGraphState {
   expandNode: (nodeId: string) => void;
 }
 
+const mapRawNode = (n: any, isWeak?: boolean): GraphNode => ({
+  id: n.id,
+  label: n.label,
+  type: n.type,
+  fileCount: n.fileCount ?? 0,
+  totalOccurrences: n.totalOccurrences ?? n.totalCount ?? 0,
+  tfidf: n.tfidf ?? n.score,
+  color: ENTITY_COLORS[n.type as EntityType] || '#6b7280',
+  ...(isWeak ? { isWeakSignal: true } : {}),
+});
+
+const isValidNode = (n: any) => n?.label?.trim() && n?.type?.trim();
+
 export function useProgressiveGraph(): ProgressiveGraphState {
   const { sessionId } = useUploadStore();
   const { filters, setNodes, setEdges, refreshTrigger } = useGraphStore();
@@ -51,50 +64,31 @@ export function useProgressiveGraph(): ProgressiveGraphState {
   loadedNodesRef.current = loadedNodes;
   loadedEdgesRef.current = loadedEdges;
 
-  useEffect(() => {
-    setNodes(loadedNodes);
-  }, [loadedNodes, setNodes]);
-
-  useEffect(() => {
-    setEdges(loadedEdges);
-  }, [loadedEdges, setEdges]);
+  useEffect(() => { setNodes(loadedNodes); }, [loadedNodes, setNodes]);
+  useEffect(() => { setEdges(loadedEdges); }, [loadedEdges, setEdges]);
 
   useSyncGraphStore({
-    loadedNodesRef,
-    setLoadedNodes,
-    loadedEdgesRef,
-    setLoadedEdges,
-    loadedNodeIdsRef,
-    loadedEdgeKeysRef,
+    loadedNodesRef, setLoadedNodes, loadedEdgesRef, setLoadedEdges,
+    loadedNodeIdsRef, loadedEdgeKeysRef,
   });
 
   const typeParam = filters.entityTypes.join(',');
 
-  const mergeNewData = useCallback(
-    (newNodes: GraphNode[], newEdges: GraphEdge[]) => {
-      const addedNodes: GraphNode[] = [];
-      for (const n of newNodes) {
-        if (!loadedNodeIdsRef.current.has(n.id)) {
-          loadedNodeIdsRef.current.add(n.id);
-          addedNodes.push(n);
-        }
-      }
-
-      const addedEdges: GraphEdge[] = [];
-      for (const e of newEdges) {
-        const key = `${e.source}|${e.target}`;
-        const keyRev = `${e.target}|${e.source}`;
-        if (!loadedEdgeKeysRef.current.has(key) && !loadedEdgeKeysRef.current.has(keyRev)) {
-          loadedEdgeKeysRef.current.add(key);
-          addedEdges.push(e);
-        }
-      }
-
-      if (addedNodes.length > 0) setLoadedNodes((prev) => [...prev, ...addedNodes]);
-      if (addedEdges.length > 0) setLoadedEdges((prev) => [...prev, ...addedEdges]);
-    },
-    []
-  );
+  const mergeNewData = useCallback((newNodes: GraphNode[], newEdges: GraphEdge[]) => {
+    const addedNodes = newNodes.filter((n) => {
+      if (loadedNodeIdsRef.current.has(n.id)) return false;
+      loadedNodeIdsRef.current.add(n.id);
+      return true;
+    });
+    const addedEdges = newEdges.filter((e) => {
+      const k1 = `${e.source}|${e.target}`, k2 = `${e.target}|${e.source}`;
+      if (loadedEdgeKeysRef.current.has(k1) || loadedEdgeKeysRef.current.has(k2)) return false;
+      loadedEdgeKeysRef.current.add(k1);
+      return true;
+    });
+    if (addedNodes.length) setLoadedNodes((prev) => [...prev, ...addedNodes]);
+    if (addedEdges.length) setLoadedEdges((prev) => [...prev, ...addedEdges]);
+  }, []);
 
   const fetchBatch = useCallback(async () => {
     const sid = sessionIdRef.current;
@@ -132,35 +126,14 @@ export function useProgressiveGraph(): ProgressiveGraphState {
               ...(wsData.emergingSignals || []),
             ];
             const uniqueWeak = Array.from(new Map(rawWeak.map(w => [w.id, w])).values());
-            weakNodes = uniqueWeak.map(w => ({
-              id: w.id,
-              label: w.label,
-              type: w.type as EntityType,
-              fileCount: w.fileCount,
-              totalOccurrences: w.totalCount,
-              tfidf: w.score,
-              color: ENTITY_COLORS[w.type as EntityType] || '#6b7280',
-              isWeakSignal: true,
-            }));
+            weakNodes = uniqueWeak.map(w => mapRawNode(w, true));
           }
         } catch (wsErr) {
           console.error('[useProgressiveGraph] failed to fetch weak signals:', wsErr);
         }
       }
 
-      const standardNodes: GraphNode[] = (data.nodes ?? [])
-        .filter((n: any) => n.label && n.label.trim() !== '' && n.type && n.type.trim() !== '')
-        .map(
-          (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; tfidf?: number; color: string }) => ({
-            id: n.id,
-            label: n.label,
-            type: n.type,
-            fileCount: n.fileCount,
-            totalOccurrences: n.totalOccurrences,
-            tfidf: n.tfidf,
-            color: ENTITY_COLORS[n.type] || '#6b7280',
-          })
-        );
+      const standardNodes = (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n));
 
       const seenIds = new Set<string>();
       const newNodes: GraphNode[] = [];
@@ -177,11 +150,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         return;
       }
 
-      const allKnownIds = [
-        ...Array.from(loadedNodeIdsRef.current),
-        ...newNodes.map((n) => n.id),
-      ];
-
+      const allKnownIds = [...Array.from(loadedNodeIdsRef.current), ...newNodes.map((n) => n.id)];
       const edgesRes = await fetch('/api/graph/edges', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -210,9 +179,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
       }
 
       if (batchCountRef.current < AUTO_STOP_AFTER_BATCHES) {
-        autoTimerRef.current = setTimeout(() => {
-          fetchBatch();
-        }, AUTO_LOAD_DELAY_MS);
+        autoTimerRef.current = setTimeout(() => { fetchBatch(); }, AUTO_LOAD_DELAY_MS);
       } else {
         setAutoLoadDone(true);
       }
@@ -227,8 +194,8 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
     offsetRef.current = 0;
     batchCountRef.current = 0;
-    loadedNodeIdsRef.current = new Set();
-    loadedEdgeKeysRef.current = new Set();
+    loadedNodeIdsRef.current.clear();
+    loadedEdgeKeysRef.current.clear();
     setLoadedNodes([]);
     setLoadedEdges([]);
     setHasMore(false);
@@ -247,8 +214,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
         _t: String(Date.now()),
       });
       const res = await fetch(`/api/graph/count?${params}`);
-      const data = res.ok ? await res.json() : { count: 0 };
-      setTotalCount(data.count ?? 0);
+      setTotalCount(res.ok ? (await res.json()).count ?? 0 : 0);
     } catch {
       setTotalCount(0);
     }
@@ -261,9 +227,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
 
   useEffect(() => {
     resetAndStart();
-    return () => {
-      if (autoTimerRef.current) clearTimeout(autoTimerRef.current);
-    };
+    return () => { if (autoTimerRef.current) clearTimeout(autoTimerRef.current); };
   }, [sessionId, typeParam, fromParam, toParam, refreshTrigger, filters.showWeakSignals, resetAndStart]);
 
   const loadMore = useCallback(() => {
@@ -273,47 +237,31 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     fetchBatch();
   }, [isLoadingBatch, hasMore, fetchBatch]);
 
-  const expandNode = useCallback(
-    async (nodeId: string) => {
-      const loadedIds = Array.from(loadedNodeIdsRef.current);
-      try {
-        const res = await fetch('/api/graph/neighbors', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nodeId, loadedIds, sessionId: sessionIdRef.current }),
-        });
-        if (!res.ok) return;
-        const data = await res.json();
+  const expandNode = useCallback(async (nodeId: string) => {
+    const loadedIds = Array.from(loadedNodeIdsRef.current);
+    try {
+      const res = await fetch('/api/graph/neighbors', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId, loadedIds, sessionId: sessionIdRef.current }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
 
-        const newNodes: GraphNode[] = (data.nodes ?? [])
-          .filter((n: any) => n.label && n.label.trim() !== '' && n.type && n.type.trim() !== '')
-          .map(
-            (n: { id: string; label: string; type: EntityType; fileCount: number; totalOccurrences: number; tfidf?: number; color: string }) => ({
-              id: n.id,
-              label: n.label,
-              type: n.type,
-              fileCount: n.fileCount,
-              totalOccurrences: n.totalOccurrences,
-              tfidf: n.tfidf,
-              color: ENTITY_COLORS[n.type] || '#6b7280',
-            })
-          );
+      const newNodes = (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n));
+      const newEdges: GraphEdge[] = (data.edges ?? []).map(
+        (e: { source: string; target: string; weight: number }) => ({
+          source: e.source,
+          target: e.target,
+          weight: e.weight,
+        })
+      );
 
-        const newEdges: GraphEdge[] = (data.edges ?? []).map(
-          (e: { source: string; target: string; weight: number }) => ({
-            source: e.source,
-            target: e.target,
-            weight: e.weight,
-          })
-        );
-
-        mergeNewData(newNodes, newEdges);
-      } catch (err) {
-        console.error('[useProgressiveGraph] expandNode error:', err);
-      }
-    },
-    [mergeNewData]
-  );
+      mergeNewData(newNodes, newEdges);
+    } catch (err) {
+      console.error('[useProgressiveGraph] expandNode error:', err);
+    }
+  }, [mergeNewData]);
 
   return {
     loadedNodes,

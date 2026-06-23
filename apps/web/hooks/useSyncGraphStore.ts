@@ -23,83 +23,61 @@ export function useSyncGraphStore({
 
   useEffect(() => {
     const graphNodeIds = new Set(graphNodes.map((n) => n.id));
-    const removed = Array.from(loadedNodeIdsRef.current).filter((id) => !graphNodeIds.has(id));
-
     const graphNodeMap = new Map(graphNodes.map((n) => [n.id, n]));
     const graphNodeByLabelMap = new Map(graphNodes.map((n) => [n.label, n]));
-
-    let updatedNodesCount = 0;
     const currentLoadedNodes = loadedNodesRef.current;
 
+    let updatedNodesCount = 0;
     const updatedLoadedNodes = currentLoadedNodes.map((ln) => {
-      let gn = graphNodeMap.get(ln.id) || graphNodeByLabelMap.get(ln.label);
-      if (gn) {
-        if (gn.id !== ln.id || gn.type !== ln.type || gn.color !== ln.color) {
-          updatedNodesCount++;
-          return {
-            ...ln,
-            id: gn.id,
-            type: gn.type,
-            color: gn.color,
-          };
-        }
+      const gn = graphNodeMap.get(ln.id) || graphNodeByLabelMap.get(ln.label);
+      if (gn && (gn.id !== ln.id || gn.type !== ln.type || gn.color !== ln.color)) {
+        updatedNodesCount++;
+        return { ...ln, id: gn.id, type: gn.type, color: gn.color };
       }
       return ln;
     });
 
-    const actualRemoved = removed.filter((id) => {
+    const actualRemoved = Array.from(loadedNodeIdsRef.current).filter((id) => {
+      if (graphNodeIds.has(id)) return false;
       const ln = currentLoadedNodes.find((n) => n.id === id);
       if (!ln) return true;
-      const hasReplacement = graphNodes.some((gn) => gn.label === ln.label && gn.id !== ln.id);
-      return !hasReplacement;
+      const rep = graphNodeByLabelMap.get(ln.label);
+      return !rep || rep.id === ln.id;
     });
 
     if (updatedNodesCount === 0 && actualRemoved.length === 0) return;
 
-    for (const id of actualRemoved) {
-      loadedNodeIdsRef.current.delete(id);
-    }
+    const removedOrUpdatedSet = new Set(actualRemoved);
+    actualRemoved.forEach((id) => loadedNodeIdsRef.current.delete(id));
 
     if (updatedNodesCount > 0) {
-      for (const ln of currentLoadedNodes) {
+      currentLoadedNodes.forEach((ln) => {
         const gn = graphNodeMap.get(ln.id) || graphNodeByLabelMap.get(ln.label);
         if (gn && gn.id !== ln.id) {
           loadedNodeIdsRef.current.delete(ln.id);
           loadedNodeIdsRef.current.add(gn.id);
+          removedOrUpdatedSet.add(ln.id);
         }
-      }
+      });
     }
 
-    const allRemovedOrUpdatedIds = [...actualRemoved];
-    if (updatedNodesCount > 0) {
-      for (const ln of currentLoadedNodes) {
-        const gn = graphNodeMap.get(ln.id) || graphNodeByLabelMap.get(ln.label);
-        if (gn && gn.id !== ln.id) {
-          allRemovedOrUpdatedIds.push(ln.id);
-        }
-      }
-    }
-
-    for (const key of Array.from(loadedEdgeKeysRef.current)) {
+    Array.from(loadedEdgeKeysRef.current).forEach((key) => {
       const [src, tgt] = key.split('|');
-      if (allRemovedOrUpdatedIds.includes(src) || allRemovedOrUpdatedIds.includes(tgt)) {
+      if (removedOrUpdatedSet.has(src) || removedOrUpdatedSet.has(tgt)) {
         loadedEdgeKeysRef.current.delete(key);
       }
-    }
-
-    let nextNodes = updatedLoadedNodes;
-    if (actualRemoved.length > 0) {
-      nextNodes = nextNodes.filter((n) => !actualRemoved.includes(n.id));
-    }
-    setLoadedNodes(nextNodes);
-
-    const graphEdges = useGraphStore.getState().edges;
-    const updatedEdges = graphEdges.filter((e) => {
-      const nextNodeIds = new Set(nextNodes.map((n) => n.id));
-      return nextNodeIds.has(e.source) && nextNodeIds.has(e.target);
     });
 
+    const nextNodes = actualRemoved.length > 0
+      ? updatedLoadedNodes.filter((n) => !removedOrUpdatedSet.has(n.id))
+      : updatedLoadedNodes;
+    setLoadedNodes(nextNodes);
+
+    const nextNodeIds = new Set(nextNodes.map((n) => n.id));
+    const updatedEdges = useGraphStore.getState().edges.filter(
+      (e) => nextNodeIds.has(e.source) && nextNodeIds.has(e.target)
+    );
     loadedEdgeKeysRef.current = new Set(updatedEdges.map((e) => `${e.source}|${e.target}`));
     setLoadedEdges(updatedEdges);
-  }, [graphNodes, setLoadedNodes, setLoadedEdges, loadedNodeIdsRef, loadedEdgeKeysRef, loadedNodesRef, loadedEdgesRef]);
+  }, [graphNodes, setLoadedNodes, setLoadedEdges, loadedNodeIdsRef, loadedEdgeKeysRef, loadedNodesRef]);
 }

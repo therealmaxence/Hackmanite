@@ -12,19 +12,12 @@ export async function GET(
     const { jobId } = await params;
     const status = await getJobStatus(jobId);
 
-    if (!status) {
-      return NextResponse.json(
-        { error: 'Job not found', code: ErrorCodes.NOT_FOUND },
-        { status: 404 }
-      );
-    }
+    if (!status)
+      return NextResponse.json({ error: 'Job not found', code: ErrorCodes.NOT_FOUND }, { status: 404 });
 
     return NextResponse.json(status);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

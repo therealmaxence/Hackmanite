@@ -6,60 +6,35 @@ import { extractionQueue } from '@/lib/queue';
 export const runtime = 'nodejs';
 
 export async function GET(req: NextRequest) {
+  const sessionId = new URL(req.url).searchParams.get('sessionId');
+  if (!sessionId) {
+    return NextResponse.json({ error: 'Missing sessionId parameter', code: ErrorCodes.VALIDATION_ERROR }, { status: 400 });
+  }
+
   try {
-    const { searchParams } = new URL(req.url);
-    const sessionId = searchParams.get('sessionId');
-
-    if (!sessionId) {
-      return NextResponse.json(
-        { error: 'Missing sessionId parameter', code: ErrorCodes.VALIDATION_ERROR },
-        { status: 400 }
-      );
-    }
-
-    // Trigger memory queue processing in background if Redis is not used
-    extractionQueue.processMemoryQueue?.().catch((err) => {
-      console.error('Failed to trigger background queue:', err);
-    });
+    extractionQueue.processMemoryQueue?.().catch((err) => console.error('Failed to trigger background queue:', err));
 
     const files = await prisma.file.findMany({
       where: { sessionId },
-      select: {
-        id: true,
-        status: true,
-        errorMessage: true,
-      },
+      select: { id: true, status: true, errorMessage: true },
     });
 
     const fileIds = files.map((f) => f.id);
-    let countMap = new Map<string, number>();
-
+    const countMap = new Map<string, number>();
     if (fileIds.length > 0) {
       const counts = await prisma.occurrence.groupBy({
         by: ['fileId'],
-        where: {
-          fileId: { in: fileIds },
-        },
-        _count: {
-          _all: true,
-        },
+        where: { fileId: { in: fileIds } },
+        _count: { _all: true },
       });
-      countMap = new Map(counts.map((c) => [c.fileId, c._count._all]));
+      for (const c of counts) countMap.set(c.fileId, c._count._all);
     }
 
-    const jobStatuses = files.map((f) => ({
-      fileId: f.id,
-      status: f.status, // 'PENDING' | 'PROCESSING' | 'DONE' | 'FAILED'
-      entityCount: countMap.get(f.id) || 0,
-      error: f.errorMessage || null,
-    }));
-
-    return NextResponse.json({ jobs: jobStatuses });
+    return NextResponse.json({
+      jobs: files.map((f) => ({ fileId: f.id, status: f.status, entityCount: countMap.get(f.id) ?? 0, error: f.errorMessage || null })),
+    });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

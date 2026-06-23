@@ -21,7 +21,8 @@ from db.writers import (
     delete_file_ref,
     delete_files_ref,
     bulk_import_transaction,
-    update_tfidf_properties
+    update_tfidf_properties,
+    save_extraction_results
 )
 from db.readers import (
     get_node_count,

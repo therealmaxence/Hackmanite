@@ -6,52 +6,36 @@ import { ErrorCodes } from '@/types/api';
 
 export const runtime = 'nodejs';
 
+const FORCE_PLAIN_TEXT = new Set([
+  'application/json', 'text/csv', 'text/x-python', 'application/x-python',
+  'text/javascript', 'application/javascript', 'text/x-sh', 'application/octet-stream',
+]);
+
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
 
   try {
-    const file = await prisma.file.findUnique({
-      where: { id },
-    });
+    const file = await prisma.file.findUnique({ where: { id } });
 
-    if (!file) {
-      return NextResponse.json(
-        { error: 'File not found', code: ErrorCodes.NOT_FOUND },
-        { status: 404 }
-      );
-    }
+    if (!file)
+      return NextResponse.json({ error: 'File not found', code: ErrorCodes.NOT_FOUND }, { status: 404 });
 
-    const filePath = resolve(process.cwd(), file.storagePath);
-    const fileBuffer = await readFile(filePath);
+    const contentType = FORCE_PLAIN_TEXT.has(file.mimeType || '')
+      ? 'text/plain; charset=utf-8'
+      : file.mimeType || 'application/octet-stream';
 
-    let contentType = file.mimeType || 'application/octet-stream';
-
-    // Force browser to display code, json, csv, and unknown text formats inline as plain text
-    const forcePlainTextMimes = [
-      'application/json', 'text/csv', 'text/x-python', 'application/x-python',
-      'text/javascript', 'application/javascript', 'text/x-sh', 'application/octet-stream'
-    ];
-
-    if (forcePlainTextMimes.includes(contentType)) {
-      contentType = 'text/plain; charset=utf-8';
-    }
-
-    return new NextResponse(fileBuffer, {
+    return new NextResponse(await readFile(resolve(process.cwd(), file.storagePath)), {
       status: 200,
       headers: {
         'Content-Type': contentType,
         'Content-Disposition': `inline; filename="${file.originalName}"`,
       },
     });
-
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

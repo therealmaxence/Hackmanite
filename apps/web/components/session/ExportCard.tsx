@@ -42,6 +42,8 @@ export default function ExportCard({ sessionId }: ExportCardProps) {
     }
   }, [sessionId]);
 
+  const isDisabled = !sessionId || exportState === 'loading';
+
   return (
     <SectionCard
       title={t('export.title')}
@@ -51,22 +53,22 @@ export default function ExportCard({ sessionId }: ExportCardProps) {
         <button
           id="export-session-btn"
           onClick={handleExport}
-          disabled={!sessionId || exportState === 'loading'}
+          disabled={isDisabled}
           style={{
             padding: '0.625rem 1.5rem',
             fontSize: '0.875rem',
             fontWeight: 600,
-            background: (!sessionId || exportState === 'loading') ? 'rgba(255,255,255,0.05)' : 'var(--color-primary)',
-            color: (!sessionId || exportState === 'loading') ? 'var(--color-text-muted)' : 'var(--color-on-primary)',
+            background: isDisabled ? 'rgba(255,255,255,0.05)' : 'var(--color-primary)',
+            color: isDisabled ? 'var(--color-text-muted)' : 'var(--color-on-primary)',
             border: 'none',
             borderRadius: 'var(--radius-sm)',
-            cursor: (!sessionId || exportState === 'loading') ? 'not-allowed' : 'pointer',
+            cursor: isDisabled ? 'not-allowed' : 'pointer',
             display: 'flex',
             alignItems: 'center',
             gap: '0.5rem',
             transition: 'all 0.15s ease-in-out',
           }}
-          onMouseEnter={(e) => { if (sessionId && exportState !== 'loading') e.currentTarget.style.opacity = '0.85'; }}
+          onMouseEnter={(e) => { if (!isDisabled) e.currentTarget.style.opacity = '0.85'; }}
           onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
         >
           {exportState === 'loading' ? <Spinner size={14} /> : (

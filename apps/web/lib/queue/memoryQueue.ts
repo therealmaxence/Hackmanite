@@ -3,66 +3,46 @@ import { ExtractionJobPayload, FileStatus } from "./types";
 import { executeExtraction } from "./executor";
 import { logger } from "@/lib/logger";
 
+const mapFile = (f: any, status: FileStatus) => ({
+  id: f.id,
+  data: { fileId: f.id, sessionId: f.sessionId, storagePath: f.storagePath, mimeType: f.mimeType } as ExtractionJobPayload,
+  status,
+  entityCount: 0,
+  error: null,
+});
+
 export class SQLiteQueue {
   private isProcessing = false;
   private activeControllers = new Map<string, AbortController>();
 
-  async add(data: ExtractionJobPayload, options?: { priority?: number }): Promise<{ id: string }> {
+  async add(_data: ExtractionJobPayload, _options?: { priority?: number }): Promise<{ id: string }> {
     this.processQueue().catch((err) => logger.error("Failed to process queue in add", { error: err.message }));
-    return { id: data.fileId };
+    return { id: _data.fileId };
   }
 
   async getActive() {
-    const files = await prisma.file.findMany({ where: { status: "PROCESSING" } });
-    return files.map(f => ({
-      id: f.id,
-      data: {
-        fileId: f.id,
-        sessionId: f.sessionId,
-        storagePath: f.storagePath,
-        mimeType: f.mimeType,
-      } as ExtractionJobPayload,
-      status: "PROCESSING" as FileStatus,
-      entityCount: 0,
-      error: null,
-    }));
+    return (await prisma.file.findMany({ where: { status: "PROCESSING" } })).map((f) => mapFile(f, "PROCESSING"));
   }
 
   async getPending() {
-    const files = await prisma.file.findMany({ where: { status: "PENDING" } });
-    return files.map(f => ({
-      id: f.id,
-      data: {
-        fileId: f.id,
-        sessionId: f.sessionId,
-        storagePath: f.storagePath,
-        mimeType: f.mimeType,
-      } as ExtractionJobPayload,
-      status: "PENDING" as FileStatus,
-      entityCount: 0,
-      error: null,
-    }));
+    return (await prisma.file.findMany({ where: { status: "PENDING" } })).map((f) => mapFile(f, "PENDING"));
   }
 
   async getJob(id: string) {
     const file = await prisma.file.findUnique({ where: { id } });
     if (!file) return null;
-    const count = await prisma.occurrence.count({ where: { fileId: id } });
     return {
       id: file.id,
       data: { fileId: file.id },
       status: file.status as FileStatus,
-      entityCount: count,
+      entityCount: await prisma.occurrence.count({ where: { fileId: id } }),
       error: file.errorMessage || null,
     };
   }
 
   removeJob(id: string) {
-    const controller = this.activeControllers.get(id);
-    if (controller) {
-      controller.abort();
-      this.activeControllers.delete(id);
-    }
+    this.activeControllers.get(id)?.abort();
+    this.activeControllers.delete(id);
   }
 
   async processQueue() {
@@ -72,32 +52,20 @@ export class SQLiteQueue {
     try {
       while (true) {
         const file = await prisma.$transaction(async (tx) => {
-          const pending = await tx.file.findMany({
+          const target = await tx.file.findFirst({
+            where: { status: "PENDING", NOT: [{ mimeType: "application/pdf" }, { mimeType: { startsWith: "image/" } }] },
+            orderBy: { uploadedAt: "asc" },
+            include: { session: true },
+          }) ?? await tx.file.findFirst({
             where: { status: "PENDING" },
             orderBy: { uploadedAt: "asc" },
             include: { session: true },
           });
 
-          if (pending.length === 0) return null;
-
-          pending.sort((a, b) => {
-            const aSlow = a.mimeType.startsWith("image/") || a.mimeType === "application/pdf";
-            const bSlow = b.mimeType.startsWith("image/") || b.mimeType === "application/pdf";
-            if (aSlow && !bSlow) return 1;
-            if (!aSlow && bSlow) return -1;
-            return 0;
-          });
-
-          const target = pending[0];
-          await tx.file.update({
-            where: { id: target.id },
-            data: { status: "PROCESSING" },
-          });
+          if (!target) return null;
+          await tx.file.update({ where: { id: target.id }, data: { status: "PROCESSING" } });
           return target;
-        }, {
-          maxWait: 5000,
-          timeout: 10000,
-        });
+        }, { maxWait: 5000, timeout: 10000 });
 
         if (!file) break;
 
@@ -107,22 +75,13 @@ export class SQLiteQueue {
         try {
           await executeExtraction(
             file.id,
-            {
-              fileId: file.id,
-              sessionId: file.sessionId,
-              storagePath: file.storagePath,
-              mimeType: file.mimeType,
-              windowSize: file.session.windowSize,
-            },
+            { fileId: file.id, sessionId: file.sessionId, storagePath: file.storagePath, mimeType: file.mimeType, windowSize: file.session.windowSize },
             controller
           );
         } catch (err: any) {
           const message = err instanceof Error ? err.message : String(err);
           logger.error("SQLiteQueue job execution failed", { fileId: file.id, error: message });
-          await prisma.file.update({
-            where: { id: file.id },
-            data: { status: "FAILED", errorMessage: message },
-          });
+          await prisma.file.update({ where: { id: file.id }, data: { status: "FAILED", errorMessage: message } });
         } finally {
           this.activeControllers.delete(file.id);
         }

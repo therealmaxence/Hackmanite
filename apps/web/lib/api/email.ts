@@ -1,5 +1,3 @@
-// ─── Email DAG builder ────────────────────────────────────────────────────────
-
 type EmailRow = {
   messageId: string;
   subject: string;
@@ -17,28 +15,20 @@ type EmailRow = {
 const FORWARD_PATTERN = /^((fwd|fw|tr|forward)(\[\d+\])?:\s*)+/i;
 const CLEAN_PATTERN = /^((re|fwd|fw|tr|aw|wg|antw|rif|reply|forward)(\[\d+\])?:\s*)+/i;
 
-function relationType(subject: string) {
-  return FORWARD_PATTERN.test(subject) ? 'FORWARD' : 'REPLY';
-}
-
-function cleanSubject(subject: string) {
-  return subject.replace(CLEAN_PATTERN, '').trim().toLowerCase();
-}
-
-function curveDistance(sourceIdx: number | undefined, targetIdx: number | undefined): number {
-  if (sourceIdx === undefined || targetIdx === undefined) return 0;
-  const steps = Math.abs(targetIdx - sourceIdx);
-  if (steps <= 1) return 0;
-  const direction = sourceIdx % 2 === 0 ? 1 : -1;
-  return (steps - 1) * 35 * direction;
-}
+const relationType = (sub: string) => FORWARD_PATTERN.test(sub) ? 'FORWARD' : 'REPLY';
+const cleanSubject = (sub: string) => sub.replace(CLEAN_PATTERN, '').trim().toLowerCase();
+const curveDistance = (s?: number, t?: number) => {
+  if (s === undefined || t === undefined) return 0;
+  const steps = Math.abs(t - s);
+  return steps <= 1 ? 0 : (steps - 1) * 35 * (s % 2 === 0 ? 1 : -1);
+};
 
 export function buildEmailDAG(emails: EmailRow[]) {
   const messageIdSet = new Set(emails.map((e) => e.messageId));
   const indexMap = new Map<string, number>(emails.map((e, i) => [e.messageId, i]));
 
-  const nodes: unknown[] = [];
-  const edges: unknown[] = [];
+  const nodes: any[] = [];
+  const edges: any[] = [];
   const sendersSet = new Set<string>();
   const recipientsSet = new Set<string>();
   const hasParentSet = new Set<string>();
@@ -46,24 +36,15 @@ export function buildEmailDAG(emails: EmailRow[]) {
 
   for (const email of emails) {
     if (email.from) sendersSet.add(email.from.trim().toLowerCase());
+    email.to.split(',').forEach((a) => { const r = a.trim().toLowerCase(); if (r) recipientsSet.add(r); });
+    email.cc?.split(',').forEach((a) => { const r = a.trim().toLowerCase(); if (r) recipientsSet.add(r); });
 
-    for (const addr of email.to.split(',').map((a) => a.trim().toLowerCase())) {
-      if (addr) recipientsSet.add(addr);
-    }
-    if (email.cc) {
-      for (const addr of email.cc.split(',').map((a) => a.trim().toLowerCase())) {
-        if (addr) recipientsSet.add(addr);
-      }
-    }
-
-    const attachments: unknown[] =
-      typeof email.attachments === 'string'
-        ? JSON.parse(email.attachments)
-        : (email.attachments as unknown[]) || [];
+    const attachments = typeof email.attachments === 'string'
+      ? JSON.parse(email.attachments)
+      : (email.attachments as any[]) || [];
     totalAttachments += attachments.length;
 
-    const displayLabel =
-      email.subject.length > 25 ? email.subject.slice(0, 23) + '...' : email.subject;
+    const displayLabel = email.subject.length > 25 ? email.subject.slice(0, 23) + '...' : email.subject;
     const fromDisplay = email.from.includes('<')
       ? email.from.substring(0, email.from.indexOf('<')).trim() || email.from
       : email.from.split('@')[0];
@@ -88,7 +69,6 @@ export function buildEmailDAG(emails: EmailRow[]) {
       },
     });
 
-    // Thread via inReplyTo
     if (email.inReplyTo && messageIdSet.has(email.inReplyTo)) {
       edges.push({
         data: {
@@ -101,40 +81,32 @@ export function buildEmailDAG(emails: EmailRow[]) {
         },
       });
       hasParentSet.add(email.messageId);
-      continue;
-    }
-
-    if (email.references) {
-      const refIds = email.references.split(/\s+/).filter(Boolean);
-      for (let i = refIds.length - 1; i >= 0; i--) {
-        const ancestorId = refIds[i];
-        if (messageIdSet.has(ancestorId)) {
-          edges.push({
-            data: {
-              id: `email-edge-ref-${ancestorId}-to-${email.messageId}`,
-              source: ancestorId,
-              target: email.messageId,
-              weight: 0.8,
-              type: relationType(email.subject),
-              curveDistance: curveDistance(indexMap.get(ancestorId), indexMap.get(email.messageId)),
-            },
-          });
-          hasParentSet.add(email.messageId);
-          break;
-        }
+    } else if (email.references) {
+      const ancestorId = email.references.split(/\s+/).filter(Boolean).reverse().find((r) => messageIdSet.has(r));
+      if (ancestorId) {
+        edges.push({
+          data: {
+            id: `email-edge-ref-${ancestorId}-to-${email.messageId}`,
+            source: ancestorId,
+            target: email.messageId,
+            weight: 0.8,
+            type: relationType(email.subject),
+            curveDistance: curveDistance(indexMap.get(ancestorId), indexMap.get(email.messageId)),
+          },
+        });
+        hasParentSet.add(email.messageId);
       }
     }
   }
 
   const subjectGroups = new Map<string, EmailRow[]>();
-  for (const email of emails) {
+  emails.forEach((email) => {
     const clean = cleanSubject(email.subject);
     if (clean) {
-      const group = subjectGroups.get(clean) ?? [];
-      group.push(email);
-      subjectGroups.set(clean, group);
+      if (!subjectGroups.has(clean)) subjectGroups.set(clean, []);
+      subjectGroups.get(clean)!.push(email);
     }
-  }
+  });
 
   for (const email of emails) {
     if (hasParentSet.has(email.messageId)) continue;
@@ -142,8 +114,7 @@ export function buildEmailDAG(emails: EmailRow[]) {
     const group = subjectGroups.get(clean);
     if (!group || group.length <= 1) continue;
     const idx = group.findIndex((e) => e.messageId === email.messageId);
-    if (idx <= 0) continue;
-    if (!CLEAN_PATTERN.test(email.subject)) continue;
+    if (idx <= 0 || !CLEAN_PATTERN.test(email.subject)) continue;
 
     const ancestor = group[idx - 1];
     edges.push({
@@ -159,7 +130,7 @@ export function buildEmailDAG(emails: EmailRow[]) {
     hasParentSet.add(email.messageId);
   }
 
-  const childNodeIds = new Set((edges as { data: { target: string } }[]).map((e) => e.data.target));
+  const childNodeIds = new Set(edges.map((e) => e.data.target));
   const totalThreads = emails.filter((e) => !childNodeIds.has(e.messageId)).length;
 
   return {

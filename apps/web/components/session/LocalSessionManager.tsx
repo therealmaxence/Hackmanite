@@ -25,6 +25,24 @@ export default function LocalSessionManager({
   const router = useRouter();
   const { t } = useTranslation();
 
+  const btnBaseStyle = {
+    padding: '0.45rem 1rem',
+    fontSize: '0.8125rem',
+    fontWeight: 600,
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    cursor: 'pointer',
+  };
+
+  const badgeStyle = {
+    fontSize: '0.75rem',
+    background: 'var(--color-surface)',
+    border: 'none',
+    borderRadius: 'var(--radius-sm)',
+    padding: '1px 6px',
+    color: 'var(--color-text-muted)',
+  };
+
   return (
     <SectionCard
       title={t('session.manager_title')}
@@ -42,14 +60,10 @@ export default function LocalSessionManager({
           <button
             onClick={handleStartNewSession}
             style={{
+              ...btnBaseStyle,
               padding: '0.5rem 1.25rem',
-              fontSize: '0.8125rem',
-              fontWeight: 600,
               background: 'var(--color-primary)',
               color: 'white',
-              border: 'none',
-              borderRadius: 'var(--radius-sm)',
-              cursor: 'pointer',
             }}
           >
             {t('session.start_new_btn')}
@@ -61,11 +75,9 @@ export default function LocalSessionManager({
             <button
               onClick={handleDeleteAllSessions}
               style={{
+                ...btnBaseStyle,
                 background: '#2a171d',
                 color: '#EF4444',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
                 transition: 'background 0.2s',
               }}
               onMouseEnter={(e) => { e.currentTarget.style.background = '#3d1d26'; }}
@@ -77,14 +89,9 @@ export default function LocalSessionManager({
             <button
               onClick={handleStartNewSession}
               style={{
-                padding: '0.45rem 1rem',
-                fontSize: '0.8125rem',
-                fontWeight: 600,
+                ...btnBaseStyle,
                 background: 'var(--color-surface-raised)',
                 color: 'var(--color-text)',
-                border: 'none',
-                borderRadius: 'var(--radius-sm)',
-                cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 gap: '6px',
@@ -99,7 +106,7 @@ export default function LocalSessionManager({
               const isActive = sessionId === s.id;
               return (
                 <div
-                   key={s.id}
+                  key={s.id}
                   style={{
                     padding: '1.25rem',
                     background: isActive ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
@@ -136,49 +143,26 @@ export default function LocalSessionManager({
                     </div>
                     
                     <div style={{ display: 'flex', gap: '0.75rem', marginTop: '0.25rem' }}>
-                      <span style={{ fontSize: '0.75rem', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
+                      <span style={badgeStyle}>
                         {t('session.files_count', { count: s.fileCount, plural: s.fileCount !== 1 ? 's' : '' })}
                       </span>
-                      <span style={{ fontSize: '0.75rem', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '1px 6px', color: 'var(--color-text-muted)' }}>
+                      <span style={badgeStyle}>
                         {t('session.entities_count', { count: s.entityCount })}
                       </span>
                     </div>
                   </div>
                   
                   <div style={{ display: 'flex', gap: '0.5rem' }}>
-                    {!isActive ? (
-                      <button
-                        onClick={() => handleSwitchSession(s)}
-                        style={{
-                          padding: '0.45rem 1rem',
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          background: 'var(--color-primary)',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: 'var(--radius-sm)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {t('session.activate_btn')}
-                      </button>
-                    ) : (
-                      <button
-                        onClick={() => router.push('/graph')}
-                        style={{
-                          padding: '0.45rem 1rem',
-                          fontSize: '0.8125rem',
-                          fontWeight: 600,
-                          background: 'var(--color-surface)',
-                          color: 'var(--color-primary)',
-                          border: 'none',
-                          borderRadius: 'var(--radius-sm)',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        {t('session.view_graph_btn')}
-                      </button>
-                    )}
+                    <button
+                      onClick={() => isActive ? router.push('/graph') : handleSwitchSession(s)}
+                      style={{
+                        ...btnBaseStyle,
+                        background: isActive ? 'var(--color-surface)' : 'var(--color-primary)',
+                        color: isActive ? 'var(--color-primary)' : 'white',
+                      }}
+                    >
+                      {isActive ? t('session.view_graph_btn') : t('session.activate_btn')}
+                    </button>
                     
                     <button
                       onClick={() => handleDeleteSession(s.id)}

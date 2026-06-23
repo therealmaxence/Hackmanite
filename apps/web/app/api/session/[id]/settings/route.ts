@@ -5,8 +5,10 @@ import { ErrorCodes } from '@/types/api';
 
 export const runtime = 'nodejs';
 
+const errMsg = (err: unknown) => (err instanceof Error ? err.message : 'Unknown error');
+
 export async function GET(
-  req: NextRequest,
+  _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: sessionId } = await params;
@@ -14,30 +16,15 @@ export async function GET(
   try {
     const session = await prisma.session.findUnique({
       where: { id: sessionId },
-      select: {
-        windowSize: true,
-        minConnections: true,
-        minOccurrences: true,
-        minEdgeWeight: true,
-        minTfidf: true,
-        hiddenNodeIds: true,
-      },
+      select: { windowSize: true, minConnections: true, minOccurrences: true, minEdgeWeight: true, minTfidf: true, hiddenNodeIds: true },
     });
 
-    if (!session) {
-      return NextResponse.json(
-        { error: 'Session not found', code: ErrorCodes.NOT_FOUND },
-        { status: 404 }
-      );
-    }
+    if (!session)
+      return NextResponse.json({ error: 'Session not found', code: ErrorCodes.NOT_FOUND }, { status: 404 });
 
     return NextResponse.json(session);
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errMsg(err), code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }
 
@@ -48,8 +35,7 @@ export async function POST(
   const { id: sessionId } = await params;
 
   try {
-    const body = await req.json();
-    const { windowSize, minConnections, minOccurrences, minEdgeWeight, minTfidf, hiddenNodeIds } = body;
+    const { windowSize, minConnections, minOccurrences, minEdgeWeight, minTfidf, hiddenNodeIds } = await req.json();
 
     const session = await prisma.session.update({
       where: { id: sessionId },
@@ -64,25 +50,20 @@ export async function POST(
     });
 
     // Clear caches so the new default settings take effect immediately
-    await clearSessionGraphCache(sessionId);
-    await redis.del(`session:window_size:${sessionId}`);
+    await Promise.all([
+      clearSessionGraphCache(sessionId),
+      redis.del(`session:window_size:${sessionId}`),
+    ]);
 
     return NextResponse.json({
       success: true,
       settings: {
-        windowSize: session.windowSize,
-        minConnections: session.minConnections,
-        minOccurrences: session.minOccurrences,
-        minEdgeWeight: session.minEdgeWeight,
-        minTfidf: session.minTfidf,
-        hiddenNodeIds: session.hiddenNodeIds,
+        windowSize: session.windowSize, minConnections: session.minConnections,
+        minOccurrences: session.minOccurrences, minEdgeWeight: session.minEdgeWeight,
+        minTfidf: session.minTfidf, hiddenNodeIds: session.hiddenNodeIds,
       },
     });
   } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Unknown error';
-    return NextResponse.json(
-      { error: msg, code: ErrorCodes.INTERNAL_ERROR },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: errMsg(err), code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });
   }
 }

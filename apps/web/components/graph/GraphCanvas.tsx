@@ -54,8 +54,6 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     removeNode,
     togglePanel,
     selectNode,
-    addCooccurrenceNodeId,
-    setCooccurrenceModalOpen,
     changeNodeType,
     isPanelOpen,
   } = useGraphStore();
@@ -311,11 +309,6 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
           nodeType={contextMenu.nodeType}
           nodeLabel={contextMenu.nodeLabel}
           onCopyName={handleCopyName}
-          onSearchCooccurrence={(id) => {
-            addCooccurrenceNodeId(id);
-            setCooccurrenceModalOpen(true);
-            setContextMenu(null);
-          }}
           onChangeType={handleChangeNodeType}
           onHideNode={handleHideNode}
           onDeleteNode={handleDeleteNode}

@@ -21,11 +21,11 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
   const { mutate } = useSWRConfig();
   const {
     selectedNodeId,
+    selectedNodeIds,
     selectNode,
+    setSelectedNodeIds,
     removeNode,
     togglePanel,
-    addCooccurrenceNodeId,
-    setCooccurrenceModalOpen,
     changeNodeType,
     filters,
   } = useGraphStore();
@@ -158,10 +158,17 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
     }
   };
 
-  const handleSearchCooccurrence = (e: React.MouseEvent, id: string) => {
-    e.stopPropagation();
-    addCooccurrenceNodeId(id);
-    setCooccurrenceModalOpen(true);
+  const handleRowClick = (e: React.MouseEvent, id: string) => {
+    const isMulti = e.ctrlKey || e.metaKey;
+    if (isMulti) {
+      if (selectedNodeIds.includes(id)) {
+        setSelectedNodeIds(selectedNodeIds.filter((x) => x !== id));
+      } else {
+        setSelectedNodeIds([...selectedNodeIds, id]);
+      }
+    } else {
+      selectNode(id);
+    }
   };
 
   const renderSortIndicator = (field: SortField) => {
@@ -234,12 +241,12 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
           </thead>
           <tbody>
             {paginatedEntities.map((node) => {
-              const isSelected = selectedNodeId === node.id;
+              const isSelected = selectedNodeId === node.id || selectedNodeIds.includes(node.id);
               const isHovered = hoveredRowId === node.id;
               return (
                 <tr
                   key={node.id}
-                  onClick={() => selectNode(node.id)}
+                  onClick={(e) => handleRowClick(e, node.id)}
                   onMouseEnter={() => setHoveredRowId(node.id)}
                   onMouseLeave={() => setHoveredRowId(null)}
                   style={{
@@ -295,18 +302,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
                         <option value="ADDRESS">ADDRESS</option>
                       </select>
 
-                      <button
-                        onClick={(e) => handleSearchCooccurrence(e, node.id)}
-                        title={t('graph.canvas.search_cooccurrence')}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: 4 }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                          <circle cx="11" cy="11" r="8" />
-                          <line x1="21" y1="21" x2="16.65" y2="16.65" />
-                        </svg>
-                      </button>
+
 
                       <button
                         onClick={(e) => handleHideNode(e, node.id)}

@@ -7,7 +7,6 @@ import GraphCanvas from '@/components/graph/GraphCanvas';
 import EntityTableView from '@/components/graph/EntityTableView';
 import NodePanel from '@/components/graph/NodePanel';
 import MultiNodePanel from '@/components/graph/MultiNodePanel';
-import CooccurrenceModal from '@/components/graph/CooccurrenceModal';
 import Spinner from '@/components/ui/Spinner';
 import { useEffect } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
@@ -17,7 +16,7 @@ import { useTranslation } from '@/lib/i18n';
 
 export default function GraphClient() {
   const { sessionId } = useUploadStore();
-  const { setFilter, isCooccurrenceModalOpen, activeView } = useGraphStore();
+  const { setFilter, activeView } = useGraphStore();
   const { t } = useTranslation();
 
   useEffect(() => {
@@ -56,7 +55,6 @@ export default function GraphClient() {
           )}
           <NodePanel />
           <MultiNodePanel />
-          {isCooccurrenceModalOpen && <CooccurrenceModal />}
         </div>
       </div>
       <LegendBar nodeCount={loadedNodes.length} edgeCount={loadedEdges.length}>

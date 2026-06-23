@@ -316,6 +316,8 @@ export const TRANSLATIONS = {
     'graph.cooccurrence.results_subtitle': 'Showing snippets containing all selected nodes',
     'graph.cooccurrence.add_more_tip': 'Right click other nodes on the graph to add them to this search.',
     'graph.cooccurrence.need_more_nodes': 'Select at least 2 nodes to search for co-occurrences.',
+    'graph.cooccurrence.mode_file': 'File Co-occurrence',
+    'graph.cooccurrence.mode_text': 'Text Co-occurrence',
 
 
     // Emails Page
@@ -845,6 +847,8 @@ export const TRANSLATIONS = {
     'graph.cooccurrence.results_subtitle': 'Affichage des extraits contenant tous les nœuds sélectionnés',
     'graph.cooccurrence.add_more_tip': 'Faites un clic droit sur d\'autres nœuds du graphe pour les ajouter à cette recherche.',
     'graph.cooccurrence.need_more_nodes': 'Sélectionnez au moins 2 nœuds pour rechercher les co-occurrences.',
+    'graph.cooccurrence.mode_file': 'Co-occurrence de fichier',
+    'graph.cooccurrence.mode_text': 'Co-occurrence de texte',
 
 
     // Emails Page

@@ -34,7 +34,7 @@ export default function GraphClient() {
     }
   }, [sessionId, setFilter]);
 
-  const { loadedNodes, loadedEdges, totalCount, loadedCount, isLoadingBatch, expandNode, setLoadedLimit } = useProgressiveGraph();
+  const { loadedNodes, loadedEdges, totalCount, loadedCount, hasMore, isLoadingBatch, autoLoadDone, loadMore, expandNode, setLoadedLimit } = useProgressiveGraph();
   const isEmpty = loadedNodes.length === 0 && !isLoadingBatch;
 
   return (
@@ -58,7 +58,15 @@ export default function GraphClient() {
         </div>
       </div>
       <LegendBar nodeCount={loadedNodes.length} edgeCount={loadedEdges.length}>
-        <ProgressBar loadedCount={loadedCount} totalCount={totalCount} isLoadingBatch={isLoadingBatch} setLoadedLimit={setLoadedLimit} />
+        <ProgressBar
+          loadedCount={loadedCount}
+          totalCount={totalCount}
+          isLoadingBatch={isLoadingBatch}
+          hasMore={hasMore}
+          autoLoadDone={autoLoadDone}
+          onLoadMore={loadMore}
+          setLoadedLimit={setLoadedLimit}
+        />
       </LegendBar>
     </div>
   );
@@ -68,13 +76,20 @@ function ProgressBar({
   loadedCount,
   totalCount,
   isLoadingBatch,
+  hasMore,
+  autoLoadDone,
+  onLoadMore,
   setLoadedLimit,
 }: {
   loadedCount: number;
   totalCount: number;
   isLoadingBatch: boolean;
+  hasMore: boolean;
+  autoLoadDone: boolean;
+  onLoadMore: () => void;
   setLoadedLimit: (targetCount: number) => Promise<void>;
 }) {
+  const { t } = useTranslation();
   const [isEditing, setIsEditing] = useState(false);
   const [inputValue, setInputValue] = useState(String(loadedCount));
 
@@ -170,6 +185,36 @@ function ProgressBar({
           </span>
         )}
         <span style={{ opacity: 0.5 }}>/ {totalCount.toLocaleString()} nodes loaded</span>
+
+        {hasMore && autoLoadDone && !isLoadingBatch && (
+          <button
+            id="load-more-btn"
+            onClick={onLoadMore}
+            style={{
+              marginLeft: '0.5rem',
+              padding: '2px 10px',
+              fontSize: '0.7rem',
+              fontWeight: 600,
+              letterSpacing: '0.04em',
+              background: 'transparent',
+              border: '1px solid var(--color-primary)',
+              color: 'var(--color-primary-hover)',
+              borderRadius: 4,
+              cursor: 'pointer',
+              transition: 'background 0.15s, color 0.15s',
+            }}
+            onMouseEnter={(e) => {
+              e.currentTarget.style.background = 'var(--color-primary)';
+              e.currentTarget.style.color = 'var(--color-on-primary)';
+            }}
+            onMouseLeave={(e) => {
+              e.currentTarget.style.background = 'transparent';
+              e.currentTarget.style.color = 'var(--color-primary-hover)';
+            }}
+          >
+            {t('graph.load_more_btn')}
+          </button>
+        )}
       </div>
 
       {isLoadingBatch && (

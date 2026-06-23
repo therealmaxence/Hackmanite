@@ -194,7 +194,7 @@ export default function WeakSignalsTable({
         <div style={{ position: 'relative', width: '300px' }}>
           <input
             type="text"
-            placeholder={t('graph.search.placeholder') || 'Search entities...'}
+            placeholder={t('graph.controls.search_placeholder') || 'Search entities...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             style={{

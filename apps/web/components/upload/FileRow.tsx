@@ -21,7 +21,7 @@ export default function FileRow({ file }: { file: UploadedFile }) {
     e.stopPropagation();
     if (!sessionId) return;
     try {
-      updateFileStatus(file.jobId, { status: 'PENDING', error: null, entityCount: 0 });
+      updateFileStatus(file.jobId, { status: 'PENDING', error: null, entityCount: 0, addedAt: Date.now() });
       const res = await fetch('/api/jobs/retry', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

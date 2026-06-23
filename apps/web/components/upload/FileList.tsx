@@ -86,7 +86,7 @@ export default function FileList() {
               onClick={async () => {
                 if (confirm(t('upload.confirm_retry'))) {
                   try {
-                    files.forEach(f => f.status === 'FAILED' && updateFileStatus(f.jobId, { status: 'PENDING', error: null, entityCount: 0 }));
+                    files.forEach(f => f.status === 'FAILED' && updateFileStatus(f.jobId, { status: 'PENDING', error: null, entityCount: 0, addedAt: Date.now() }));
                     const res = await fetch('/api/jobs/retry', {
                       method: 'POST',
                       headers: { 'Content-Type': 'application/json' },

@@ -6,10 +6,8 @@ import { motion } from 'framer-motion';
 import useSWR from 'swr';
 import Spinner from '@/components/ui/Spinner';
 import { useTranslation } from '@/lib/i18n';
-import BridgeSignalsTable from '@/components/weak-signals/BridgeSignalsTable';
-import NicheSignalsTable from '@/components/weak-signals/NicheSignalsTable';
-import EmergingSignalsTable from '@/components/weak-signals/EmergingSignalsTable';
-import MethodologyExplanations from '@/components/weak-signals/MethodologyExplanations';
+import WeakSignalsTable from '@/components/weak-signals/WeakSignalsTable';
+
 
 interface Signal { id: string; label: string; type: string; totalCount: number; fileCount: number; score: number }
 interface WeakSignalsData { bridgeSignals: Signal[]; nicheSignals: Signal[]; emergingSignals: Signal[] }
@@ -52,16 +50,13 @@ export default function WeakSignalsClient() {
               <p className="text-sm text-white/40">{t('stats.error_desc')}</p>
             </div>
           ) : data ? (
-            <>
-              <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.8 }} className="grid grid-cols-1 lg:grid-cols-3 gap-8" style={{ gap: '2rem', width: '100%' }}>
-                <BridgeSignalsTable signals={data.bridgeSignals} />
-                <NicheSignalsTable signals={data.nicheSignals} />
-                <EmergingSignalsTable signals={data.emergingSignals} />
-              </motion.div>
-              <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, duration: 0.6 }} style={{ marginTop: '1.5rem' }}>
-                <MethodologyExplanations />
-              </motion.div>
-            </>
+            <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.6 }} style={{ width: '100%' }}>
+              <WeakSignalsTable
+                bridgeSignals={data.bridgeSignals}
+                nicheSignals={data.nicheSignals}
+                emergingSignals={data.emergingSignals}
+              />
+            </motion.div>
           ) : null}
         </div>
       </main>

@@ -19,24 +19,14 @@ export const TRANSLATIONS = {
     // Weak Signals Page
     'weak_signals.title': 'Weak Signals Discovery',
     'weak_signals.desc': '',
-    'weak_signals.bridges.title': 'Top Rare Bridges (Methodology A)',
+    'weak_signals.bridges.title': 'Bridge Signals',
     'weak_signals.bridges.no_data': 'No bridging signals detected',
-    'weak_signals.niche.title': 'Top Niche Topics (Methodology B)',
+    'weak_signals.niche.title': 'Niche Signals',
     'weak_signals.niche.no_data': 'No niche signals detected',
-    'weak_signals.emerging.title': 'Spiking Signals (Methodology C)',
+    'weak_signals.emerging.title': 'Emerging Signals',
     'weak_signals.emerging.no_data': 'No spiking signals detected (requires multiple dated documents)',
     'weak_signals.emerging.peak_count': '{count} peak count{plural}',
     'graph.controls.weak_signals': 'Show Weak Signals',
-    'weak_signals.explanations.title': 'Methodology & Score Calculations',
-    'weak_signals.methodology_a.name': 'Methodology A: Rare Bridges',
-    'weak_signals.methodology_a.formula': 'Score = Betweenness Centrality / (Total Occurrences + 1)',
-    'weak_signals.methodology_a.desc': 'Identifies entities that have very few occurrences globally but serve as critical bridges between clusters in the co-occurrence network. By dividing betweenness centrality (which measures shortest path coverage) by the occurrence frequency, we uncover hidden topological brokers rather than prominent hubs.',
-    'weak_signals.methodology_b.name': 'Methodology B: Niche Topics',
-    'weak_signals.methodology_b.formula': 'Score = Maximum TF-IDF in local occurrences',
-    'weak_signals.methodology_b.desc': 'Detects highly specific topics that appear in at most 2 files. By ordering by maximum local TF-IDF (Term Frequency-Inverse Document Frequency), we isolate concentrated local signals that are significant within their specific documents but have not yet spread across the rest of the corpus.',
-    'weak_signals.methodology_c.name': 'Methodology C: Spiking Signals',
-    'weak_signals.methodology_c.formula': 'Score = Peak Window TF-IDF * Concentration Ratio',
-    'weak_signals.methodology_c.desc': 'Identifies isolated bursts of occurrences in the timeline. The session timespan is analyzed using a sliding window of 20% (moving in steps of 10%). If an entity exhibits a concentrated spike inside a window (at least 60% of its total occurrences fall within that window), it is considered as an isolated weak signal.',
 
     // Electron Title Bar
     'titlebar.minimize': 'Minimize',
@@ -229,6 +219,7 @@ export const TRANSLATIONS = {
     'graph.table.col_files': 'Files',
     'graph.table.col_tfidf': 'TF-IDF',
     'graph.table.col_actions': 'Actions',
+    'weak_signals.table.col_score': 'Score',
 
     // Graph Panel Details (Single & Multi)
     'graph.panel.entity_not_found': 'Entity not found',
@@ -550,24 +541,14 @@ export const TRANSLATIONS = {
     // Weak Signals Page
     'weak_signals.title': 'Détection des Signaux Faibles',
     'weak_signals.desc': '',
-    'weak_signals.bridges.title': 'Ponts Rares (Méthodologie A)',
+    'weak_signals.bridges.title': 'Signaux Ponts',
     'weak_signals.bridges.no_data': 'Aucun signal pont détecté',
-    'weak_signals.niche.title': 'Sujets de Niche (Méthodologie B)',
+    'weak_signals.niche.title': 'Signaux de Niche',
     'weak_signals.niche.no_data': 'Aucun signal niche détecté',
-    'weak_signals.emerging.title': 'Signaux à Pic (Méthodologie C)',
+    'weak_signals.emerging.title': 'Signaux Émergents',
     'weak_signals.emerging.no_data': 'Aucun signal à pic détecté (nécessite plusieurs documents datés)',
     'weak_signals.emerging.peak_count': '{count} occurrence{plural} au pic',
     'graph.controls.weak_signals': 'Signaux faibles',
-    'weak_signals.explanations.title': 'Méthodologies & Calcul des Scores',
-    'weak_signals.methodology_a.name': 'Méthodologie A : Ponts Rares',
-    'weak_signals.methodology_a.formula': 'Score = Centralité d\'intermédiarité / (Occurrences totales + 1)',
-    'weak_signals.methodology_a.desc': 'Identifie les entités qui ont très peu d\'occurrences globales mais qui servent de ponts entre différents clusters du réseau. En divisant la centralité (betweenness, qui mesure la couverture des chemins les plus courts) par la fréquence (nombre d\'occurrence), nous mettons en évidence les intermédiaires topologiques discrets plutôt que les hubs évidents.',
-    'weak_signals.methodology_b.name': 'Méthodologie B : Sujets de Niche',
-    'weak_signals.methodology_b.formula': 'Score = TF-IDF maximum dans les occurrences locales',
-    'weak_signals.methodology_b.desc': 'Détecte les sujets spécifiques qui apparaissent dans au plus 2 fichiers. En triant par TF-IDF local maximum (fréquence du terme-fréquence inverse de document), nous isolons les signaux locaux concentrés qui sont significatifs dans leurs documents mais ne se sont pas encore propagés dans le reste du corpus.',
-    'weak_signals.methodology_c.name': 'Méthodologie C : Signaux à Pic',
-    'weak_signals.methodology_c.formula': 'Score = TF-IDF de la fenêtre de pic * Ratio de concentration',
-    'weak_signals.methodology_c.desc': 'Identifie des sursauts (spikes) d\'occurrences dans la chronologie. La durée totale de la session est analysée à l\'aide d\'une fenêtre glissante de 20 % (avec un pas de 10 %). Si une entité présente un pic concentré à l\'intérieur d\'une fenêtre (au moins 60 % de ses occurrences totales s\'y trouvent), elle est signalée comme un signal isolé.',
 
     // Electron Title Bar
     'titlebar.minimize': 'Réduire',
@@ -760,6 +741,7 @@ export const TRANSLATIONS = {
     'graph.table.col_files': 'Fichiers',
     'graph.table.col_tfidf': 'TF-IDF',
     'graph.table.col_actions': 'Actions',
+    'weak_signals.table.col_score': 'Score',
 
     // Graph Panel Details (Single & Multi)
     'graph.panel.entity_not_found': 'Entité non trouvée',

@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useSWRConfig } from 'swr';
 import { useGraphStore } from '@/store/graphStore';
 import { useUploadStore } from '@/store/uploadStore';
@@ -27,15 +27,25 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
     addCooccurrenceNodeId,
     setCooccurrenceModalOpen,
     changeNodeType,
+    filters,
   } = useGraphStore();
 
   const [sortField, setSortField] = useState<SortField>('totalOccurrences');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hoveredBtn, setHoveredBtn] = useState<string | number | null>(null);
+
+  const PAGE_SIZE = 15;
 
   const entities = useMemo(() => {
-    return nodes.filter((n) => n.type !== 'FILE');
-  }, [nodes]);
+    const q = filters.searchQuery.trim().toLowerCase();
+    return nodes.filter((n) => n.type !== 'FILE' && (!q || n.label.toLowerCase().includes(q)));
+  }, [nodes, filters.searchQuery]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filters.searchQuery, nodes]);
 
   const handleSort = (field: SortField) => {
     if (sortField === field) {
@@ -75,6 +85,13 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
     });
     return sorted;
   }, [entities, sortField, sortOrder]);
+
+  const totalPages = Math.ceil(sortedEntities.length / PAGE_SIZE) || 1;
+
+  const paginatedEntities = useMemo(() => {
+    const start = (currentPage - 1) * PAGE_SIZE;
+    return sortedEntities.slice(start, start + PAGE_SIZE);
+  }, [sortedEntities, currentPage]);
 
   const handleDeleteNode = async (e: React.MouseEvent, id: string, label: string) => {
     e.stopPropagation();
@@ -152,18 +169,46 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
     return sortOrder === 'asc' ? ' ▲' : ' ▼';
   };
 
+  const getPageNumbers = () => {
+    const pages: (number | string)[] = [];
+    const delta = 1;
+    const left = currentPage - delta;
+    const right = currentPage + delta;
+
+    let range: number[] = [];
+    for (let i = 1; i <= totalPages; i++) {
+      if (i === 1 || i === totalPages || (i >= left && i <= right)) {
+        range.push(i);
+      }
+    }
+
+    let l: number | null = null;
+    for (const i of range) {
+      if (l !== null) {
+        if (i - l === 2) {
+          pages.push(l + 1);
+        } else if (i - l > 2) {
+          pages.push('...');
+        }
+      }
+      pages.push(i);
+      l = i;
+    }
+    return pages;
+  };
+
   return (
-    <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-base)' }}>
+    <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
         <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
           {t('graph.table.ledger')}
         </h3>
         <span style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-raised)', padding: '2px 8px', borderRadius: 'var(--radius-sm)' }}>
-          {t('graph.table.matching_records', { count: sortedEntities.length })}
+          {t('graph.table.matching_records', { count: sortedEntities.length })}{sortedEntities.length > PAGE_SIZE && ` (Page ${currentPage} of ${totalPages})`}
         </span>
       </div>
 
-      <div style={{ border: 'none', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--color-surface)' }}>
+      <div style={{ border: 'none', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--color-surface)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
         <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem' }}>
           <thead>
             <tr style={{ background: 'var(--color-surface-raised)', borderBottom: 'none' }}>
@@ -188,7 +233,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
             </tr>
           </thead>
           <tbody>
-            {sortedEntities.map((node) => {
+            {paginatedEntities.map((node) => {
               const isSelected = selectedNodeId === node.id;
               const isHovered = hoveredRowId === node.id;
               return (
@@ -295,6 +340,100 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
             })}
           </tbody>
         </table>
+
+        {totalPages > 1 && (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '1rem 0', background: 'var(--color-surface-raised)', borderTop: '1px solid var(--color-border)' }}>
+            <button
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              onMouseEnter={() => setHoveredBtn('first')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                background: hoveredBtn === 'first' && currentPage !== 1 ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', cursor: 'pointer',
+                opacity: currentPage === 1 ? 0.35 : 1, transition: 'all 0.15s ease',
+              }}
+            >
+              «
+            </button>
+            <button
+              onClick={() => setCurrentPage((p) => Math.max(1, p - 1))}
+              disabled={currentPage === 1}
+              onMouseEnter={() => setHoveredBtn('prev')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                background: hoveredBtn === 'prev' && currentPage !== 1 ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', cursor: 'pointer',
+                opacity: currentPage === 1 ? 0.35 : 1, transition: 'all 0.15s ease',
+              }}
+            >
+              ‹
+            </button>
+
+            {getPageNumbers().map((p, idx) => {
+              if (p === '...') {
+                return (
+                  <span key={`ellipsis-${idx}`} style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, color: 'var(--color-text-muted)', fontSize: '0.8125rem' }}>
+                    ...
+                  </span>
+                );
+              }
+              const isCurrent = currentPage === p;
+              return (
+                <button
+                  key={`page-${p}`}
+                  onClick={() => setCurrentPage(Number(p))}
+                  onMouseEnter={() => setHoveredBtn(p)}
+                  onMouseLeave={() => setHoveredBtn(null)}
+                  style={{
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                    background: isCurrent ? 'var(--color-primary)' : hoveredBtn === p ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                    border: isCurrent ? '1px solid var(--color-primary)' : '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)', color: isCurrent ? 'var(--color-on-primary)' : 'var(--color-text)',
+                    fontWeight: isCurrent ? 600 : 400, cursor: 'pointer', transition: 'all 0.15s ease',
+                  }}
+                >
+                  {p}
+                </button>
+              );
+            })}
+
+            <button
+              onClick={() => setCurrentPage((p) => Math.min(totalPages, p + 1))}
+              disabled={currentPage === totalPages}
+              onMouseEnter={() => setHoveredBtn('next')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                background: hoveredBtn === 'next' && currentPage !== totalPages ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', cursor: 'pointer',
+                opacity: currentPage === totalPages ? 0.35 : 1, transition: 'all 0.15s ease',
+              }}
+            >
+              ›
+            </button>
+            <button
+              onClick={() => setCurrentPage(totalPages)}
+              disabled={currentPage === totalPages}
+              onMouseEnter={() => setHoveredBtn('last')}
+              onMouseLeave={() => setHoveredBtn(null)}
+              style={{
+                display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32,
+                background: hoveredBtn === 'last' && currentPage !== totalPages ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                border: '1px solid var(--color-border)',
+                borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', cursor: 'pointer',
+                opacity: currentPage === totalPages ? 0.35 : 1, transition: 'all 0.15s ease',
+              }}
+            >
+              »
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );

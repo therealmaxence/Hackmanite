@@ -8,7 +8,7 @@ import EntityTableView from '@/components/graph/EntityTableView';
 import NodePanel from '@/components/graph/NodePanel';
 import MultiNodePanel from '@/components/graph/MultiNodePanel';
 import Spinner from '@/components/ui/Spinner';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useUploadStore } from '@/store/uploadStore';
 import { useGraphStore } from '@/store/graphStore';
 import { useProgressiveGraph } from '@/hooks/useProgressiveGraph';
@@ -34,7 +34,7 @@ export default function GraphClient() {
     }
   }, [sessionId, setFilter]);
 
-  const { loadedNodes, loadedEdges, totalCount, loadedCount, hasMore, isLoadingBatch, autoLoadDone, loadMore, expandNode } = useProgressiveGraph();
+  const { loadedNodes, loadedEdges, totalCount, loadedCount, isLoadingBatch, expandNode, setLoadedLimit } = useProgressiveGraph();
   const isEmpty = loadedNodes.length === 0 && !isLoadingBatch;
 
   return (
@@ -58,39 +58,123 @@ export default function GraphClient() {
         </div>
       </div>
       <LegendBar nodeCount={loadedNodes.length} edgeCount={loadedEdges.length}>
-        <ProgressBar loadedCount={loadedCount} totalCount={totalCount} isLoadingBatch={isLoadingBatch} hasMore={hasMore} autoLoadDone={autoLoadDone} onLoadMore={loadMore} />
+        <ProgressBar loadedCount={loadedCount} totalCount={totalCount} isLoadingBatch={isLoadingBatch} setLoadedLimit={setLoadedLimit} />
       </LegendBar>
     </div>
   );
 }
 
-function ProgressBar({ loadedCount, totalCount, isLoadingBatch, hasMore, autoLoadDone, onLoadMore }: { loadedCount: number; totalCount: number; isLoadingBatch: boolean; hasMore: boolean; autoLoadDone: boolean; onLoadMore: () => void; }) {
-  const { t } = useTranslation();
+function ProgressBar({
+  loadedCount,
+  totalCount,
+  isLoadingBatch,
+  setLoadedLimit,
+}: {
+  loadedCount: number;
+  totalCount: number;
+  isLoadingBatch: boolean;
+  setLoadedLimit: (targetCount: number) => Promise<void>;
+}) {
+  const [isEditing, setIsEditing] = useState(false);
+  const [inputValue, setInputValue] = useState(String(loadedCount));
+
+  useEffect(() => {
+    if (!isEditing) {
+      setInputValue(String(loadedCount));
+    }
+  }, [loadedCount, isEditing]);
+
   if (totalCount === 0) return null;
-  const pct = Math.min(100, Math.round((loadedCount / totalCount) * 100)), done = !hasMore && !isLoadingBatch;
+
+  const handleCommit = () => {
+    const val = parseInt(inputValue);
+    if (!isNaN(val) && val > 0 && val <= totalCount) {
+      setLoadedLimit(val);
+    } else {
+      setInputValue(String(loadedCount));
+    }
+    setIsEditing(false);
+  };
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.75rem', color: 'var(--text-secondary)', minWidth: 0 }}>
-      <div style={{ width: 100, height: 3, background: 'var(--border-subtle, rgba(255,255,255,0.08))', borderRadius: 2, overflow: 'hidden', flexShrink: 0 }}>
-        <div style={{ height: '100%', width: `${pct}%`, background: done ? 'var(--color-success)' : 'var(--color-primary)', borderRadius: 2, transition: 'width 0.3s ease' }} />
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', fontSize: '0.75rem', color: 'var(--color-text-muted)', minWidth: 0 }}>
+      <input
+        type="range"
+        min={1}
+        max={totalCount}
+        value={loadedCount}
+        disabled={isLoadingBatch}
+        onChange={(e) => {
+          const val = Number(e.target.value);
+          setLoadedLimit(val);
+        }}
+        style={{
+          width: '130px',
+          height: '4px',
+          borderRadius: '2px',
+          background: 'var(--color-border)',
+          outline: 'none',
+          cursor: isLoadingBatch ? 'not-allowed' : 'pointer',
+          accentColor: 'var(--color-primary)',
+          opacity: isLoadingBatch ? 0.5 : 1,
+        }}
+      />
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', whiteSpace: 'nowrap' }}>
+        {isEditing ? (
+          <input
+            type="number"
+            min={1}
+            max={totalCount}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onBlur={handleCommit}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') handleCommit();
+              if (e.key === 'Escape') {
+                setInputValue(String(loadedCount));
+                setIsEditing(false);
+              }
+            }}
+            autoFocus
+            style={{
+              width: '55px',
+              background: 'var(--color-surface-raised)',
+              border: '1px solid var(--color-primary)',
+              color: 'var(--color-text)',
+              borderRadius: 'var(--radius-sm)',
+              padding: '2px 6px',
+              fontSize: '0.75rem',
+              outline: 'none',
+            }}
+          />
+        ) : (
+          <span
+            onClick={() => {
+              if (!isLoadingBatch) {
+                setInputValue(String(loadedCount));
+                setIsEditing(true);
+              }
+            }}
+            style={{
+              cursor: isLoadingBatch ? 'not-allowed' : 'pointer',
+              borderBottom: '1px dashed var(--color-primary)',
+              color: 'var(--color-primary-hover)',
+              fontWeight: 600,
+              fontSize: '0.75rem',
+              padding: '0 2px',
+            }}
+            title="Click to manually enter precise node count"
+          >
+            {loadedCount.toLocaleString()}
+          </span>
+        )}
+        <span style={{ opacity: 0.5 }}>/ {totalCount.toLocaleString()} nodes loaded</span>
       </div>
-      {isLoadingBatch ? (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', opacity: 0.75 }}><Spinner size={11} />{t('graph.loading_nodes', { loaded: loadedCount.toLocaleString(), total: totalCount.toLocaleString() })}</span>
-      ) : done ? (
-        <span style={{ opacity: 0.5 }}>{t('graph.nodes_count', { loaded: loadedCount.toLocaleString(), total: totalCount.toLocaleString() })}</span>
-      ) : (
-        <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-          <span style={{ opacity: 0.5 }}>{t('graph.nodes_count', { loaded: loadedCount.toLocaleString(), total: totalCount.toLocaleString() })}</span>
-          {hasMore && autoLoadDone && (
-            <button
-              id="load-more-btn" onClick={onLoadMore}
-              style={{ padding: '2px 10px', fontSize: '0.7rem', fontWeight: 600, letterSpacing: '0.04em', background: 'transparent', border: '1px solid var(--color-primary)', color: 'var(--color-primary-hover)', borderRadius: 4, cursor: 'pointer', transition: 'background 0.15s, color 0.15s' }}
-              onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-primary)'; e.currentTarget.style.color = 'var(--color-on-primary)'; }}
-              onMouseLeave={(e) => { e.currentTarget.style.background = 'transparent'; e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
-            >
-              {t('graph.load_more_btn')}
-            </button>
-          )}
+
+      {isLoadingBatch && (
+        <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', opacity: 0.8 }}>
+          <Spinner size={10} />
         </span>
       )}
     </div>

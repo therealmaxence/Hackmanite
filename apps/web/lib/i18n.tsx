@@ -15,6 +15,7 @@ export const TRANSLATIONS = {
     'nav.ai_report': 'AI Report',
     'nav.session': 'Session',
     'nav.settings': 'Settings',
+    'nav.help': 'Help',
 
     // Weak Signals Page
     'weak_signals.title': 'Weak Signals Discovery',
@@ -537,6 +538,7 @@ export const TRANSLATIONS = {
     'nav.ai_report': 'Rapport IA',
     'nav.session': 'Session',
     'nav.settings': 'Paramètres',
+    'nav.help': 'Aide',
 
     // Weak Signals Page
     'weak_signals.title': 'Détection des Signaux Faibles',

@@ -14,6 +14,7 @@ const NAV_ITEMS = [
   { href: '/ai-report', labelKey: 'nav.ai_report', id: 'nav-ai-report' },
   { href: '/session', labelKey: 'nav.session', id: 'nav-session' },
   { href: '/settings', labelKey: 'nav.settings', id: 'nav-settings' },
+  { href: '/help', labelKey: 'nav.help', id: 'nav-help' },
 ];
 
 export default function Header() {

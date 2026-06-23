@@ -1,6 +1,7 @@
 'use client';
 
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
+import { useGraphStore } from '@/store/graphStore';
 
 interface NodeItem {
   id: string;
@@ -14,6 +15,8 @@ interface Props {
 }
 
 export default function SelectedNodesList({ selectedNodes }: Props) {
+  const { selectedNodeIds, setSelectedNodeIds } = useGraphStore();
+
   return (
     <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem' }}>
       {selectedNodes.map((node) => {
@@ -43,6 +46,37 @@ export default function SelectedNodesList({ selectedNodes }: Props) {
               }}
             />
             <span>{node.label}</span>
+            <button
+              onClick={() => {
+                setSelectedNodeIds(selectedNodeIds.filter((id) => id !== node.id));
+              }}
+              style={{
+                background: 'none',
+                border: 'none',
+                color: 'var(--color-text-muted)',
+                cursor: 'pointer',
+                fontSize: '0.75rem',
+                marginLeft: '0.25rem',
+                padding: '0 2px',
+                display: 'inline-flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                lineHeight: 1,
+                opacity: 0.6,
+                transition: 'opacity 0.2s, color 0.2s',
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.opacity = '1';
+                e.currentTarget.style.color = 'var(--color-error)';
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.opacity = '0.6';
+                e.currentTarget.style.color = 'var(--color-text-muted)';
+              }}
+              title="Deselect"
+            >
+              ×
+            </button>
           </div>
         );
       })}

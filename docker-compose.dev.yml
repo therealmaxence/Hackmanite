@@ -21,5 +21,5 @@ services:
     volumes:
       - ./data/uploads:/app/uploads:ro
       - ./apps/nlp-service:/app
-      - ./data/kuzu_data:/app/kuzu_data
+      - kuzu_data:/app/kuzu_data
     command: uvicorn main:app --host 0.0.0.0 --port 8000 --reload --reload-exclude "uploads/*"

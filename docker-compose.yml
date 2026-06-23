@@ -40,7 +40,7 @@ services:
       LOG_LEVEL: info
     volumes:
       - ./data/uploads:/app/uploads:ro
-      - ./data/kuzu_data:/app/kuzu_data
+      - kuzu_data:/app/kuzu_data
     networks:
       - app-network
     restart: unless-stopped
@@ -78,6 +78,8 @@ services:
 
 volumes:
   redis_data:
+    driver: local
+  kuzu_data:
     driver: local
 
 networks:

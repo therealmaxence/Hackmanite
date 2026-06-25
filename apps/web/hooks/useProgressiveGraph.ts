@@ -7,6 +7,7 @@ import { ENTITY_COLORS } from '@/types/entities';
 import type { EntityType } from '@/types/entities';
 import type { GraphNode, GraphEdge } from '@/lib/graph-builder';
 import { useSyncGraphStore } from './useSyncGraphStore';
+import { useTranslation } from '@/lib/i18n';
 
 const BATCH_SIZE = 100;
 const AUTO_LOAD_DELAY_MS = 300;
@@ -41,6 +42,7 @@ const isValidNode = (n: any) => n?.label?.trim() && n?.type?.trim();
 export function useProgressiveGraph(): ProgressiveGraphState {
   const { sessionId } = useUploadStore();
   const { filters, setNodes, setEdges, refreshTrigger } = useGraphStore();
+  const { t } = useTranslation();
 
   const [loadedNodes, setLoadedNodes] = useState<GraphNode[]>([]);
   const [loadedEdges, setLoadedEdges] = useState<GraphEdge[]>([]);
@@ -267,6 +269,13 @@ export function useProgressiveGraph(): ProgressiveGraphState {
   const setLoadedLimit = useCallback(async (targetCount: number) => {
     const currentCount = loadedNodesRef.current.length;
     if (targetCount === currentCount || targetCount <= 0 || targetCount > totalCount) return;
+
+    if (targetCount > 500 && targetCount > currentCount) {
+      const ok = typeof window !== 'undefined'
+        ? window.confirm(t('graph.controls.confirm_large_load') || 'Loading more than 500 nodes might take a bit of time. Do you want to proceed?')
+        : true;
+      if (!ok) return;
+    }
 
     if (targetCount < currentCount) {
       const nextNodes = loadedNodesRef.current.slice(0, targetCount);

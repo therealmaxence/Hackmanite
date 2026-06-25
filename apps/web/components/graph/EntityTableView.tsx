@@ -28,6 +28,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
     togglePanel,
     changeNodeType,
     filters,
+    edges,
   } = useGraphStore();
 
   const [sortField, setSortField] = useState<SortField>('totalOccurrences');
@@ -38,10 +39,57 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
 
   const PAGE_SIZE = 15;
 
+  const adjacency = useMemo(() => {
+    const adj = new Map<string, Set<string>>();
+    for (const edge of edges) {
+      if (!adj.has(edge.source)) adj.set(edge.source, new Set());
+      if (!adj.has(edge.target)) adj.set(edge.target, new Set());
+      adj.get(edge.source)!.add(edge.target);
+      adj.get(edge.target)!.add(edge.source);
+    }
+    return adj;
+  }, [edges]);
+
+  const maxEdgeWeightMap = useMemo(() => {
+    const maxWeights = new Map<string, number>();
+    for (const edge of edges) {
+      const w = edge.weight ?? 0;
+      maxWeights.set(edge.source, Math.max(maxWeights.get(edge.source) ?? 0, w));
+      maxWeights.set(edge.target, Math.max(maxWeights.get(edge.target) ?? 0, w));
+    }
+    return maxWeights;
+  }, [edges]);
+
   const entities = useMemo(() => {
     const q = filters.searchQuery.trim().toLowerCase();
-    return nodes.filter((n) => n.type !== 'FILE' && (!q || n.label.toLowerCase().includes(q)));
-  }, [nodes, filters.searchQuery]);
+    const minConn = filters.minConnections ?? 0;
+    const minOcc = filters.minOccurrences ?? 2;
+    const minTfidf = filters.minTfidf ?? 0.0;
+    const minEdgeWeight = filters.minEdgeWeight ?? 0.0;
+    const types = new Set(filters.entityTypes);
+
+    return nodes.filter((n) => {
+      if (n.type === 'FILE') return false;
+      if (types.size > 0 && !types.has(n.type as EntityType)) return false;
+      if (q && !n.label.toLowerCase().includes(q)) return false;
+      if (n.totalOccurrences < minOcc) return false;
+
+      const degree = adjacency.get(n.id)?.size ?? 0;
+      if (degree < minConn) return false;
+
+      const tfidf = n.tfidf ?? n.totalOccurrences;
+      if (tfidf < minTfidf) return false;
+
+      if (filters.crossDocumentOnly && n.fileCount <= 1) return false;
+
+      if (minEdgeWeight > 0) {
+        const maxW = maxEdgeWeightMap.get(n.id) ?? 0;
+        if (maxW < minEdgeWeight) return false;
+      }
+
+      return true;
+    });
+  }, [nodes, edges, filters, adjacency, maxEdgeWeightMap]);
 
   useEffect(() => {
     setCurrentPage(1);
@@ -205,7 +253,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
   };
 
   return (
-    <div style={{ flex: 1, padding: '1.5rem', overflowY: 'auto', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column' }}>
+    <div style={{ flex: 1, padding: '1.5rem', background: 'var(--bg-base)', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '1.25rem' }}>
         <h3 style={{ fontSize: '0.9375rem', fontWeight: 600, color: 'var(--color-text)', margin: 0 }}>
           {t('graph.table.ledger')}
@@ -215,30 +263,31 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
         </span>
       </div>
 
-      <div style={{ border: 'none', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--color-surface)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem' }}>
-          <thead>
-            <tr style={{ background: 'var(--color-surface-raised)', borderBottom: 'none' }}>
-              <th onClick={() => handleSort('label')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
-                {t('graph.table.col_name')}{renderSortIndicator('label')}
-              </th>
-              <th onClick={() => handleSort('type')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
-                {t('graph.table.col_type')}{renderSortIndicator('type')}
-              </th>
-              <th onClick={() => handleSort('totalOccurrences')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
-                {t('graph.table.col_occurrences')}{renderSortIndicator('totalOccurrences')}
-              </th>
-              <th onClick={() => handleSort('fileCount')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
-                {t('graph.table.col_files')}{renderSortIndicator('fileCount')}
-              </th>
-              <th onClick={() => handleSort('tfidf')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
-                {t('graph.table.col_tfidf')}{renderSortIndicator('tfidf')}
-              </th>
-              <th style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                {t('graph.table.col_actions')}
-              </th>
-            </tr>
-          </thead>
+      <div style={{ border: 'none', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--color-surface)', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: 0 }}>
+        <div style={{ overflowX: 'auto', overflowY: 'auto', flex: 1, minHeight: 0 }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem' }}>
+            <thead>
+              <tr style={{ background: 'var(--color-surface-raised)', borderBottom: 'none' }}>
+                <th onClick={() => handleSort('label')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                  {t('graph.table.col_name')}{renderSortIndicator('label')}
+                </th>
+                <th onClick={() => handleSort('type')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                  {t('graph.table.col_type')}{renderSortIndicator('type')}
+                </th>
+                <th onClick={() => handleSort('totalOccurrences')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                  {t('graph.table.col_occurrences')}{renderSortIndicator('totalOccurrences')}
+                </th>
+                <th onClick={() => handleSort('fileCount')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                  {t('graph.table.col_files')}{renderSortIndicator('fileCount')}
+                </th>
+                <th onClick={() => handleSort('tfidf')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                  {t('graph.table.col_tfidf')}{renderSortIndicator('tfidf')}
+                </th>
+                <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                  {t('graph.table.col_actions')}
+                </th>
+              </tr>
+            </thead>
           <tbody>
             {paginatedEntities.map((node) => {
               const isSelected = selectedNodeId === node.id || selectedNodeIds.includes(node.id);
@@ -336,6 +385,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
             })}
           </tbody>
         </table>
+        </div>
 
         {totalPages > 1 && (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem', padding: '1rem 0', background: 'var(--color-surface-raised)', borderTop: '1px solid var(--color-border)' }}>

@@ -238,23 +238,23 @@ export default function WeakSignalsTable({
 
       {/* Table view */}
       <div style={{ border: 'none', borderRadius: 'var(--radius)', overflow: 'hidden', background: 'var(--color-surface)', display: 'flex', flexDirection: 'column', justifyContent: 'space-between', minHeight: '400px' }}>
-        <div style={{ overflowX: 'auto' }}>
+        <div style={{ overflowX: 'auto', overflowY: 'auto', maxHeight: 'calc(100vh - 380px)', minHeight: '300px' }}>
           <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', fontSize: '0.8125rem' }}>
             <thead>
               <tr style={{ background: 'var(--color-surface-raised)', borderBottom: 'none' }}>
-                <th onClick={() => handleSort('label')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                <th onClick={() => handleSort('label')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
                   {t('graph.table.col_name')}{renderSortIndicator('label')}
                 </th>
-                <th onClick={() => handleSort('type')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                <th onClick={() => handleSort('type')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
                   {t('graph.table.col_type')}{renderSortIndicator('type')}
                 </th>
-                <th onClick={() => handleSort('totalCount')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                <th onClick={() => handleSort('totalCount')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
                   {t('graph.table.col_occurrences')}{renderSortIndicator('totalCount')}
                 </th>
-                <th onClick={() => handleSort('fileCount')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                <th onClick={() => handleSort('fileCount')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
                   {t('graph.table.col_files')}{renderSortIndicator('fileCount')}
                 </th>
-                <th onClick={() => handleSort('score')} style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
+                <th onClick={() => handleSort('score')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
                   {t('weak_signals.table.col_score')}{renderSortIndicator('score')}
                 </th>
               </tr>

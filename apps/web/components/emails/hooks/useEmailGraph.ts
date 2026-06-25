@@ -44,10 +44,28 @@ interface UseEmailGraphProps {
   onNodeSelect: (data: EmailNodeData) => void;
   onBackgroundTap: () => void;
   selectedEmailId: string | null;
+  onNodeRightClick?: (data: EmailNodeData, x: number, y: number) => void;
 }
 
-export function useEmailGraph({ containerRef, elements, layoutType, activeTab, onNodeSelect, onBackgroundTap, selectedEmailId }: UseEmailGraphProps) {
+export function useEmailGraph({
+  containerRef,
+  elements,
+  layoutType,
+  activeTab,
+  onNodeSelect,
+  onBackgroundTap,
+  selectedEmailId,
+  onNodeRightClick,
+}: UseEmailGraphProps) {
   const cyRef = useRef<Core | null>(null);
+
+  const onNodeRightClickRef = useRef(onNodeRightClick);
+  const onBackgroundTapRef = useRef(onBackgroundTap);
+
+  useEffect(() => {
+    onNodeRightClickRef.current = onNodeRightClick;
+    onBackgroundTapRef.current = onBackgroundTap;
+  });
 
   const highlightNeighborhood = (cy: Core, node: any) => {
     cy.batch(() => {
@@ -82,6 +100,22 @@ export function useEmailGraph({ containerRef, elements, layoutType, activeTab, o
       if (e.target === cy) {
         cy.elements().removeClass('faded highlighted');
         onBackgroundTap();
+      }
+    });
+
+    cy.on('cxttap', 'node', (e) => {
+      e.preventDefault();
+      const node = e.target;
+      const data = node.data() as EmailNodeData;
+      const origEvent = e.originalEvent;
+      const x = origEvent.clientX || origEvent.pageX;
+      const y = origEvent.clientY || origEvent.pageY;
+      onNodeRightClickRef.current?.(data, x, y);
+    });
+
+    cy.on('cxttap', (e) => {
+      if (e.target === cy) {
+        onBackgroundTapRef.current?.();
       }
     });
 

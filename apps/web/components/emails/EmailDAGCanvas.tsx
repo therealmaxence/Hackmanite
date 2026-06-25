@@ -4,6 +4,9 @@ import { useRef, useCallback, useState, useEffect } from 'react';
 import { EmailNodeData, LayoutType } from './types';
 import { useEmailGraph } from './hooks/useEmailGraph';
 import { useTranslation } from '@/lib/i18n';
+import { useUploadStore } from '@/store/uploadStore';
+import EmailContextMenu from './EmailContextMenu';
+import ModifyNodeModal from '../graph/ModifyNodeModal';
 
 interface EmailDAGCanvasProps {
   elements: Record<string, unknown>[]; layoutType: LayoutType;
@@ -15,8 +18,49 @@ export default function EmailDAGCanvas({ elements, layoutType, onNodeSelect, onB
   const containerRef = useRef<HTMLDivElement>(null), wrapperRef = useRef<HTMLDivElement>(null);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const { t } = useTranslation();
+  const { sessionId } = useUploadStore();
 
-  const cyRef = useEmailGraph({ containerRef, elements, layoutType, activeTab: 'graph', onNodeSelect, onBackgroundTap, selectedEmailId });
+  const [contextMenu, setContextMenu] = useState<{
+    x: number;
+    y: number;
+    nodeId: string;
+    nodeSubject: string;
+    nodeData: EmailNodeData;
+  } | null>(null);
+
+  const [editingEmail, setEditingEmail] = useState<EmailNodeData | null>(null);
+
+  const handleNodeRightClick = useCallback((data: EmailNodeData, x: number, y: number) => {
+    setContextMenu({ x, y, nodeId: data.messageId, nodeSubject: data.subject, nodeData: data });
+  }, []);
+
+  const handleBackgroundTap = useCallback(() => {
+    setContextMenu(null);
+    onBackgroundTap();
+  }, [onBackgroundTap]);
+
+  const handleCopySubject = useCallback((subject: string) => {
+    navigator.clipboard?.writeText(subject).catch(() => {});
+    setContextMenu(null);
+  }, []);
+
+  const handleModifyEmail = useCallback(() => {
+    if (contextMenu) {
+      setEditingEmail(contextMenu.nodeData);
+    }
+    setContextMenu(null);
+  }, [contextMenu]);
+
+  const cyRef = useEmailGraph({
+    containerRef,
+    elements,
+    layoutType,
+    activeTab: 'graph',
+    onNodeSelect,
+    onBackgroundTap: handleBackgroundTap,
+    selectedEmailId,
+    onNodeRightClick: handleNodeRightClick,
+  });
 
   const zoomIn = useCallback(() => cyRef.current?.zoom(cyRef.current.zoom() * 1.2), [cyRef]);
   const zoomOut = useCallback(() => cyRef.current?.zoom(cyRef.current.zoom() / 1.2), [cyRef]);
@@ -93,7 +137,27 @@ export default function EmailDAGCanvas({ elements, layoutType, onNodeSelect, onB
           <span>{t('emails.canvas.fwd_flow')}</span>
         </div>
       </div>
+
+      {contextMenu && (
+        <EmailContextMenu
+          x={contextMenu.x}
+          y={contextMenu.y}
+          nodeId={contextMenu.nodeId}
+          nodeSubject={contextMenu.nodeSubject}
+          onCopySubject={handleCopySubject}
+          onModify={handleModifyEmail}
+        />
+      )}
+
+      {editingEmail && (
+        <ModifyNodeModal
+          nodeId={editingEmail.messageId}
+          nodeType="EMAIL_NODE"
+          initialEmailData={editingEmail}
+          sessionId={sessionId!}
+          onClose={() => setEditingEmail(null)}
+        />
+      )}
     </div>
   );
 }
-

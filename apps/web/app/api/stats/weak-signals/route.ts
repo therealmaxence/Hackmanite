@@ -97,8 +97,7 @@ export async function GET(req: NextRequest) {
         return { entityId, score: (rawC > 0 ? rawC : degree * 0.1) / (s.totalCount + 1) };
       })
       .filter((x) => x.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
+      .sort((a, b) => b.score - a.score);
 
     const bridgeEntitiesDb = await prisma.entity.findMany({
       where: { id: { in: bridgeSignalsRaw.map((b) => b.entityId) } },
@@ -115,8 +114,7 @@ export async function GET(req: NextRequest) {
     // --- Methodology B: Niche Topics (Low Doc Frequency, High TF-IDF) ---
     const sortedNiches = [...entityStats.entries()]
       .filter(([, s]) => s.fileCount <= 2)
-      .sort((a, b) => b[1].maxTfidf - a[1].maxTfidf)
-      .slice(0, 10);
+      .sort((a, b) => b[1].maxTfidf - a[1].maxTfidf);
 
     const nicheEntitiesDb = await prisma.entity.findMany({
       where: { id: { in: sortedNiches.map(([id]) => id) } },
@@ -178,7 +176,7 @@ export async function GET(req: NextRequest) {
           }
         }
 
-        const sortedSpikes = [...spikeMap.entries()].sort((a, b) => b[1].maxScore - a[1].maxScore).slice(0, 10);
+        const sortedSpikes = [...spikeMap.entries()].sort((a, b) => b[1].maxScore - a[1].maxScore);
         const spikeEntitiesDb = await prisma.entity.findMany({
           where: { id: { in: sortedSpikes.map(([id]) => id) } },
           select: { id: true, displayName: true, type: true },

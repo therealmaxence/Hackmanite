@@ -56,6 +56,7 @@ type Neighborhood = Prisma.EntityNeighborhoodGetPayload<{
 type OccurrenceWithFile = {
   fileId: string;
   count: number;
+  tfidf: number;
   excerpts: unknown;
   file: {
     originalName: string;
@@ -74,6 +75,7 @@ interface FileEntry {
   uploadedAt: string;
   processedAt: string | null;
   count: number;
+  tfidf?: number;
   snippets: {
     text: string;
     offset: number;
@@ -104,6 +106,7 @@ export function buildEntityFiles(
   for (const occ of entity.occurrences) {
     const entry = filesMap.get(occ.fileId) || makeFileEntry(occ.fileId, occ.file);
     entry.count += occ.count;
+    entry.tfidf = occ.tfidf;
 
     const excerpts = typeof occ.excerpts === 'string'
       ? JSON.parse(occ.excerpts)

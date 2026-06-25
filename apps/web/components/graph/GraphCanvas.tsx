@@ -19,6 +19,7 @@ import { useCytoscapeSelection } from './hooks/useCytoscapeSelection';
 import { useCytoscapeHighlights } from './hooks/useCytoscapeHighlights';
 import GraphSelectionTip from './GraphSelectionTip';
 import GraphContextMenu from './GraphContextMenu';
+import ModifyNodeModal from './ModifyNodeModal';
 
 if (typeof window !== 'undefined') {
   cytoscape.use(coseBilkent);
@@ -41,6 +42,8 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     nodeType: string;
     nodeLabel: string;
   } | null>(null);
+
+  const [editingNode, setEditingNode] = useState<{ id: string; type: string } | null>(null);
 
   const renderedNodeIds = useRef<Set<string>>(new Set());
   const renderedEdgeKeys = useRef<Set<string>>(new Set());
@@ -222,6 +225,14 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     setContextMenu(null);
   };
 
+  const handleModifyNode = (id: string) => {
+    const node = nodes.find((n) => n.id === id);
+    if (node) {
+      setEditingNode({ id, type: node.type });
+    }
+    setContextMenu(null);
+  };
+
   const handleChangeNodeType = async (id: string, newType: string) => {
     try {
       setContextMenu(null);
@@ -312,6 +323,20 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
           onChangeType={handleChangeNodeType}
           onHideNode={handleHideNode}
           onDeleteNode={handleDeleteNode}
+          onModifyNode={handleModifyNode}
+        />
+      )}
+      {editingNode && (
+        <ModifyNodeModal
+          nodeId={editingNode.id}
+          nodeType={editingNode.type}
+          sessionId={sessionId!}
+          onClose={() => setEditingNode(null)}
+          onSaveSuccess={(newId) => {
+            if (newId && selectedNodeId === editingNode.id) {
+              selectNode(newId);
+            }
+          }}
         />
       )}
     </div>

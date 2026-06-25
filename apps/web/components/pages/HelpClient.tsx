@@ -41,7 +41,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Session Export (JSON & Obsidian)',
-            content: 'Save your progress or share analysis by exporting sessions in two formats:\n\n- **JSON Snapshot**: A complete, self-contained database backup of all entities, files, and co-occurrences that can be re-imported into any instance of Hackmanite.\n- **Obsidian Vault (ZIP)**: Generates a ZIP archive containing a structured local knowledge base of Markdown files. Every entity and document gets its own page, fully interconnected via wiki-links (`[[Entities/Name]]`), complete with metadata, text snippets, and email headers.',
+            content: 'Save your progress or share analysis by exporting sessions in two formats:\n\n- **JSON Snapshot**: A complete, self-contained database backup of all entities, files, and co-occurrences that can be re-imported into any instance of Hackmanite.\n- **Obsidian Vault (ZIP)**: Generates a ZIP archive containing a structured local knowledge base of Markdown files. Every entity and document gets its own page, fully interconnected via wiki-links (`[[Entities/Name]]`), complete with metadata, text snippets, and email headers (only compatible with Obsidian).',
           },
         ]
       },
@@ -155,7 +155,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Export de Session (JSON & Obsidian)',
-            content: 'Sauvegardez votre travail ou partagez vos analyses en exportant vos sessions sous deux formats :\n\n- **Instantané JSON** : Une sauvegarde complète contenant toutes les entités, relations et fichiers, prête à être réimportée sur n\'importe quelle instance d\'Hackmanite.\n- **Coffre Obsidian (ZIP)** : Génère une archive ZIP contenant une base de connaissances locale au format Markdown. Chaque entité et document possède sa propre page interconnectée via des liens internes wiki (`[[Entities/Name]]`), complétée par des métadonnées, des extraits de texte et des en-têtes d\'e-mails.',
+            content: 'Sauvegardez votre travail ou partagez vos analyses en exportant vos sessions sous deux formats :\n\n- **JSON** : Une sauvegarde complète contenant toutes les entités, relations et fichiers, prête à être réimportée sur n\'importe quelle instance d\'Hackmanite.\n- **Coffre Obsidian (ZIP)** : Génère une archive ZIP contenant une base de connaissances locale au format Markdown. Chaque entité et document possède sa propre page interconnectée via des liens internes wiki (`[[Entities/Name]]`), complétée par des métadonnées, des extraits de texte et des en-têtes d\'e-mails (compatible uniquement avec Obsidian).',
           },
         ]
       },

@@ -1,4 +1,5 @@
 import { prisma } from '@/lib/prisma';
+import { brandes, buildAdj } from '@/lib/brandes';
 
 export interface AiReportData {
   general: {
@@ -74,7 +75,6 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
   ]);
 
   const V = new Set<string>(topEntitiesForBridges.map((e) => e.entityId));
-  const adj = new Map<string, Set<string>>();
   let bridges: Array<{ label: string; type: string; score: number }> = [];
 
   if (V.size > 0) {
@@ -87,49 +87,8 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
       select: { sourceEntityId: true, targetEntityId: true },
     });
 
-    for (const edge of neighborhoods) {
-      const s = edge.sourceEntityId, t = edge.targetEntityId;
-      if (s === t) continue;
-      if (!adj.has(s)) adj.set(s, new Set());
-      if (!adj.has(t)) adj.set(t, new Set());
-      adj.get(s)!.add(t);
-      adj.get(t)!.add(s);
-    }
-
-    const centralityScores = new Map<string, number>(Array.from(V).map((v) => [v, 0]));
-    const allNodes = Array.from(V);
-
-    for (const s of allNodes) {
-      const S: string[] = [];
-      const P = new Map<string, string[]>(allNodes.map((w) => [w, []]));
-      const sigma = new Map<string, number>(allNodes.map((w) => [w, w === s ? 1 : 0]));
-      const d = new Map<string, number>(allNodes.map((w) => [w, w === s ? 0 : -1]));
-
-      const Q = [s];
-      while (Q.length) {
-        const v = Q.shift()!;
-        S.push(v);
-        const dv = d.get(v)!;
-        (adj.get(v) || new Set<string>()).forEach((w) => {
-          if (d.get(w)! < 0) {
-            d.set(w, dv + 1);
-            Q.push(w);
-          }
-          if (d.get(w) === dv + 1) {
-            sigma.set(w, sigma.get(w)! + sigma.get(v)!);
-            P.get(w)!.push(v);
-          }
-        });
-      }
-
-      const delta = new Map<string, number>(allNodes.map((w) => [w, 0]));
-      while (S.length) {
-        const w = S.pop()!;
-        const coeff = (1 + delta.get(w)!) / sigma.get(w)!;
-        P.get(w)!.forEach((v) => delta.set(v, delta.get(v)! + sigma.get(v)! * coeff));
-        if (w !== s) centralityScores.set(w, centralityScores.get(w)! + delta.get(w)!);
-      }
-    }
+    const adj = buildAdj(V, neighborhoods);
+    const centralityScores = brandes(Array.from(V), adj);
 
     const sortedBridges = Array.from(centralityScores.entries())
       .sort((a, b) => b[1] - a[1])
@@ -144,8 +103,8 @@ export async function getAiReportData(sessionId: string): Promise<AiReportData> 
     bridges = sortedBridges.map(([id, score]) => {
       const ent = detailsMap.get(id);
       return {
-        label: ent?.displayName || 'Unknown',
-        type: ent?.type || 'OTHER',
+        label: ent?.displayName ?? 'Unknown',
+        type: ent?.type ?? 'OTHER',
         score: Number(score.toFixed(4)),
       };
     });

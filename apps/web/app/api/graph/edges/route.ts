@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { redis, RedisKeys, RedisTTL } from '@/lib/redis';
 import { ErrorCodes } from '@/types/api';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export const runtime = 'nodejs';
-
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : 'Unknown error');
 
 async function fetchEdges({

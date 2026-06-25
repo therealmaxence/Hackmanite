@@ -28,11 +28,14 @@ INLINE_HEADER_PATTERNS = [
     re.compile(r'(?:\r?\n|^)>*\s*(([\s\S]{1,500}?)\s+(?:пишет|написал\(а\)|написал|написала)\s*:)', re.IGNORECASE),
 ]
 
+def _overlaps(matches, pos):
+    return any(h.start_idx <= pos < h.end_idx for h in matches)
+
 def find_headers(body: str) -> List[HeaderMatch]:
     matches = []
     for pattern in INLINE_HEADER_PATTERNS:
         for m in pattern.finditer(body):
-            if any(existing.start_idx <= m.start(1) < existing.end_idx for existing in matches):
+            if _overlaps(matches, m.start(1)):
                 continue
             content = m.group(2)
             author_str = ""
@@ -63,7 +66,7 @@ def find_headers(body: str) -> List[HeaderMatch]:
             author_str = re.sub(r'^[,;:\s]+', '', author_str)
             author_str = re.sub(r'^(?:пользователь|user|à|at|to)\s+', '', author_str, flags=re.IGNORECASE)
 
-            author_lines = [al.strip()[1:].strip() if al.strip().startswith('>') else al.strip() for al in author_str.splitlines()]
+            author_lines = [(al.strip()[1:] if al.strip().startswith('>') else al).strip() for al in author_str.splitlines()]
             author_str = " ".join(al for al in author_lines if al).strip(" ,;:\r\n\t\xa0")
             date_str = re.sub(r'[,;:\s\(\)]+$', '', date_str.strip())
 
@@ -86,7 +89,7 @@ def find_headers(body: str) -> List[HeaderMatch]:
 
     for m in block_start_pattern.finditer(body):
         start_pos = m.start()
-        if any(existing.start_idx <= start_pos < existing.end_idx for existing in matches):
+        if _overlaps(matches, start_pos):
             continue
 
         lines = body[start_pos:start_pos + 1000].splitlines()
@@ -118,9 +121,6 @@ def find_headers(body: str) -> List[HeaderMatch]:
 
         header_text = "\n".join(lines[:header_lines_count])
         end_pos = start_pos + len(header_text)
-
-        if any(existing.start_idx <= start_pos < existing.end_idx for existing in matches):
-            continue
 
         preceding_text = body[max(0, start_pos - 150):start_pos].lower()
         is_fwd = any(p in preceding_text for p in [

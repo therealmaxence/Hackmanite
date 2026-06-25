@@ -13,9 +13,10 @@ def dispatch(file_id: str, file_path: str, mime_type: str, window_size: int = 40
     entities, neighborhoods, emails, extractor, error = [], [], [], "unknown", None
     tier = decide_routing(file_path, mime_type)
     logger.info(f"Dispatching file {file_id} with tier {tier}")
+    path = Path(file_path)
+    suffix = path.suffix.lower()
 
     try:
-        path, suffix = Path(file_path), Path(file_path).suffix.lower()
         from services.email_parser import parse_eml_file, parse_pst_emails
         if mime_type in ("message/rfc822", "application/mime") or suffix == ".eml":
             logger.info(f"Parsing structured EML headers/body for {file_id}")
@@ -33,7 +34,7 @@ def dispatch(file_id: str, file_path: str, mime_type: str, window_size: int = 40
             result = tier1_text.extract(file_path, mime_type, window_size)
         elif tier == ExtractionTier.TIER2_OCR:
             text = tier2_vision.extract(file_path, mime_type)
-            result = tier0_regex.analyze_text(text, Path(file_path).name, Path(file_path).suffix.lower(), window_size)
+            result = tier0_regex.analyze_text(text, path.name, suffix, window_size)
             result["extractor_used"] = "tier2_ocr"
         else:
             raise ValueError(f"Unknown tier: {tier}")

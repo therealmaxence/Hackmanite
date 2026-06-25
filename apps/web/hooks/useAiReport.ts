@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import useSWR from 'swr';
 import { useUploadStore } from '@/store/uploadStore';
+import { downloadBlob } from '@/lib/download';
 
 const fetcher = (url: string) => fetch(url).then((res) => {
   if (!res.ok) throw new Error('Failed to fetch weak signals');
@@ -184,15 +185,7 @@ export function useAiReport() {
   };
 
   const downloadMarkdown = () => {
-    const blob = new Blob([report], { type: 'text/markdown' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = `intelligence-report-${sessionId ? sessionId.slice(0, 8) : 'report'}.md`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
+    downloadBlob(new Blob([report], { type: 'text/markdown' }), `intelligence-report-${sessionId ? sessionId.slice(0, 8) : 'report'}.md`);
   };
 
   return {

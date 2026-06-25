@@ -1,9 +1,4 @@
-"""
-Specialized file for person regex.
-"""
-
 import re
-
 
 # ── Latin script (English / French) ───────────────────────────────────────────
 
@@ -114,9 +109,6 @@ _RU_DENYLIST: frozenset[str] = frozenset({
 # ── Extraction logic ───────────────────────────────────────────────────────────
 
 def _extract_persons(text: str) -> list[dict[str, int | str]]:
-    """
-    Multi-rule person-name extractor for Latin and Cyrillic scripts.
-    """
     if not text:
         return []
 
@@ -154,9 +146,6 @@ def _run_extraction(
     results: list[dict[str, int | str]],
     seen: set[tuple[str, int, int]],
 ) -> None:
-    """
-    Shared extraction loop — works for any script given the right regexes and denylist.
-    """
     trigger_ends = {m.end() + offset for m in trigger_re.finditer(text) for offset in range(3)}
     cap_tokens = list(token_re.finditer(text))
 

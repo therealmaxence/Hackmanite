@@ -1,5 +1,6 @@
 import JSZip from 'jszip';
 import { SessionExportResponse } from '@/types/api';
+import { downloadBlob } from '@/lib/download';
 
 interface EmailData {
   id: string;
@@ -154,15 +155,7 @@ export async function generateAndDownloadObsidianZip(
     documentsFolder?.file(`${docName}.md`, md);
   }
 
-  const content = await zip.generateAsync({ type: 'blob' });
-  const url = URL.createObjectURL(content);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = `session-${sessionId}-obsidian.zip`;
-  document.body.appendChild(a);
-  a.click();
-  a.remove();
-  URL.revokeObjectURL(url);
+  downloadBlob(await zip.generateAsync({ type: 'blob' }), `session-${sessionId}-obsidian.zip`);
 }
 
 export default exportSessionAsObsidian;

@@ -1,7 +1,7 @@
 import { prisma } from '@/lib/prisma';
 import { recomputeSessionTfidf } from './tfidf';
+import { NLP_URL } from '@/lib/nlp-url';
 
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 const activeSyncs = new Map<string, Promise<void>>();
 
 const nlpPost = async (path: string, body: object): Promise<Response> => {

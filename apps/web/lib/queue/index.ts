@@ -4,10 +4,24 @@ import { ExtractionJobPayload, FileStatus, JobStatus } from "./types";
 import { memoryQueue } from "./memoryQueue";
 import { isRedisAvailable, bullQueue, activeControllers } from "./bullQueue";
 import { prisma } from "@/lib/prisma";
+import { NLP_URL } from "@/lib/nlp-url";
 
 export * from "./types";
 
-const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+/** Reset a PROCESSING file back to PENDING and clean up its KuzuDB data. */
+async function resetFileToPending(fileId: string): Promise<void> {
+  await prisma.$transaction(async (tx) => {
+    await tx.occurrence.deleteMany({ where: { fileId } });
+    await tx.entityNeighborhood.deleteMany({ where: { fileId } });
+    await tx.email.deleteMany({ where: { fileId } });
+    await tx.file.update({ where: { id: fileId }, data: { status: "PENDING", errorMessage: null, processedAt: null } });
+  }, { maxWait: 15000, timeout: 30000 });
+  try {
+    await fetch(`${NLP_URL}/graph/file/${fileId}`, { method: "DELETE" });
+  } catch (err: any) {
+    logger.error("Failed KuzuDB clean during reset:", { error: err.message });
+  }
+}
 
 const useBull = () => isRedisAvailable && bullQueue;
 const mapBullJob = (status: FileStatus) => (j: any) => ({ id: j.id!, data: j.data as ExtractionJobPayload, status, entityCount: 0, error: null });
@@ -91,19 +105,7 @@ export async function retryFile(fileId: string): Promise<void> {
 
   await redis.del(RedisKeys.sessionCancellation(file.sessionId));
 
-  await prisma.$transaction(async (tx) => {
-    await tx.occurrence.deleteMany({ where: { fileId } });
-    await tx.entityNeighborhood.deleteMany({ where: { fileId } });
-    await tx.email.deleteMany({ where: { fileId } });
-    await tx.file.update({ where: { id: fileId }, data: { status: "PENDING", errorMessage: null, processedAt: null } });
-  }, { maxWait: 15000, timeout: 30000 });
-
-  try {
-    const res = await fetch(`${NLP_URL}/graph/file/${fileId}`, { method: "DELETE" });
-    if (!res.ok) logger.error(`Failed to delete file ${fileId} in KuzuDB, status: ${res.status}`);
-  } catch (err: any) {
-    logger.error("Failed to contact Python service for KuzuDB file delete:", { error: err.message });
-  }
+  await resetFileToPending(fileId);
 
   await clearSessionGraphCache(file.sessionId);
   const priority = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf" ? 10 : 1;
@@ -133,18 +135,7 @@ export async function resumeStuckJobs(sessionId: string): Promise<number> {
     if (queuedFileIds.has(file.id)) continue;
 
     if (file.status === "PROCESSING") {
-      await prisma.$transaction(async (tx) => {
-        await tx.occurrence.deleteMany({ where: { fileId: file.id } });
-        await tx.entityNeighborhood.deleteMany({ where: { fileId: file.id } });
-        await tx.email.deleteMany({ where: { fileId: file.id } });
-        await tx.file.update({ where: { id: file.id }, data: { status: "PENDING", errorMessage: null, processedAt: null } });
-      }, { maxWait: 15000, timeout: 30000 });
-
-      try {
-        await fetch(`${NLP_URL}/graph/file/${file.id}`, { method: "DELETE" });
-      } catch (err: any) {
-        logger.error("Failed KuzuDB clean during resume:", { error: err.message });
-      }
+      await resetFileToPending(file.id);
     }
 
     const priority = file.mimeType.startsWith("image/") || file.mimeType === "application/pdf" ? 10 : 1;

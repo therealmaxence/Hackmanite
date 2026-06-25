@@ -1,7 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { Prisma } from '@prisma/client';
-
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
+import { NLP_URL } from '@/lib/nlp-url';
 
 const occurrenceInclude = (sessionId: string | null) => ({
   occurrences: {

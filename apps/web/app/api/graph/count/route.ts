@@ -2,10 +2,9 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
 import { syncSessionToKuzu } from '@/lib/api/entity';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export const runtime = 'nodejs';
-
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 
 const nlpNodeCount = async (fileIds: string[]) => {
   const res = await fetch(`${NLP_URL}/graph/node-count`, {

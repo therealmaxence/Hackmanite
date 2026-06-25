@@ -2,11 +2,10 @@ import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
 import { redis } from '@/lib/redis';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
-
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 
 export async function GET() {
   try {

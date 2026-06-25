@@ -3,10 +3,9 @@ import { prisma } from '@/lib/prisma';
 import { ENTITY_COLORS } from '@/types/entities';
 import type { EntityType } from '@/types/entities';
 import { ErrorCodes } from '@/types/api';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export const runtime = 'nodejs';
-
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 
 const mapNode = (n: { id: string; display_name: string; type: string; total_count: number; file_count: number; tfidf?: number }) => ({
   id: n.id, label: n.display_name, type: n.type as EntityType,

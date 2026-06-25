@@ -1,6 +1,3 @@
-"""
-Tier 0 structured documents.
-"""
 from __future__ import annotations
 import logging
 from pathlib import Path
@@ -12,7 +9,6 @@ from services.entity_extraction import extract_entities_and_neighborhoods
 logger = logging.getLogger(__name__)
 
 def extract(file_path: str, mime_type: str, window_size: int = 400) -> dict:
-    """Run text extraction + structural mention detection."""
     path = Path(file_path)
     try:
         prepared = prepare_input(file_path, mime_type)
@@ -25,7 +21,6 @@ def extract(file_path: str, mime_type: str, window_size: int = 400) -> dict:
         return _empty(path.name)
 
 def analyze_text(text: str, filename: str, ext: str = ".txt", window_size: int = 400) -> dict:
-    """Core analysis logic"""
     keywords = extract_keywords(text, top_n=1000000)
     entities, neighborhoods = extract_entities_and_neighborhoods(text, keywords, window_size)
     return {

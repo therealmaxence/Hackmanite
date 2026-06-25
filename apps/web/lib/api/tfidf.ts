@@ -1,6 +1,5 @@
 import { prisma } from '@/lib/prisma';
-
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export async function recomputeSessionTfidf(sessionId: string): Promise<void> {
   const files = await prisma.file.findMany({

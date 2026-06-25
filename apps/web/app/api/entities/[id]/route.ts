@@ -11,10 +11,10 @@ import {
 } from '@/lib/api/entity';
 import { uuid5 } from '@/lib/uuid5';
 import { syncSessionToKuzu } from '@/lib/api/sync';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export const runtime = 'nodejs';
 
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : 'Unknown error');
 const internalError = (msg: string) =>
   NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });

@@ -1,6 +1,6 @@
 import re
 import logging
-from datetime import timezone
+from datetime import datetime, timezone
 from typing import Optional
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ def parse_colloquial_date(date_str: str, reference_tz: Optional[timezone] = None
             return None
         year = int(year_match.group(1))
         s = s.replace(year_match.group(1), " ")
-        
+
         time_match = re.search(r'\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\b', s)
         hour = minute = second = 0
         if time_match:
@@ -54,7 +54,6 @@ def parse_colloquial_date(date_str: str, reference_tz: Optional[timezone] = None
         day = next((int(dm) for dm in re.findall(r'\b(\d{1,2})\b', s) if 1 <= int(dm) <= 31), None)
         if not day:
             return None
-        from datetime import datetime
         return datetime(year, month[1], day, hour, minute, second, tzinfo=reference_tz or timezone.utc).isoformat()
     except Exception as e:
         logger.warning("Failed to parse colloquial date '%s': %s", date_str, e)

@@ -39,6 +39,59 @@ const mapRawNode = (n: any, isWeak?: boolean): GraphNode => ({
 
 const isValidNode = (n: any) => n?.label?.trim() && n?.type?.trim();
 
+const fetchEdgesForIds = async (nodeIds: string[]): Promise<GraphEdge[]> => {
+  const res = await fetch('/api/graph/edges', {
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ nodeIds }),
+  });
+  const data = res.ok ? await res.json() : { edges: [] };
+  return (data.edges ?? []).map((e: { source: string; target: string; weight: number }) => ({
+    source: e.source, target: e.target, weight: e.weight,
+  }));
+};
+
+/** Fetch a batch of nodes (+ optional weak signals at offset=0), returns null on failure. */
+async function fetchNodeBatch(
+  sid: string,
+  limit: number,
+  offset: number,
+  types: string,
+  from: string,
+  to: string,
+  showWeakSignals: boolean,
+): Promise<{ nodes: GraphNode[]; hasMore: boolean } | null> {
+  const params = new URLSearchParams({
+    sessionId: sid, limit: String(limit), offset: String(offset), types,
+    ...(from ? { from } : {}), ...(to ? { to } : {}),
+    _t: String(Date.now()),
+  });
+  const res = await fetch(`/api/graph/nodes?${params}`);
+  if (!res.ok) return null;
+  const data = await res.json();
+
+  let weakNodes: GraphNode[] = [];
+  if (offset === 0 && showWeakSignals) {
+    try {
+      const wsRes = await fetch(`/api/stats/weak-signals?sessionId=${sid}&_t=${Date.now()}`);
+      if (wsRes.ok) {
+        const wsData = await wsRes.json();
+        const rawWeak = [...(wsData.bridgeSignals || []), ...(wsData.nicheSignals || []), ...(wsData.emergingSignals || [])];
+        weakNodes = Array.from(new Map(rawWeak.map((w: any) => [w.id, w])).values()).map(w => mapRawNode(w, true));
+      }
+    } catch (wsErr) {
+      console.error('[useProgressiveGraph] failed to fetch weak signals:', wsErr);
+    }
+  }
+
+  const standardNodes = (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n));
+  const seenIds = new Set<string>();
+  const nodes: GraphNode[] = [];
+  for (const n of [...weakNodes, ...standardNodes]) {
+    if (!seenIds.has(n.id)) { seenIds.add(n.id); nodes.push(n); }
+  }
+  return { nodes, hasMore: data.has_more ?? false };
+}
+
 export function useProgressiveGraph(): ProgressiveGraphState {
   const { sessionId } = useUploadStore();
   const { filters, setNodes, setEdges, refreshTrigger } = useGraphStore();
@@ -70,10 +123,7 @@ export function useProgressiveGraph(): ProgressiveGraphState {
   useEffect(() => { setNodes(loadedNodes); }, [loadedNodes, setNodes]);
   useEffect(() => { setEdges(loadedEdges); }, [loadedEdges, setEdges]);
 
-  useSyncGraphStore({
-    loadedNodesRef, setLoadedNodes, loadedEdgesRef, setLoadedEdges,
-    loadedNodeIdsRef, loadedEdgeKeysRef,
-  });
+  useSyncGraphStore({ loadedNodesRef, setLoadedNodes, loadedEdgesRef, setLoadedEdges, loadedNodeIdsRef, loadedEdgeKeysRef });
 
   const typeParam = filters.entityTypes.join(',');
 
@@ -96,93 +146,27 @@ export function useProgressiveGraph(): ProgressiveGraphState {
   const fetchBatch = useCallback(async () => {
     const sid = sessionIdRef.current;
     if (!sid) return;
-
     setIsLoadingBatch(true);
     try {
+      const f = filtersRef.current;
+      const from = f.dateRange.from?.toISOString() ?? '';
+      const to = f.dateRange.to?.toISOString() ?? '';
       const offset = offsetRef.current;
-      const from = filtersRef.current.dateRange.from ? filtersRef.current.dateRange.from.toISOString() : '';
-      const to = filtersRef.current.dateRange.to ? filtersRef.current.dateRange.to.toISOString() : '';
 
-      const params = new URLSearchParams({
-        sessionId: sid,
-        limit: String(BATCH_SIZE),
-        offset: String(offset),
-        types: filtersRef.current.entityTypes.join(','),
-        ...(from ? { from } : {}),
-        ...(to ? { to } : {}),
-        _t: String(Date.now()),
-      });
+      const batch = await fetchNodeBatch(sid, BATCH_SIZE, offset, f.entityTypes.join(','), from, to, f.showWeakSignals);
+      if (!batch || batch.nodes.length === 0) { setHasMore(false); setAutoLoadDone(true); return; }
 
-      const res = await fetch(`/api/graph/nodes?${params}`);
-      if (!res.ok) return;
-      const data = await res.json();
+      const allIds = [...Array.from(loadedNodeIdsRef.current), ...batch.nodes.map(n => n.id)];
+      const newEdges = await fetchEdgesForIds(allIds);
 
-      let weakNodes: GraphNode[] = [];
-      if (offset === 0 && filtersRef.current.showWeakSignals) {
-        try {
-          const wsRes = await fetch(`/api/stats/weak-signals?sessionId=${sid}&_t=${Date.now()}`);
-          if (wsRes.ok) {
-            const wsData = await wsRes.json();
-            const rawWeak = [
-              ...(wsData.bridgeSignals || []),
-              ...(wsData.nicheSignals || []),
-              ...(wsData.emergingSignals || []),
-            ];
-            const uniqueWeak = Array.from(new Map(rawWeak.map(w => [w.id, w])).values());
-            weakNodes = uniqueWeak.map(w => mapRawNode(w, true));
-          }
-        } catch (wsErr) {
-          console.error('[useProgressiveGraph] failed to fetch weak signals:', wsErr);
-        }
-      }
-
-      const standardNodes = (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n));
-
-      const seenIds = new Set<string>();
-      const newNodes: GraphNode[] = [];
-      for (const n of [...weakNodes, ...standardNodes]) {
-        if (!seenIds.has(n.id)) {
-          seenIds.add(n.id);
-          newNodes.push(n);
-        }
-      }
-
-      if (newNodes.length === 0) {
-        setHasMore(false);
-        setAutoLoadDone(true);
-        return;
-      }
-
-      const allKnownIds = [...Array.from(loadedNodeIdsRef.current), ...newNodes.map((n) => n.id)];
-      const edgesRes = await fetch('/api/graph/edges', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodeIds: allKnownIds }),
-      });
-      const edgesData = edgesRes.ok ? await edgesRes.json() : { edges: [] };
-      const newEdges: GraphEdge[] = (edgesData.edges ?? []).map(
-        (e: { source: string; target: string; weight: number }) => ({
-          source: e.source,
-          target: e.target,
-          weight: e.weight,
-        })
-      );
-
-      mergeNewData(newNodes, newEdges);
-
-      offsetRef.current = offset + newNodes.length;
+      mergeNewData(batch.nodes, newEdges);
+      offsetRef.current = offset + batch.nodes.length;
       batchCountRef.current += 1;
+      setHasMore(batch.hasMore);
 
-      const more = data.has_more ?? false;
-      setHasMore(more);
-
-      if (!more) {
-        setAutoLoadDone(true);
-        return;
-      }
-
+      if (!batch.hasMore) { setAutoLoadDone(true); return; }
       if (batchCountRef.current < AUTO_STOP_AFTER_BATCHES) {
-        autoTimerRef.current = setTimeout(() => { fetchBatch(); }, AUTO_LOAD_DELAY_MS);
+        autoTimerRef.current = setTimeout(fetchBatch, AUTO_LOAD_DELAY_MS);
       } else {
         setAutoLoadDone(true);
       }
@@ -207,13 +191,12 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     if (!sessionIdRef.current) return;
 
     try {
-      const from = filtersRef.current.dateRange.from ? filtersRef.current.dateRange.from.toISOString() : '';
-      const to = filtersRef.current.dateRange.to ? filtersRef.current.dateRange.to.toISOString() : '';
+      const f = filtersRef.current;
+      const from = f.dateRange.from?.toISOString() ?? '';
+      const to = f.dateRange.to?.toISOString() ?? '';
       const params = new URLSearchParams({
-        sessionId: sessionIdRef.current!,
-        types: filtersRef.current.entityTypes.join(','),
-        ...(from ? { from } : {}),
-        ...(to ? { to } : {}),
+        sessionId: sessionIdRef.current!, types: f.entityTypes.join(','),
+        ...(from ? { from } : {}), ...(to ? { to } : {}),
         _t: String(Date.now()),
       });
       const res = await fetch(`/api/graph/count?${params}`);
@@ -221,12 +204,11 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     } catch {
       setTotalCount(0);
     }
-
     fetchBatch();
   }, [fetchBatch]);
 
-  const fromParam = filters.dateRange.from ? filters.dateRange.from.toISOString() : '';
-  const toParam = filters.dateRange.to ? filters.dateRange.to.toISOString() : '';
+  const fromParam = filters.dateRange.from?.toISOString() ?? '';
+  const toParam = filters.dateRange.to?.toISOString() ?? '';
 
   useEffect(() => {
     resetAndStart();
@@ -241,26 +223,17 @@ export function useProgressiveGraph(): ProgressiveGraphState {
   }, [isLoadingBatch, hasMore, fetchBatch]);
 
   const expandNode = useCallback(async (nodeId: string) => {
-    const loadedIds = Array.from(loadedNodeIdsRef.current);
     try {
       const res = await fetch('/api/graph/neighbors', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ nodeId, loadedIds, sessionId: sessionIdRef.current }),
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ nodeId, loadedIds: Array.from(loadedNodeIdsRef.current), sessionId: sessionIdRef.current }),
       });
       if (!res.ok) return;
       const data = await res.json();
-
-      const newNodes = (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n));
-      const newEdges: GraphEdge[] = (data.edges ?? []).map(
-        (e: { source: string; target: string; weight: number }) => ({
-          source: e.source,
-          target: e.target,
-          weight: e.weight,
-        })
+      mergeNewData(
+        (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n)),
+        (data.edges ?? []).map((e: { source: string; target: string; weight: number }) => ({ source: e.source, target: e.target, weight: e.weight })),
       );
-
-      mergeNewData(newNodes, newEdges);
     } catch (err) {
       console.error('[useProgressiveGraph] expandNode error:', err);
     }
@@ -281,10 +254,8 @@ export function useProgressiveGraph(): ProgressiveGraphState {
       const nextNodes = loadedNodesRef.current.slice(0, targetCount);
       const nextNodeIds = new Set(nextNodes.map(n => n.id));
       loadedNodeIdsRef.current = nextNodeIds;
-
       const nextEdges = loadedEdgesRef.current.filter(e => nextNodeIds.has(e.source) && nextNodeIds.has(e.target));
       loadedEdgeKeysRef.current = new Set(nextEdges.map(e => `${e.source}|${e.target}`));
-
       offsetRef.current = nextNodes.length;
       setLoadedNodes(nextNodes);
       setLoadedEdges(nextEdges);
@@ -292,103 +263,35 @@ export function useProgressiveGraph(): ProgressiveGraphState {
     } else {
       const diff = targetCount - currentCount;
       if (diff <= 0) return;
-
       setIsLoadingBatch(true);
       try {
         const sid = sessionIdRef.current;
         if (!sid) return;
+        const f = filtersRef.current;
+        const from = f.dateRange.from?.toISOString() ?? '';
+        const to = f.dateRange.to?.toISOString() ?? '';
 
-        const offset = offsetRef.current;
-        const from = filtersRef.current.dateRange.from ? filtersRef.current.dateRange.from.toISOString() : '';
-        const to = filtersRef.current.dateRange.to ? filtersRef.current.dateRange.to.toISOString() : '';
+        const batch = await fetchNodeBatch(sid, diff, offsetRef.current, f.entityTypes.join(','), from, to, f.showWeakSignals);
+        if (!batch || batch.nodes.length === 0) { setHasMore(false); return; }
 
-        const params = new URLSearchParams({
-          sessionId: sid,
-          limit: String(diff),
-          offset: String(offset),
-          types: filtersRef.current.entityTypes.join(','),
-          ...(from ? { from } : {}),
-          ...(to ? { to } : {}),
-          _t: String(Date.now()),
-        });
+        const allIds = [...Array.from(loadedNodeIdsRef.current), ...batch.nodes.map(n => n.id)];
+        const newEdges = await fetchEdgesForIds(allIds);
 
-        const res = await fetch(`/api/graph/nodes?${params}`);
-        if (!res.ok) return;
-        const data = await res.json();
-
-        let weakNodes: GraphNode[] = [];
-        if (offset === 0 && filtersRef.current.showWeakSignals) {
-          try {
-            const wsRes = await fetch(`/api/stats/weak-signals?sessionId=${sid}&_t=${Date.now()}`);
-            if (wsRes.ok) {
-              const wsData = await wsRes.json();
-              const rawWeak = [
-                ...(wsData.bridgeSignals || []),
-                ...(wsData.nicheSignals || []),
-                ...(wsData.emergingSignals || []),
-              ];
-              const uniqueWeak = Array.from(new Map(rawWeak.map(w => [w.id, w])).values());
-              weakNodes = uniqueWeak.map(w => mapRawNode(w, true));
-            }
-          } catch (wsErr) {
-            console.error('[useProgressiveGraph] failed to fetch weak signals:', wsErr);
-          }
-        }
-
-        const standardNodes = (data.nodes ?? []).filter(isValidNode).map((n: any) => mapRawNode(n));
-
-        const seenIds = new Set<string>();
-        const newNodes: GraphNode[] = [];
-        for (const n of [...weakNodes, ...standardNodes]) {
-          if (!seenIds.has(n.id)) {
-            seenIds.add(n.id);
-            newNodes.push(n);
-          }
-        }
-
-        if (newNodes.length === 0) {
-          setHasMore(false);
-          return;
-        }
-
-        const allKnownIds = [...Array.from(loadedNodeIdsRef.current), ...newNodes.map((n) => n.id)];
-        const edgesRes = await fetch('/api/graph/edges', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nodeIds: allKnownIds }),
-        });
-        const edgesData = edgesRes.ok ? await edgesRes.json() : { edges: [] };
-        const newEdges: GraphEdge[] = (edgesData.edges ?? []).map(
-          (e: { source: string; target: string; weight: number }) => ({
-            source: e.source,
-            target: e.target,
-            weight: e.weight,
-          })
-        );
-
-        mergeNewData(newNodes, newEdges);
-
-        offsetRef.current = offset + newNodes.length;
-        const more = data.has_more ?? false;
-        setHasMore(more);
+        mergeNewData(batch.nodes, newEdges);
+        offsetRef.current += batch.nodes.length;
+        setHasMore(batch.hasMore);
       } catch (err) {
         console.error('[useProgressiveGraph] setLoadedLimit grow error:', err);
       } finally {
         setIsLoadingBatch(false);
       }
     }
-  }, [mergeNewData, totalCount]);
+  }, [mergeNewData, totalCount, t]);
 
   return {
-    loadedNodes,
-    loadedEdges,
-    totalCount,
+    loadedNodes, loadedEdges, totalCount,
     loadedCount: loadedNodeIdsRef.current.size,
-    hasMore,
-    isLoadingBatch,
-    autoLoadDone,
-    loadMore,
-    expandNode,
-    setLoadedLimit,
+    hasMore, isLoadingBatch, autoLoadDone,
+    loadMore, expandNode, setLoadedLimit,
   };
 }

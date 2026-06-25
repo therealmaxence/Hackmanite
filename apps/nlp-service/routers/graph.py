@@ -1,6 +1,3 @@
-"""
-Graph read API endpoints served by the Python NLP service.
-"""
 from __future__ import annotations
 import logging
 from typing import Optional
@@ -288,4 +285,3 @@ async def delete_files(req: DeleteFilesRequest):
     except Exception as exc:
         logger.error("delete_files failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))
-

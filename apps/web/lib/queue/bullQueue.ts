@@ -28,9 +28,7 @@ if (redisUrl && !isBuildPhase) {
         }
         return 1000; // Wait 1s between retries
       },
-      reconnectOnError: (err) => {
-        return false;
-      }
+      reconnectOnError: () => false,
     });
 
     redisConnection.on("error", (err) => {
@@ -46,10 +44,7 @@ if (redisUrl && !isBuildPhase) {
 
     bullQueue = new Queue("extraction", {
       connection: redisConnection,
-      defaultJobOptions: {
-        removeOnComplete: true,
-        removeOnFail: false,
-      }
+      defaultJobOptions: { removeOnComplete: true, removeOnFail: false },
     });
 
     const concurrency = parseInt(process.env.BULL_EXTRACTION_CONCURRENCY || "5", 10);
@@ -62,20 +57,14 @@ if (redisUrl && !isBuildPhase) {
       } finally {
         activeControllers.delete(job.id!);
       }
-    }, {
-      connection: redisConnection,
-      concurrency,
-    });
+    }, { connection: redisConnection, concurrency });
 
     bullWorker.on("failed", (job, err) => {
       logger.error("BullMQ extraction job failed", { jobId: job?.id, error: err.message });
     });
-
     bullWorker.on("completed", (job) => {
       logger.info("BullMQ extraction job completed", { jobId: job?.id });
     });
-
-    isRedisAvailable = true;
   } catch (err: any) {
     logger.warn("Failed to initialize Redis client, using In-Memory fallback", { error: err.message });
     isRedisAvailable = false;

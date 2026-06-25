@@ -5,8 +5,7 @@ import { resolve } from "path";
 import { uuid5 } from "@/lib/uuid5";
 import { ExtractionJobPayload } from "./types";
 import { recomputeSessionTfidf } from "@/lib/api/tfidf";
-
-const NLP_URL = process.env.NLP_SERVICE_URL || "http://localhost:8000";
+import { NLP_URL } from "@/lib/nlp-url";
 
 const isSessionCancelled = async (sessionId: string) =>
   (await redis.get(RedisKeys.sessionCancellation(sessionId))) === "1";

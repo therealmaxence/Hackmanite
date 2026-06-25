@@ -1,13 +1,14 @@
 import { prisma } from '@/lib/prisma';
 import { clearSessionGraphCache } from '@/lib/redis';
 import { cancelSessionExtraction } from '@/lib/queue';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export async function deleteSession(sessionId: string): Promise<void> {
   await cancelSessionExtraction(sessionId);
   const fileIds = (await prisma.file.findMany({ where: { sessionId }, select: { id: true } })).map((f) => f.id);
   if (fileIds.length > 0) {
     try {
-      const url = `${process.env.NLP_SERVICE_URL || 'http://localhost:8000'}/graph/files/delete`;
+      const url = `${NLP_URL}/graph/files/delete`;
       const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

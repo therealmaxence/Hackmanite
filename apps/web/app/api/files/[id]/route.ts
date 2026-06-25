@@ -3,10 +3,10 @@ import { prisma } from '@/lib/prisma';
 import { clearSessionGraphCache } from '@/lib/redis';
 import { ErrorCodes } from '@/types/api';
 import { recomputeSessionTfidf } from '@/lib/api/tfidf';
+import { NLP_URL } from '@/lib/nlp-url';
 
 export const runtime = 'nodejs';
 
-const NLP_URL = process.env.NLP_SERVICE_URL || 'http://localhost:8000';
 const errMsg = (err: unknown) => (err instanceof Error ? err.message : 'Unknown error');
 
 export async function GET(

@@ -494,3 +494,36 @@ body.is-electron .home-left {
   overflow-y: auto !important;
   padding-top: clamp(2rem, 5vh, 5rem) !important;
 }
+
+.collapsible-sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+

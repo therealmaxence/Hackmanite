@@ -64,32 +64,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   const { sessionId } = useUploadStore();
   const { mutate } = useSWRConfig();
 
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const wrapperRef = useRef<HTMLDivElement>(null);
 
-
-  const toggleFullscreen = () => {
-    if (!wrapperRef.current) return;
-    if (!document.fullscreenElement) {
-      wrapperRef.current.requestFullscreen?.()
-        .then(() => setIsFullscreen(true))
-        .catch(() => setIsFullscreen(true));
-    } else {
-      document.exitFullscreen?.();
-      setIsFullscreen(false);
-    }
-  };
-
-  useEffect(() => {
-    window.scrollTo(0, 0);
-    setIsFullscreen(!!document.fullscreenElement);
-
-    const handleFullscreenChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', handleFullscreenChange);
-    return () => document.removeEventListener('fullscreenchange', handleFullscreenChange);
-  }, []);
 
   const cyInstance = useCytoscapeInit({
     containerRef,
@@ -113,7 +88,16 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
       }
     }, 150);
     return () => clearTimeout(timer);
-  }, [isFullscreen, cyInstance]);
+  }, [cyInstance]);
+
+  useEffect(() => {
+    if (!cyInstance || !containerRef.current) return;
+    const obs = new ResizeObserver(() => !cyInstance.destroyed() && cyInstance.resize());
+    obs.observe(containerRef.current);
+    return () => obs.disconnect();
+  }, [cyInstance]);
+
+
 
   useCytoscapeElements({
     cy: cyInstance,
@@ -252,65 +236,12 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   };
 
   return (
-    <div
-      ref={wrapperRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        position: 'relative',
-        ...(isFullscreen ? {
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          right: 0,
-          bottom: 0,
-          width: '100vw',
-          height: '100vh',
-          zIndex: 9999,
-        } : {}),
-      }}
-    >
+    <div style={{ width: '100%', height: '100%', position: 'relative' }}>
       <div
         ref={containerRef}
         id="cy"
         style={{ width: '100%', height: '100%', background: 'var(--bg-base)' }}
       />
-      {(!isPanelOpen || isFullscreen) && (
-        <button
-          onClick={toggleFullscreen}
-          title={isFullscreen ? t('graph.canvas.exit_fullscreen') : t('graph.canvas.fullscreen')}
-          style={{
-            position: 'absolute',
-            top: '1rem',
-            right: '1rem',
-            zIndex: 50,
-            width: '40px',
-            height: '40px',
-            borderRadius: 'var(--radius)',
-            background: 'var(--color-surface-raised) var(--noise-bg)',
-            border: 'none',
-            color: 'var(--color-text)',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
-            transition: 'all 0.15s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-        >
-          {isFullscreen ? (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M4 14h6v6M20 10h-6V4M14 10l7-7M10 14l-7 7" />
-            </svg>
-          ) : (
-            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <path d="M8 3H5a2 2 0 0 0-2 2v3M21 8V5a2 2 0 0 0-2-2h-3M3 16v3a2 2 0 0 0 2 2h3M16 21h3a2 2 0 0 0 2-2v-3" />
-            </svg>
-          )}
-        </button>
-      )}
       <GraphSelectionTip />
       {contextMenu && contextMenu.visible && (
         <GraphContextMenu

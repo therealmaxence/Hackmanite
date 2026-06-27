@@ -18,6 +18,7 @@ export default function GraphClient() {
   const { sessionId } = useUploadStore();
   const { setFilter, activeView } = useGraphStore();
   const { t } = useTranslation();
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     if (sessionId) {
@@ -41,7 +42,38 @@ export default function GraphClient() {
     <div className="graph-layout" style={{ height: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
       <Header />
       <div className="graph-main" style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        <GraphControls />
+        <div
+          className="collapsible-sidebar"
+          style={{
+            width: isSidebarCollapsed ? 0 : 360,
+            minWidth: isSidebarCollapsed ? 0 : 360,
+          }}
+        >
+          <GraphControls />
+        </div>
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="sidebar-toggle-btn"
+          style={{ left: isSidebarCollapsed ? '12px' : 'calc(360px - 14px)' }}
+          title={isSidebarCollapsed ? t('graph.controls.expand') : t('graph.controls.collapse')}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: isSidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.3s ease',
+            }}
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
         <div style={{ flex: 1, display: 'flex', position: 'relative', overflow: 'hidden' }}>
           {isEmpty ? (
             <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyItems: 'center', justifyContent: 'center', gap: '1.5rem' }}>

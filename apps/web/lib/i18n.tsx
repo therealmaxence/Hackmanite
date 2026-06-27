@@ -177,6 +177,8 @@ export const TRANSLATIONS = {
 
     // Graph Option Panel & Controls
     'graph.controls.title': 'Graph filters',
+    'graph.controls.collapse': 'Collapse options',
+    'graph.controls.expand': 'Expand options',
     'graph.controls.search_label': 'Search',
     'graph.controls.search_placeholder': 'Search entities…',
     'graph.controls.min_connections': 'Min connections',
@@ -701,6 +703,8 @@ export const TRANSLATIONS = {
 
     // Graph Option Panel & Controls
     'graph.controls.title': 'Filtres du graphe',
+    'graph.controls.collapse': 'Masquer les options',
+    'graph.controls.expand': 'Afficher les options',
     'graph.controls.search_label': 'Rechercher',
     'graph.controls.search_placeholder': 'Rechercher des entités…',
     'graph.controls.min_connections': 'Connexions min.',

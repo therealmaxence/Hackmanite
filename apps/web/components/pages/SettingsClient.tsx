@@ -6,6 +6,7 @@ import WindowSizeSelector from '@/components/upload/WindowSizeSelector';
 import Button from '@/components/ui/Button';
 import CustomSlider from '@/components/ui/CustomSlider';
 import { useTranslation } from '@/lib/i18n';
+import Spinner from '@/components/ui/Spinner';
 
 interface SessionSettings { windowSize: number; minConnections: number; minOccurrences: number; minEdgeWeight: number; minTfidf: number; }
 
@@ -25,6 +26,61 @@ export default function SettingsClient() {
   const [minTfidf, setMinTfidf] = useState(0.0);
 
   const { t, language, setLanguage } = useTranslation();
+
+  const [modelSettings, setModelSettings] = useState<{ models: any[]; selected: string }>({ models: [], selected: 'auto' });
+  const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
+
+  const fetchModels = useCallback(async () => {
+    try {
+      const res = await fetch('/api/spacy-models');
+      if (res.ok) {
+        const data = await res.json();
+        setModelSettings(data);
+        const activeDownload = data.models.find((m: any) => m.status === 'downloading');
+        setDownloadingModel(activeDownload ? activeDownload.id : null);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchModels();
+  }, [fetchModels]);
+
+  useEffect(() => {
+    if (!downloadingModel) return;
+    const interval = setInterval(fetchModels, 3000);
+    return () => clearInterval(interval);
+  }, [downloadingModel, fetchModels]);
+
+  const handleSelectModel = async (modelId: string) => {
+    try {
+      const res = await fetch('/api/spacy-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'select', model: modelId }),
+      });
+      if (res.ok) fetchModels();
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleDownloadModel = async (modelId: string) => {
+    setDownloadingModel(modelId);
+    try {
+      await fetch('/api/spacy-models', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'download', model: modelId }),
+      });
+      fetchModels();
+    } catch (err) {
+      console.error(err);
+      setDownloadingModel(null);
+    }
+  };
 
   const fetchSessions = useCallback(async () => {
     try {
@@ -135,6 +191,77 @@ export default function SettingsClient() {
             <div style={{ display: 'flex', gap: '1rem' }}>
               <button onClick={() => setLanguage('en')} style={langBtnStyle('en')}>{t('language.en')}</button>
               <button onClick={() => setLanguage('fr')} style={langBtnStyle('fr')}>{t('language.fr')}</button>
+            </div>
+          </div>
+
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>
+                {language === 'fr' ? "Modèles d'extraction d'entités" : "Entity Extraction Models"}
+              </h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>
+                {language === 'fr' 
+                  ? "Configurez le modèle spaCy utilisé lors de l'extraction ou téléchargez des langues supplémentaires." 
+                  : "Configure the spaCy model used during entity extraction, or download additional language models."}
+              </p>
+            </div>
+            
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--color-surface-raised)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
+                <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
+                  {language === 'fr' ? "Langue d'extraction active" : "Active Extraction Language"}
+                </span>
+                <select
+                  value={modelSettings.selected}
+                  onChange={(e) => handleSelectModel(e.target.value)}
+                  style={{ padding: '0.5rem 1rem', background: '#120108', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', fontSize: '0.875rem', outline: 'none', cursor: 'pointer' }}
+                >
+                  <option value="auto">{language === 'fr' ? 'Détection automatique' : 'Auto-detect'}</option>
+                  {modelSettings.models
+                    .filter((m) => m.status === 'installed')
+                    .map((m) => (
+                      <option key={m.id} value={m.id}>{m.name}</option>
+                    ))
+                  }
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                  {language === 'fr' ? 'Modèles disponibles' : 'Available Models'}
+                </span>
+                
+                {modelSettings.models.map((model) => (
+                  <div key={model.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                    <div style={{ display: 'flex', flexDirection: 'column' }}>
+                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>{model.name}</span>
+                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{model.id}</span>
+                    </div>
+                    <div>
+                      {model.status === 'downloading' ? (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
+                          <Spinner size={12} />
+                          <span>{language === 'fr' ? 'Téléchargement...' : 'Downloading...'}</span>
+                        </div>
+                      ) : model.status === 'installed' ? (
+                        <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>
+                          {language === 'fr' ? 'Installé' : 'Installed'}
+                        </span>
+                      ) : (
+                        <Button
+                          size="sm"
+                          variant="secondary"
+                          onClick={() => handleDownloadModel(model.id)}
+                          disabled={downloadingModel !== null}
+                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        >
+                          {language === 'fr' ? 'Télécharger' : 'Download'}
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
 

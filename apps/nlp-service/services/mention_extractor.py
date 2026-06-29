@@ -67,6 +67,14 @@ def get_selected_model() -> str:
             pass
     return "auto"
 
+def _load_local_model(model_name: str) -> any:
+    if MODELS_DIR.exists():
+        for p in MODELS_DIR.glob(f"**/{model_name}*"):
+            if (p / "config.cfg").exists():
+                logger.info("loading_local_spacy_model", model=model_name, path=str(p))
+                return spacy.load(p)
+    return None
+
 def get_configured_spacy_model() -> any:
     if spacy is None:
         return None
@@ -78,13 +86,11 @@ def get_configured_spacy_model() -> any:
     with _spacy_lock:
         if selected not in SPACY_MODELS:
             try:
-                if MODELS_DIR.exists():
-                    for p in MODELS_DIR.glob(f"**/{selected}*"):
-                        if (p / "config.cfg").exists():
-                            logger.info("loading_local_spacy_model", path=str(p))
-                            SPACY_MODELS[selected] = spacy.load(p)
-                            logger.info("local_spacy_model_loaded", model=selected)
-                            return SPACY_MODELS[selected]
+                local_model = _load_local_model(selected)
+                if local_model:
+                    SPACY_MODELS[selected] = local_model
+                    logger.info("local_spacy_model_loaded", model=selected)
+                    return local_model
                 logger.info("loading_spacy_package", model=selected)
                 SPACY_MODELS[selected] = spacy.load(selected)
                 logger.info("spacy_package_loaded", model=selected)
@@ -100,13 +106,11 @@ def get_spacy_model(lang: str) -> any:
             if lang not in SPACY_MODELS:
                 for candidate in _SPACY_CANDIDATES[lang]:
                     try:
-                        if MODELS_DIR.exists():
-                            for p in MODELS_DIR.glob(f"**/{candidate}*"):
-                                if (p / "config.cfg").exists():
-                                    logger.info("loading_local_spacy_model", lang=lang, path=str(p))
-                                    SPACY_MODELS[lang] = spacy.load(p)
-                                    logger.info("local_spacy_model_loaded", lang=lang, model=candidate)
-                                    return SPACY_MODELS[lang]
+                        local_model = _load_local_model(candidate)
+                        if local_model:
+                            SPACY_MODELS[lang] = local_model
+                            logger.info("local_spacy_model_loaded", lang=lang, model=candidate)
+                            return local_model
                         logger.info("loading_spacy_package", lang=lang, model=candidate)
                         SPACY_MODELS[lang] = spacy.load(candidate)
                         logger.info("spacy_package_loaded", lang=lang, model=candidate)

@@ -4,6 +4,7 @@ import json
 import urllib.request
 import tarfile
 import spacy.util
+import shutil
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Body
 from models.schemas import ExtractionRequest, ExtractionResult
@@ -177,4 +178,33 @@ async def download_model(background_tasks: BackgroundTasks, payload: dict = Body
     DOWNLOAD_STATUS[model_name] = "downloading"
     background_tasks.add_task(run_download, model_name)
     return {"status": "started"}
+
+@router.post("/spacy-models/delete")
+async def delete_model(payload: dict = Body(...)):
+    model_name = payload.get("model")
+    if not model_name or model_name not in SUPPORTED_MODELS:
+        return {"error": "Invalid model name"}
+        
+    deleted_any = False
+    if MODELS_DIR.exists():
+        for p in MODELS_DIR.glob(f"**/{model_name}*"):
+            if (p / "config.cfg").exists():
+                parent_folder = p
+                if parent_folder.parent != MODELS_DIR:
+                    parent_folder = parent_folder.parent
+                try:
+                    shutil.rmtree(parent_folder)
+                    deleted_any = True
+                except Exception as e:
+                    logger.error("failed_to_delete_local_model", model=model_name, path=str(parent_folder), error=str(e))
+                    
+    if model_name in DOWNLOAD_STATUS:
+        del DOWNLOAD_STATUS[model_name]
+        
+    if deleted_any:
+        if get_selected_model() == model_name:
+            with open(SETTINGS_FILE, "w") as f:
+                json.dump({"selected": "auto"}, f)
+        return {"status": "ok", "deleted": True}
+    return {"status": "ok", "deleted": False, "message": "Model was not found in local models directory"}
 

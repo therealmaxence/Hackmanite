@@ -15,7 +15,7 @@ export async function GET() {
 export async function POST(req: NextRequest) {
   try {
     const { action, model } = await req.json();
-    const endpoint = action === 'download' ? 'download' : 'select';
+    const endpoint = action === 'delete' ? 'delete' : action === 'download' ? 'download' : 'select';
     const res = await fetch(`${NLP_URL}/spacy-models/${endpoint}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

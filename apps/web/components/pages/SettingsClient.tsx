@@ -29,12 +29,9 @@ export default function SettingsClient() {
 
   const [modelSettings, setModelSettings] = useState<{ models: any[]; selected: string }>({ models: [], selected: 'auto' });
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
-  const [selectedSizes, setSelectedSizes] = useState<Record<string, 'sm' | 'lg'>>({
-    en: 'lg',
-    fr: 'lg',
-    ru: 'lg',
-    es: 'sm',
-    de: 'sm',
+  const [selectedSizes, setSelectedSizes] = useState<Record<string, 'sm' | 'md' | 'lg'>>({
+    en: 'lg', fr: 'lg', ru: 'lg', es: 'sm', de: 'sm', zh: 'sm', ja: 'sm', pt: 'sm', it: 'sm', nl: 'sm',
+    pl: 'sm', el: 'sm', ro: 'sm', ca: 'sm', hr: 'sm', da: 'sm', fi: 'sm', ko: 'sm', nb: 'sm', sv: 'sm', uk: 'sm'
   });
 
   const fetchModels = useCallback(async () => {
@@ -244,9 +241,25 @@ export default function SettingsClient() {
                   { code: 'ru', name: language === 'fr' ? 'Russe' : 'Russian' },
                   { code: 'es', name: language === 'fr' ? 'Espagnol' : 'Spanish' },
                   { code: 'de', name: language === 'fr' ? 'Allemand' : 'German' },
+                  { code: 'zh', name: language === 'fr' ? 'Chinois' : 'Chinese' },
+                  { code: 'ja', name: language === 'fr' ? 'Japonais' : 'Japanese' },
+                  { code: 'pt', name: language === 'fr' ? 'Portugais' : 'Portuguese' },
+                  { code: 'it', name: language === 'fr' ? 'Italien' : 'Italian' },
+                  { code: 'nl', name: language === 'fr' ? 'Néerlandais' : 'Dutch' },
+                  { code: 'pl', name: language === 'fr' ? 'Polonais' : 'Polish' },
+                  { code: 'el', name: language === 'fr' ? 'Grec' : 'Greek' },
+                  { code: 'ro', name: language === 'fr' ? 'Roumain' : 'Romanian' },
+                  { code: 'ca', name: language === 'fr' ? 'Catalan' : 'Catalan' },
+                  { code: 'hr', name: language === 'fr' ? 'Croate' : 'Croatian' },
+                  { code: 'da', name: language === 'fr' ? 'Danois' : 'Danish' },
+                  { code: 'fi', name: language === 'fr' ? 'Finnois' : 'Finnish' },
+                  { code: 'ko', name: language === 'fr' ? 'Coréen' : 'Korean' },
+                  { code: 'nb', name: language === 'fr' ? 'Norvégien (Bokmål)' : 'Norwegian (Bokmål)' },
+                  { code: 'sv', name: language === 'fr' ? 'Suédois' : 'Swedish' },
+                  { code: 'uk', name: language === 'fr' ? 'Ukrainien' : 'Ukrainian' },
                 ].map((lang) => {
                   const size = selectedSizes[lang.code] || 'sm';
-                  const modelId = lang.code === 'en' ? `en_core_web_${size}` : `${lang.code}_core_news_${size}`;
+                  const modelId = (lang.code === 'en' || lang.code === 'zh') ? `${lang.code}_core_web_${size}` : `${lang.code}_core_news_${size}`;
                   const model = modelSettings.models.find((m) => m.id === modelId) || { id: modelId, name: `${lang.name} (${size})`, status: 'not_installed' };
                   
                   return (
@@ -258,10 +271,11 @@ export default function SettingsClient() {
                         </div>
                         <select
                           value={size}
-                          onChange={(e) => setSelectedSizes({ ...selectedSizes, [lang.code]: e.target.value as 'sm' | 'lg' })}
+                          onChange={(e) => setSelectedSizes({ ...selectedSizes, [lang.code]: e.target.value as 'sm' | 'md' | 'lg' })}
                           style={{ padding: '0.25rem 0.5rem', background: '#120108', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-muted)', fontSize: '0.72rem', cursor: 'pointer', outline: 'none' }}
                         >
                           <option value="sm">{language === 'fr' ? 'Petit (sm)' : 'Small (sm)'}</option>
+                          <option value="md">{language === 'fr' ? 'Moyen (md)' : 'Medium (md)'}</option>
                           <option value="lg">{language === 'fr' ? 'Grand (lg)' : 'Large (lg)'}</option>
                         </select>
                       </div>

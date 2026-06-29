@@ -16,9 +16,27 @@ except Exception:
 logger = structlog.get_logger()
 
 _SPACY_CANDIDATES = {
-    "en": ["en_core_web_sm", "en_core_web_lg"],
-    "fr": ["fr_core_news_sm", "fr_core_news_lg"],
-    "ru": ["ru_core_news_sm", "ru_core_news_lg"],
+    "en": ["en_core_web_sm", "en_core_web_md", "en_core_web_lg"],
+    "fr": ["fr_core_news_sm", "fr_core_news_md", "fr_core_news_lg"],
+    "ru": ["ru_core_news_sm", "ru_core_news_md", "ru_core_news_lg"],
+    "es": ["es_core_news_sm", "es_core_news_md", "es_core_news_lg"],
+    "de": ["de_core_news_sm", "de_core_news_md", "de_core_news_lg"],
+    "zh": ["zh_core_web_sm", "zh_core_web_md", "zh_core_web_lg"],
+    "ja": ["ja_core_news_sm", "ja_core_news_md", "ja_core_news_lg"],
+    "pt": ["pt_core_news_sm", "pt_core_news_md", "pt_core_news_lg"],
+    "it": ["it_core_news_sm", "it_core_news_md", "it_core_news_lg"],
+    "nl": ["nl_core_news_sm", "nl_core_news_md", "nl_core_news_lg"],
+    "pl": ["pl_core_news_sm", "pl_core_news_md", "pl_core_news_lg"],
+    "el": ["el_core_news_sm", "el_core_news_md", "el_core_news_lg"],
+    "ro": ["ro_core_news_sm", "ro_core_news_md", "ro_core_news_lg"],
+    "ca": ["ca_core_news_sm", "ca_core_news_md", "ca_core_news_lg"],
+    "hr": ["hr_core_news_sm", "hr_core_news_md", "hr_core_news_lg"],
+    "da": ["da_core_news_sm", "da_core_news_md", "da_core_news_lg"],
+    "fi": ["fi_core_news_sm", "fi_core_news_md", "fi_core_news_lg"],
+    "ko": ["ko_core_news_sm", "ko_core_news_md", "ko_core_news_lg"],
+    "nb": ["nb_core_news_sm", "nb_core_news_md", "nb_core_news_lg"],
+    "sv": ["sv_core_news_sm", "sv_core_news_md", "sv_core_news_lg"],
+    "uk": ["uk_core_news_sm", "uk_core_news_md", "uk_core_news_lg"],
 }
 
 SPACY_LABEL_MAP = {

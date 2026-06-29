@@ -55,7 +55,7 @@ SPACY_LABEL_MAP = {
 _spacy_lock = threading.Lock()
 SPACY_MODELS = {}
 
-MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
+MODELS_DIR = Path.home() / ".hackmanite" / "models"
 SETTINGS_FILE = MODELS_DIR / "settings.json"
 
 def get_selected_model() -> str:
@@ -73,6 +73,9 @@ def _load_local_model(model_name: str) -> any:
             if (p / "config.cfg").exists():
                 logger.info("loading_local_spacy_model", model=model_name, path=str(p))
                 return spacy.load(p)
+            for sub in p.glob("**/config.cfg"):
+                logger.info("loading_local_spacy_model_nested", model=model_name, path=str(sub.parent))
+                return spacy.load(sub.parent)
     return None
 
 def get_configured_spacy_model() -> any:

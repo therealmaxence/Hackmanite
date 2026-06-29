@@ -13,7 +13,8 @@ from services.dispatcher import dispatch
 logger = structlog.get_logger()
 router = APIRouter()
 
-MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
+MODELS_DIR = Path.home() / ".hackmanite" / "models"
+MODELS_DIR.mkdir(parents=True, exist_ok=True)
 SETTINGS_FILE = MODELS_DIR / "settings.json"
 
 SUPPORTED_MODELS = {
@@ -103,6 +104,8 @@ def is_model_installed(model_name: str) -> bool:
         return False
     for p in MODELS_DIR.glob(f"**/{model_name}*"):
         if (p / "config.cfg").exists():
+            return True
+        for sub in p.glob("**/config.cfg"):
             return True
     return False
 

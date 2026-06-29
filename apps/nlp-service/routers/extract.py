@@ -119,10 +119,26 @@ def run_download(model_name: str):
     except Exception as e:
         DOWNLOAD_STATUS[model_name] = f"error: {str(e)}"
 
+def sanitize_surrogates(val):
+    if isinstance(val, str):
+        try:
+            return val.encode("utf-16", "surrogatepass").decode("utf-16", "ignore")
+        except Exception:
+            return val
+    elif isinstance(val, list):
+        return [sanitize_surrogates(x) for x in val]
+    elif isinstance(val, dict):
+        return {k: sanitize_surrogates(v) for k, v in val.items()}
+    elif hasattr(val, "__dict__"):
+        for k, v in list(val.__dict__.items()):
+            setattr(val, k, sanitize_surrogates(v))
+    return val
+
 @router.post("/extract", response_model=ExtractionResult)
 async def extract(req: ExtractionRequest) -> ExtractionResult:
     logger.info("Starting extraction", file_id=req.file_id, mime=req.mime_type, window_size=req.window_size)
-    return await asyncio.to_thread(dispatch, req.file_id, req.storage_path, req.mime_type, req.window_size)
+    res = await asyncio.to_thread(dispatch, req.file_id, req.storage_path, req.mime_type, req.window_size)
+    return sanitize_surrogates(res)
 
 @router.get("/spacy-models")
 async def list_models():

@@ -100,9 +100,16 @@ def get_spacy_model(lang: str) -> any:
             if lang not in SPACY_MODELS:
                 for candidate in _SPACY_CANDIDATES[lang]:
                     try:
-                        logger.info("loading_spacy_model", lang=lang, model=candidate)
+                        if MODELS_DIR.exists():
+                            for p in MODELS_DIR.glob(f"**/{candidate}*"):
+                                if (p / "config.cfg").exists():
+                                    logger.info("loading_local_spacy_model", lang=lang, path=str(p))
+                                    SPACY_MODELS[lang] = spacy.load(p)
+                                    logger.info("local_spacy_model_loaded", lang=lang, model=candidate)
+                                    return SPACY_MODELS[lang]
+                        logger.info("loading_spacy_package", lang=lang, model=candidate)
                         SPACY_MODELS[lang] = spacy.load(candidate)
-                        logger.info("spacy_model_loaded", lang=lang, model=candidate)
+                        logger.info("spacy_package_loaded", lang=lang, model=candidate)
                         break
                     except Exception as e:
                         logger.error("failed_to_load_spacy_model", lang=lang, model=candidate, error=str(e))

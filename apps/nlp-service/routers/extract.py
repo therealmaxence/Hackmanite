@@ -108,7 +108,7 @@ def is_model_installed(model_name: str) -> bool:
 def run_download(model_name: str):
     try:
         DOWNLOAD_STATUS[model_name] = "downloading"
-        url = f"https://github.com/explosion/spacy-models/releases/download/{model_name}-3.7.5/{model_name}-3.7.5.tar.gz"
+        url = f"https://github.com/explosion/spacy-models/releases/download/{model_name}-3.7.0/{model_name}-3.7.0.tar.gz"
         dest_tar = MODELS_DIR / f"{model_name}.tar.gz"
         MODELS_DIR.mkdir(exist_ok=True)
         urllib.request.urlretrieve(url, dest_tar)

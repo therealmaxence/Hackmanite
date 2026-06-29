@@ -3,6 +3,7 @@ import structlog
 import json
 import urllib.request
 import tarfile
+import spacy.util
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Body
 from models.schemas import ExtractionRequest, ExtractionResult
@@ -15,11 +16,16 @@ MODELS_DIR = Path(__file__).resolve().parent.parent / "models"
 SETTINGS_FILE = MODELS_DIR / "settings.json"
 
 SUPPORTED_MODELS = {
-    "en_core_web_sm": {"name": "English (sm)", "lang": "en"},
-    "fr_core_news_sm": {"name": "French (sm)", "lang": "fr"},
-    "ru_core_news_sm": {"name": "Russian (sm)", "lang": "ru"},
-    "es_core_news_sm": {"name": "Spanish (sm)", "lang": "es"},
-    "de_core_news_sm": {"name": "German (sm)", "lang": "de"},
+    "en_core_web_lg": {"name": "English (Large)", "lang": "en"},
+    "en_core_web_sm": {"name": "English (Small)", "lang": "en"},
+    "fr_core_news_lg": {"name": "French (Large)", "lang": "fr"},
+    "fr_core_news_sm": {"name": "French (Small)", "lang": "fr"},
+    "ru_core_news_lg": {"name": "Russian (Large)", "lang": "ru"},
+    "ru_core_news_sm": {"name": "Russian (Small)", "lang": "ru"},
+    "es_core_news_lg": {"name": "Spanish (Large)", "lang": "es"},
+    "es_core_news_sm": {"name": "Spanish (Small)", "lang": "es"},
+    "de_core_news_lg": {"name": "German (Large)", "lang": "de"},
+    "de_core_news_sm": {"name": "German (Small)", "lang": "de"},
 }
 
 DOWNLOAD_STATUS = {}
@@ -34,6 +40,11 @@ def get_selected_model() -> str:
     return "auto"
 
 def is_model_installed(model_name: str) -> bool:
+    try:
+        if spacy.util.is_package(model_name):
+            return True
+    except Exception:
+        pass
     if not MODELS_DIR.exists():
         return False
     for p in MODELS_DIR.glob(f"**/{model_name}*"):

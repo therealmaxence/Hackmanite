@@ -29,6 +29,13 @@ export default function SettingsClient() {
 
   const [modelSettings, setModelSettings] = useState<{ models: any[]; selected: string }>({ models: [], selected: 'auto' });
   const [downloadingModel, setDownloadingModel] = useState<string | null>(null);
+  const [selectedSizes, setSelectedSizes] = useState<Record<string, 'sm' | 'lg'>>({
+    en: 'lg',
+    fr: 'lg',
+    ru: 'lg',
+    es: 'sm',
+    de: 'sm',
+  });
 
   const fetchModels = useCallback(async () => {
     try {
@@ -231,36 +238,58 @@ export default function SettingsClient() {
                   {language === 'fr' ? 'Modèles disponibles' : 'Available Models'}
                 </span>
                 
-                {modelSettings.models.map((model) => (
-                  <div key={model.id} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                    <div style={{ display: 'flex', flexDirection: 'column' }}>
-                      <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>{model.name}</span>
-                      <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>{model.id}</span>
-                    </div>
-                    <div>
-                      {model.status === 'downloading' ? (
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
-                          <Spinner size={12} />
-                          <span>{language === 'fr' ? 'Téléchargement...' : 'Downloading...'}</span>
+                {[
+                  { code: 'en', name: language === 'fr' ? 'Anglais' : 'English' },
+                  { code: 'fr', name: language === 'fr' ? 'Français' : 'French' },
+                  { code: 'ru', name: language === 'fr' ? 'Russe' : 'Russian' },
+                  { code: 'es', name: language === 'fr' ? 'Espagnol' : 'Spanish' },
+                  { code: 'de', name: language === 'fr' ? 'Allemand' : 'German' },
+                ].map((lang) => {
+                  const size = selectedSizes[lang.code] || 'sm';
+                  const modelId = lang.code === 'en' ? `en_core_web_${size}` : `${lang.code}_core_news_${size}`;
+                  const model = modelSettings.models.find((m) => m.id === modelId) || { id: modelId, name: `${lang.name} (${size})`, status: 'not_installed' };
+                  
+                  return (
+                    <div key={lang.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: '100px' }}>
+                          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>{lang.name}</span>
+                          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{modelId}</span>
                         </div>
-                      ) : model.status === 'installed' ? (
-                        <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>
-                          {language === 'fr' ? 'Installé' : 'Installed'}
-                        </span>
-                      ) : (
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleDownloadModel(model.id)}
-                          disabled={downloadingModel !== null}
-                          style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                        <select
+                          value={size}
+                          onChange={(e) => setSelectedSizes({ ...selectedSizes, [lang.code]: e.target.value as 'sm' | 'lg' })}
+                          style={{ padding: '0.25rem 0.5rem', background: '#120108', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-muted)', fontSize: '0.72rem', cursor: 'pointer', outline: 'none' }}
                         >
-                          {language === 'fr' ? 'Télécharger' : 'Download'}
-                        </Button>
-                      )}
+                          <option value="sm">{language === 'fr' ? 'Petit (sm)' : 'Small (sm)'}</option>
+                          <option value="lg">{language === 'fr' ? 'Grand (lg)' : 'Large (lg)'}</option>
+                        </select>
+                      </div>
+                      <div>
+                        {model.status === 'downloading' ? (
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
+                            <Spinner size={12} />
+                            <span>{language === 'fr' ? 'Téléchargement...' : 'Downloading...'}</span>
+                          </div>
+                        ) : model.status === 'installed' ? (
+                          <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>
+                            {language === 'fr' ? 'Installé' : 'Installed'}
+                          </span>
+                        ) : (
+                          <Button
+                            size="sm"
+                            variant="secondary"
+                            onClick={() => handleDownloadModel(model.id)}
+                            disabled={downloadingModel !== null}
+                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                          >
+                            {language === 'fr' ? 'Télécharger' : 'Download'}
+                          </Button>
+                        )}
+                      </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>

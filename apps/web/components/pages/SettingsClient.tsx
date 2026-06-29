@@ -33,6 +33,8 @@ export default function SettingsClient() {
     en: 'lg', fr: 'lg', ru: 'lg', es: 'sm', de: 'sm', zh: 'sm', ja: 'sm', pt: 'sm', it: 'sm', nl: 'sm',
     pl: 'sm', el: 'sm', ro: 'sm', ca: 'sm', hr: 'sm', da: 'sm', fi: 'sm', ko: 'sm', nb: 'sm', sv: 'sm', uk: 'sm'
   });
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchModels = useCallback(async () => {
     try {
@@ -210,7 +212,7 @@ export default function SettingsClient() {
               </p>
             </div>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
               <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--color-surface-raised)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
                 <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
                   {language === 'fr' ? "Langue d'extraction active" : "Active Extraction Language"}
@@ -230,80 +232,159 @@ export default function SettingsClient() {
                 </select>
               </div>
 
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
-                <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text-muted)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
-                  {language === 'fr' ? 'Modèles disponibles' : 'Available Models'}
-                </span>
-                
-                {[
-                  { code: 'en', name: language === 'fr' ? 'Anglais' : 'English' },
-                  { code: 'fr', name: language === 'fr' ? 'Français' : 'French' },
-                  { code: 'ru', name: language === 'fr' ? 'Russe' : 'Russian' },
-                  { code: 'es', name: language === 'fr' ? 'Espagnol' : 'Spanish' },
-                  { code: 'de', name: language === 'fr' ? 'Allemand' : 'German' },
-                  { code: 'zh', name: language === 'fr' ? 'Chinois' : 'Chinese' },
-                  { code: 'ja', name: language === 'fr' ? 'Japonais' : 'Japanese' },
-                  { code: 'pt', name: language === 'fr' ? 'Portugais' : 'Portuguese' },
-                  { code: 'it', name: language === 'fr' ? 'Italien' : 'Italian' },
-                  { code: 'nl', name: language === 'fr' ? 'Néerlandais' : 'Dutch' },
-                  { code: 'pl', name: language === 'fr' ? 'Polonais' : 'Polish' },
-                  { code: 'el', name: language === 'fr' ? 'Grec' : 'Greek' },
-                  { code: 'ro', name: language === 'fr' ? 'Roumain' : 'Romanian' },
-                  { code: 'ca', name: language === 'fr' ? 'Catalan' : 'Catalan' },
-                  { code: 'hr', name: language === 'fr' ? 'Croate' : 'Croatian' },
-                  { code: 'da', name: language === 'fr' ? 'Danois' : 'Danish' },
-                  { code: 'fi', name: language === 'fr' ? 'Finnois' : 'Finnish' },
-                  { code: 'ko', name: language === 'fr' ? 'Coréen' : 'Korean' },
-                  { code: 'nb', name: language === 'fr' ? 'Norvégien (Bokmål)' : 'Norwegian (Bokmål)' },
-                  { code: 'sv', name: language === 'fr' ? 'Suédois' : 'Swedish' },
-                  { code: 'uk', name: language === 'fr' ? 'Ukrainien' : 'Ukrainian' },
-                ].map((lang) => {
-                  const size = selectedSizes[lang.code] || 'sm';
-                  const modelId = (lang.code === 'en' || lang.code === 'zh') ? `${lang.code}_core_web_${size}` : `${lang.code}_core_news_${size}`;
-                  const model = modelSettings.models.find((m) => m.id === modelId) || { id: modelId, name: `${lang.name} (${size})`, status: 'not_installed' };
-                  
-                  return (
-                    <div key={lang.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                        <div style={{ display: 'flex', flexDirection: 'column', minWidth: '100px' }}>
-                          <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>{lang.name}</span>
-                          <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{modelId}</span>
-                        </div>
-                        <select
-                          value={size}
-                          onChange={(e) => setSelectedSizes({ ...selectedSizes, [lang.code]: e.target.value as 'sm' | 'md' | 'lg' })}
-                          style={{ padding: '0.25rem 0.5rem', background: '#120108', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-muted)', fontSize: '0.72rem', cursor: 'pointer', outline: 'none' }}
-                        >
-                          <option value="sm">{language === 'fr' ? 'Petit (sm)' : 'Small (sm)'}</option>
-                          <option value="md">{language === 'fr' ? 'Moyen (md)' : 'Medium (md)'}</option>
-                          <option value="lg">{language === 'fr' ? 'Grand (lg)' : 'Large (lg)'}</option>
-                        </select>
-                      </div>
-                      <div>
-                        {model.status === 'downloading' ? (
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
-                            <Spinner size={12} />
-                            <span>{language === 'fr' ? 'Téléchargement...' : 'Downloading...'}</span>
-                          </div>
-                        ) : model.status === 'installed' ? (
-                          <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>
-                            {language === 'fr' ? 'Installé' : 'Installed'}
-                          </span>
-                        ) : (
-                          <Button
-                            size="sm"
-                            variant="secondary"
-                            onClick={() => handleDownloadModel(model.id)}
-                            disabled={downloadingModel !== null}
-                            style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
-                          >
-                            {language === 'fr' ? 'Télécharger' : 'Download'}
-                          </Button>
-                        )}
-                      </div>
+              <div style={{ position: 'relative', marginTop: '0.5rem' }}>
+                <button
+                  onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                  style={{
+                    width: '100%',
+                    padding: '0.75rem 1rem',
+                    background: 'var(--color-surface-raised)',
+                    border: '1px solid var(--color-border)',
+                    borderRadius: 'var(--radius-sm)',
+                    color: 'var(--color-text)',
+                    fontSize: '0.875rem',
+                    fontWeight: 500,
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    outline: 'none',
+                  }}
+                >
+                  <span>
+                    {language === 'fr' ? 'Gérer et télécharger des modèles...' : 'Manage & Download Models...'}
+                  </span>
+                  <svg
+                    width="16"
+                    height="16"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    style={{
+                      transform: isDropdownOpen ? 'rotate(180deg)' : 'rotate(0deg)',
+                      transition: 'transform 0.2s',
+                    }}
+                  >
+                    <polyline points="6 9 12 15 18 9" />
+                  </svg>
+                </button>
+
+                {isDropdownOpen && (
+                  <div
+                    style={{
+                      position: 'absolute',
+                      top: 'calc(100% + 4px)',
+                      left: 0,
+                      right: 0,
+                      zIndex: 100,
+                      background: 'var(--color-surface) var(--noise-bg)',
+                      border: '1px solid var(--color-border)',
+                      borderRadius: 'var(--radius)',
+                      boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                      padding: '1rem',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '0.75rem',
+                      maxHeight: '350px',
+                      overflowY: 'auto',
+                    }}
+                  >
+                    <div style={{ position: 'relative' }}>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="var(--color-text-muted)" strokeWidth="2" style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none' }}>
+                        <circle cx="11" cy="11" r="8" />
+                        <line x1="21" y1="21" x2="16.65" y2="16.65" />
+                      </svg>
+                      <input
+                        type="text"
+                        value={searchQuery}
+                        onChange={(e) => setSearchQuery(e.target.value)}
+                        placeholder={language === 'fr' ? 'Rechercher une langue...' : 'Search languages...'}
+                        className="signature-input"
+                        style={{ width: '100%', height: 38, paddingLeft: 36, paddingRight: 12, fontSize: '0.8125rem' }}
+                      />
                     </div>
-                  );
-                })}
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                      {[
+                        { code: 'en', name: language === 'fr' ? 'Anglais' : 'English' },
+                        { code: 'fr', name: language === 'fr' ? 'Français' : 'French' },
+                        { code: 'ru', name: language === 'fr' ? 'Russe' : 'Russian' },
+                        { code: 'es', name: language === 'fr' ? 'Espagnol' : 'Spanish' },
+                        { code: 'de', name: language === 'fr' ? 'Allemand' : 'German' },
+                        { code: 'zh', name: language === 'fr' ? 'Chinois' : 'Chinese' },
+                        { code: 'ja', name: language === 'fr' ? 'Japonais' : 'Japanese' },
+                        { code: 'pt', name: language === 'fr' ? 'Portugais' : 'Portuguese' },
+                        { code: 'it', name: language === 'fr' ? 'Italien' : 'Italian' },
+                        { code: 'nl', name: language === 'fr' ? 'Néerlandais' : 'Dutch' },
+                        { code: 'pl', name: language === 'fr' ? 'Polonais' : 'Polish' },
+                        { code: 'el', name: language === 'fr' ? 'Grec' : 'Greek' },
+                        { code: 'ro', name: language === 'fr' ? 'Roumain' : 'Romanian' },
+                        { code: 'ca', name: language === 'fr' ? 'Catalan' : 'Catalan' },
+                        { code: 'hr', name: language === 'fr' ? 'Croate' : 'Croatian' },
+                        { code: 'da', name: language === 'fr' ? 'Danois' : 'Danish' },
+                        { code: 'fi', name: language === 'fr' ? 'Finnois' : 'Finnish' },
+                        { code: 'ko', name: language === 'fr' ? 'Coréen' : 'Korean' },
+                        { code: 'nb', name: language === 'fr' ? 'Norvégien (Bokmål)' : 'Norwegian (Bokmål)' },
+                        { code: 'sv', name: language === 'fr' ? 'Suédois' : 'Swedish' },
+                        { code: 'uk', name: language === 'fr' ? 'Ukrainien' : 'Ukrainian' },
+                      ]
+                        .filter((lang) =>
+                          lang.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                          lang.code.toLowerCase().includes(searchQuery.toLowerCase())
+                        )
+                        .map((lang) => {
+                          const size = selectedSizes[lang.code] || 'sm';
+                          const modelId = (lang.code === 'en' || lang.code === 'zh') ? `${lang.code}_core_web_${size}` : `${lang.code}_core_news_${size}`;
+                          const model = modelSettings.models.find((m) => m.id === modelId) || { id: modelId, name: `${lang.name} (${size})`, status: 'not_installed' };
+
+                          return (
+                            <div key={lang.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
+                              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
+                                <div style={{ display: 'flex', flexDirection: 'column', minWidth: '100px' }}>
+                                  <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>{lang.name}</span>
+                                  <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{modelId}</span>
+                                </div>
+                                <select
+                                  value={size}
+                                  onChange={(e) => setSelectedSizes({ ...selectedSizes, [lang.code]: e.target.value as 'sm' | 'md' | 'lg' })}
+                                  style={{ padding: '0.25rem 0.5rem', background: '#120108', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text-muted)', fontSize: '0.72rem', cursor: 'pointer', outline: 'none' }}
+                                >
+                                  <option value="sm">{language === 'fr' ? 'Petit (sm)' : 'Small (sm)'}</option>
+                                  <option value="md">{language === 'fr' ? 'Moyen (md)' : 'Medium (md)'}</option>
+                                  <option value="lg">{language === 'fr' ? 'Grand (lg)' : 'Large (lg)'}</option>
+                                </select>
+                              </div>
+                              <div>
+                                {model.status === 'downloading' ? (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-primary)' }}>
+                                    <Spinner size={12} />
+                                    <span>{language === 'fr' ? 'Téléchargement...' : 'Downloading...'}</span>
+                                  </div>
+                                ) : model.status === 'installed' ? (
+                                  <span style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>
+                                    {language === 'fr' ? 'Installé' : 'Installed'}
+                                  </span>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="secondary"
+                                    onClick={() => handleDownloadModel(model.id)}
+                                    disabled={downloadingModel !== null}
+                                    style={{ fontSize: '0.75rem', padding: '0.25rem 0.75rem' }}
+                                  >
+                                    {language === 'fr' ? 'Télécharger' : 'Download'}
+                                  </Button>
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                    </div>
+                  </div>
+                )}
               </div>
             </div>
           </div>

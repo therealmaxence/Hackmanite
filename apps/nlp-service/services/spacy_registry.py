@@ -41,15 +41,11 @@ _cache: dict[str, any] = {}
 
 
 def get_selected() -> str:
-    try:
-        return json.loads(SETTINGS_FILE.read_text()).get("selected", "auto") if SETTINGS_FILE.exists() else "auto"
-    except Exception:
-        return "auto"
+    return "auto"
 
 
 def set_selected(model_name: str) -> None:
-    MODELS_DIR.mkdir(parents=True, exist_ok=True)
-    SETTINGS_FILE.write_text(json.dumps({"selected": model_name}))
+    pass
 
 
 def _load_local(model_name: str) -> any:

@@ -226,26 +226,7 @@ export default function SettingsClient() {
             </div>
             
             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem', position: 'relative' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.75rem 1rem', background: 'var(--color-surface-raised)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.05)' }}>
-                <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>
-                  {language === 'fr' ? "Langue d'extraction active" : "Active Extraction Language"}
-                </span>
-                <select
-                  value={modelSettings.selected}
-                  onChange={(e) => handleSelectModel(e.target.value)}
-                  style={{ padding: '0.5rem 1rem', background: '#120108', border: '1px solid var(--color-border)', borderRadius: 'var(--radius-sm)', color: 'var(--color-text)', fontSize: '0.875rem', outline: 'none', cursor: 'pointer' }}
-                >
-                  <option value="auto">{language === 'fr' ? 'Détection automatique' : 'Auto-detect'}</option>
-                  {modelSettings.models
-                    .filter((m) => m.status === 'installed')
-                    .map((m) => (
-                      <option key={m.id} value={m.id}>{m.name}</option>
-                    ))
-                  }
-                </select>
-              </div>
-
-              <div style={{ position: 'relative', marginTop: '0.5rem' }}>
+              <div style={{ position: 'relative' }}>
                 <button
                   onClick={() => setIsDropdownOpen(!isDropdownOpen)}
                   style={{

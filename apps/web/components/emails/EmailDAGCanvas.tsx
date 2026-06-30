@@ -82,6 +82,7 @@ export default function EmailDAGCanvas({ elements, layoutType, onNodeSelect, onB
           >
             {label}
           </button>
+        ))}
       </div>
 
       <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', background: 'var(--color-surface-raised) var(--noise-bg)', borderRadius: 'var(--radius)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.6875rem', color: 'var(--color-text-muted)', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>

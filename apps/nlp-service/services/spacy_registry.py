@@ -10,7 +10,6 @@ except Exception:
     spacy = None
 
 MODELS_DIR = Path.home() / ".hackmanite" / "models"
-SETTINGS_FILE = MODELS_DIR / "settings.json"
 
 SUPPORTED_MODELS: dict[str, dict] = {
     f"{lang}_core_{kind}_{sz}": {"name": f"{label} ({size})", "lang": lang}

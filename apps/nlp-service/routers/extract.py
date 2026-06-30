@@ -9,7 +9,7 @@ from fastapi import APIRouter, BackgroundTasks, Body
 from models.schemas import ExtractionRequest, ExtractionResult
 from services.dispatcher import dispatch
 from services.spacy_registry import (
-    SUPPORTED_MODELS, MODELS_DIR, SETTINGS_FILE,
+    SUPPORTED_MODELS, MODELS_DIR,
     is_installed, evict,
 )
 

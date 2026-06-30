@@ -55,7 +55,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Optical Character Recognition (OCR)',
-            content: 'For scanned PDFs or images, Hackmanite routes documents through Tesseract OCR to extract machine-readable text before running spaCy NER.',
+            content: 'For scanned PDFs or images, Hackmanite routes documents through Tesseract OCR to extract machine-readable text before running spaCy NER.\n\n**To enable OCR, you must install Tesseract OCR on your machine:**\n- **Windows:** Download the installer from the official repository (https://github.com/UB-Mannheim/tesseract/wiki) or install it via winget: \n  `winget install UB-Mannheim.TesseractOCR`\n- **Mac:** Run `brew install tesseract` in your terminal.\n- **Linux:** Run `sudo apt install tesseract-ocr` in your terminal.',
           },
           {
             title: 'Network Construction',
@@ -169,7 +169,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Reconnaissance Optique de Caractères (OCR)',
-            content: 'Pour les images et les PDF scannés, Hackmanite extrait le texte brut via Tesseract OCR avant de l\'envoyer au moteur spaCy NER.',
+            content: 'Pour les images et les PDF scannés, Hackmanite extrait le texte brut via Tesseract OCR avant de l\'envoyer au moteur spaCy NER.\n\n**Pour activer l\'OCR, vous devez installer Tesseract OCR sur votre machine :**\n- **Windows :** Téléchargez l\'installateur depuis le dépôt officiel (https://github.com/UB-Mannheim/tesseract/wiki) ou installez-le via winget : \n  `winget install UB-Mannheim.TesseractOCR`\n- **Mac :** Exécutez `brew install tesseract` dans votre terminal.\n- **Linux :** Exécutez `sudo apt install tesseract-ocr` dans votre terminal.',
           },
           {
             title: 'Construction du Réseau',

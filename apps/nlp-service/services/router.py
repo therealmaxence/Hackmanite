@@ -10,12 +10,12 @@ class ExtractionTier(str, Enum):
     TIER1_DOCUMENT   = "tier1_document"
     TIER2_OCR        = "tier2_ocr"
 
-REGEX_ONLY_MIMES = {
+TIER0_MIMES = {
     "text/csv", "text/tab-separated-values", "text/html", "application/json", "application/x-ndjson",
     "application/xml", "text/xml", "text/x-log",
     "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", "application/vnd.ms-excel",
 }
-REGEX_ONLY_EXTENSIONS = {
+TIER0_EXTENSIONS = {
     ".csv", ".tsv", ".json", ".jsonl", ".ndjson", ".xml", ".html", ".htm", ".log", ".access", ".err",
     ".xlsx", ".xls", ".xlsm", ".py", ".js", ".ts", ".tsx", ".jsx", ".java", ".go", ".rs", ".c", ".cc",
     ".cpp", ".h", ".hpp", ".cs", ".php", ".rb", ".sql", ".yml", ".yaml", ".toml", ".ini", ".cfg", ".conf",
@@ -34,7 +34,7 @@ def decide_routing(file_path: str, mime_type: str) -> ExtractionTier:
     path = Path(file_path)
     ext = path.suffix.lower()
 
-    if mime_type in REGEX_ONLY_MIMES or ext in REGEX_ONLY_EXTENSIONS:
+    if mime_type in TIER0_MIMES or ext in TIER0_EXTENSIONS:
         logger.info("Router → TIER0_STRUCTURED [%s] (structured)", path.name)
         return ExtractionTier.TIER0_STRUCTURED
 

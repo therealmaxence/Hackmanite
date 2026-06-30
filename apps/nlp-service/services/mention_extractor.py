@@ -2,6 +2,7 @@ from __future__ import annotations
 import structlog
 from models.schemas import EntityType
 from services.entity_normalizer import canonicalize
+from services.person_regex import _extract_persons
 from services.regex_patterns import ENTITY_REGEX_PATTERNS
 from services.spacy_registry import get_configured_model, get_model_for_lang
 
@@ -13,7 +14,7 @@ SPACY_LABEL_MAP = {
     "ORG":           EntityType.ORGANIZATION,
     "GPE":           EntityType.LOCATION,
     "LOC":           EntityType.LOCATION,
-    "FAC":           EntityType.LOCATION,    
+    "FAC":           EntityType.LOCATION,
     "DATE":          EntityType.DATE,
     "TIME":          EntityType.DATE,
     "EMAIL":         EntityType.EMAIL,
@@ -39,7 +40,9 @@ def _extract_mentions(text: str) -> list[dict]:
             seen.add(key)
             mentions.append({"canonical": canonical, "display_name": display_name, "type": etype, "start": start, "end": end})
 
+    spacy_ran = False
     if model := get_configured_model():
+        spacy_ran = True
         try:
             for label, txt, s, e in _run_spacy(model, text, source="selected"):
                 if etype := SPACY_LABEL_MAP.get(label):
@@ -52,6 +55,7 @@ def _extract_mentions(text: str) -> list[dict]:
             if (langs := detect_langs(text[:3000])) and langs[0].prob >= 0.8:
                 best = langs[0]
                 if nlp := get_model_for_lang(best.lang):
+                    spacy_ran = True
                     for label, txt, s, e in _run_spacy(nlp, text, lang=best.lang, prob=best.prob):
                         if etype := SPACY_LABEL_MAP.get(label):
                             add(txt, etype, s, e)
@@ -67,5 +71,9 @@ def _extract_mentions(text: str) -> list[dict]:
     for etype, pattern in ENTITY_REGEX_PATTERNS:
         for m in pattern.finditer(text):
             add(m.group(1) if m.lastindex else m.group(0), etype, m.start(), m.end())
+
+    if not spacy_ran:
+        for val in _extract_persons(text):
+            add(val["text"], EntityType.PERSON, int(val["start"]), int(val["end"]))
 
     return mentions

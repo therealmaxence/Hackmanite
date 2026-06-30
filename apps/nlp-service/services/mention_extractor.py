@@ -9,11 +9,11 @@ logger = structlog.get_logger()
 
 SPACY_LABEL_MAP = {
     "PERSON":        EntityType.PERSON,
-    "PER":           EntityType.PERSON,       # fr, ru, de, es, it, nl, ... models
+    "PER":           EntityType.PERSON,
     "ORG":           EntityType.ORGANIZATION,
     "GPE":           EntityType.LOCATION,
     "LOC":           EntityType.LOCATION,
-    "FAC":           EntityType.LOCATION,     # facilities (airports, bridges, …)
+    "FAC":           EntityType.LOCATION,    
     "DATE":          EntityType.DATE,
     "TIME":          EntityType.DATE,
     "EMAIL":         EntityType.EMAIL,

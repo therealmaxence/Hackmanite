@@ -67,7 +67,7 @@ export default function CustomSlider({
         .slider-btn {
           background: rgba(255,255,255,0.03); border: 1px solid rgba(255,255,255,0.08); color: var(--color-text-muted);
           width: 28px; height: 28px; border-radius: 6px; cursor: pointer; font-size: 0.9rem;
-          display: flex; alignItems: center; justifyContent: center; flex-shrink: 0; transition: all 0.15s ease;
+          display: flex; align-items: center; justify-content: center; flex-shrink: 0; transition: all 0.15s ease;
         }
         .slider-btn:hover { color: var(--color-text); background: rgba(255,255,255,0.08); }
       `}</style>

@@ -20,6 +20,7 @@ import { useCytoscapeHighlights } from './hooks/useCytoscapeHighlights';
 import GraphSelectionTip from './GraphSelectionTip';
 import GraphContextMenu from './GraphContextMenu';
 import ModifyNodeModal from './ModifyNodeModal';
+import ZoomControls from '@/components/ui/ZoomControls';
 
 if (typeof window !== 'undefined') {
   cytoscape.use(coseBilkent);
@@ -258,22 +259,7 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
         id="cy"
         style={{ width: '100%', height: '100%', background: 'var(--bg-base)' }}
       />
-      <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'var(--color-surface-raised) var(--noise-bg)', borderRadius: 'var(--radius)', padding: '6px', display: 'flex', gap: '4px', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-        {[
-          { label: t('emails.canvas.fit') || 'Fit', title: t('emails.canvas.fit') || 'Fit', action: fitGraph },
-          { label: '+', title: t('emails.canvas.zoom_in') || 'Zoom In', action: zoomIn },
-          { label: '-', title: t('emails.canvas.zoom_out') || 'Zoom Out', action: zoomOut },
-        ].map(({ label, title, action }) => (
-          <button
-            key={title} onClick={action} title={title}
-            style={{ width: '32px', height: '32px', background: 'transparent', border: 'none', borderRadius: '4px', color: 'var(--color-text)', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.15s ease' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ZoomControls onZoomIn={zoomIn} onZoomOut={zoomOut} onFit={fitGraph} />
       <GraphSelectionTip />
       {contextMenu && contextMenu.visible && (
         <GraphContextMenu

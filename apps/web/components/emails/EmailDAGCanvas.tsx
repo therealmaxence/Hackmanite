@@ -7,6 +7,7 @@ import { useTranslation } from '@/lib/i18n';
 import { useUploadStore } from '@/store/uploadStore';
 import EmailContextMenu from './EmailContextMenu';
 import ModifyNodeModal from '../graph/ModifyNodeModal';
+import ZoomControls from '../ui/ZoomControls';
 
 interface EmailDAGCanvasProps {
   elements: Record<string, unknown>[]; layoutType: LayoutType;
@@ -68,22 +69,7 @@ export default function EmailDAGCanvas({ elements, layoutType, onNodeSelect, onB
   return (
     <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
       <div ref={containerRef} style={{ width: '100%', height: '100%', background: 'var(--bg-base)' }} />
-      <div style={{ position: 'absolute', top: '1rem', left: '1rem', background: 'var(--color-surface-raised) var(--noise-bg)', borderRadius: 'var(--radius)', padding: '6px', display: 'flex', gap: '4px', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
-        {[
-          { label: t('emails.canvas.fit'), title: t('emails.canvas.fit'), action: fitGraph },
-          { label: '+', title: t('emails.canvas.zoom_in'), action: zoomIn },
-          { label: '-', title: t('emails.canvas.zoom_out'), action: zoomOut },
-        ].map(({ label, title, action }) => (
-          <button
-            key={title} onClick={action} title={title}
-            style={{ width: '32px', height: '32px', background: 'transparent', border: 'none', borderRadius: '4px', color: 'var(--color-text)', cursor: 'pointer', fontSize: '0.875rem', display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'background-color 0.15s ease' }}
-            onMouseEnter={(e) => (e.currentTarget.style.background = 'var(--color-surface-hover)')}
-            onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-          >
-            {label}
-          </button>
-        ))}
-      </div>
+      <ZoomControls onZoomIn={zoomIn} onZoomOut={zoomOut} onFit={fitGraph} />
 
       <div style={{ position: 'absolute', bottom: '1rem', left: '1rem', background: 'var(--color-surface-raised) var(--noise-bg)', borderRadius: 'var(--radius)', padding: '6px 12px', display: 'flex', alignItems: 'center', gap: '12px', fontSize: '0.6875rem', color: 'var(--color-text-muted)', zIndex: 50, boxShadow: '0 4px 12px rgba(0,0,0,0.5)' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>

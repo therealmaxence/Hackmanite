@@ -31,6 +31,7 @@ export default function EmailsClient() {
   const [senderFilter, setSenderFilter] = useState('all');
   const [recipientFilter, setRecipientFilter] = useState('all');
   const [activeTab, setActiveTab] = useState<ActiveTab>('graph');
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
   useEffect(() => {
     const query = searchParams?.get('search');
@@ -99,12 +100,43 @@ export default function EmailsClient() {
       <Header />
       <KpiRibbon stats={stats} />
       <div style={{ flex: 1, display: 'flex', overflow: 'hidden', position: 'relative' }}>
-        <FiltersPanel
-          searchQuery={searchQuery} onSearchChange={setSearchQuery} senderFilter={senderFilter} onSenderChange={setSenderFilter}
-          recipientFilter={recipientFilter} onRecipientChange={setRecipientFilter} filterOptions={filterOptions}
-          focusedThreadRootId={focusedThreadRootId} onResetFocus={() => setFocusedThreadRootId(null)} activeTab={activeTab}
-          onTabChange={setActiveTab} layoutType={layoutType} onLayoutChange={setLayoutType}
-        />
+        <div
+          className="collapsible-sidebar"
+          style={{
+            width: isSidebarCollapsed ? 0 : 280,
+            minWidth: isSidebarCollapsed ? 0 : 280,
+          }}
+        >
+          <FiltersPanel
+            searchQuery={searchQuery} onSearchChange={setSearchQuery} senderFilter={senderFilter} onSenderChange={setSenderFilter}
+            recipientFilter={recipientFilter} onRecipientChange={setRecipientFilter} filterOptions={filterOptions}
+            focusedThreadRootId={focusedThreadRootId} onResetFocus={() => setFocusedThreadRootId(null)} activeTab={activeTab}
+            onTabChange={setActiveTab} layoutType={layoutType} onLayoutChange={setLayoutType}
+          />
+        </div>
+        <button
+          onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+          className="sidebar-toggle-btn"
+          style={{ left: isSidebarCollapsed ? '12px' : 'calc(280px - 14px)' }}
+          title={isSidebarCollapsed ? t('graph.controls.expand') || 'Expand' : t('graph.controls.collapse') || 'Collapse'}
+        >
+          <svg
+            width="14"
+            height="14"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="2.5"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            style={{
+              transform: isSidebarCollapsed ? 'rotate(0deg)' : 'rotate(180deg)',
+              transition: 'transform 0.3s ease',
+            }}
+          >
+            <polyline points="9 18 15 12 9 6" />
+          </svg>
+        </button>
         <div style={{ flex: 1, position: 'relative', overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
           {activeTab === 'graph' ? (
             <EmailDAGCanvas elements={elements} layoutType={layoutType} onNodeSelect={setSelectedEmail} onBackgroundTap={() => setSelectedEmail(null)} selectedEmailId={selectedEmail?.messageId || selectedEmail?.id || null} />

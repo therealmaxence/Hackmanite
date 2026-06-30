@@ -1,4 +1,5 @@
 import re
+import email.utils
 import logging
 from datetime import datetime, timezone
 from typing import Optional
@@ -14,8 +15,12 @@ MONTHS_MAP = {
     'января': 1, 'февраля': 2, 'марта': 3, 'апреля': 4, 'мая': 5, 'июня': 6, 'июля': 7, 'августа': 8, 'сентября': 9, 'октября': 10, 'ноября': 11, 'декабря': 12,
     'январь': 1, 'февраль': 2, 'март': 3, 'апрель': 4, 'июнь': 6, 'июль': 7, 'август': 8, 'сентябрь': 9, 'октябрь': 10, 'ноябрь': 11, 'декабрь': 12,
 }
-
 _MONTH_RES = {name: re.compile(r'(?<![a-zа-яё])' + re.escape(name) + r'(?![a-zа-яё])') for name in MONTHS_MAP}
+_YEAR_RE = re.compile(r'\b(19\d{2}|20\d{2})\b')
+_TIME_RE = re.compile(r'\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\b')
+_TIME_FR_RE = re.compile(r'\b(\d{1,2})h(\d{2})\b')
+_DAY_RE = re.compile(r'\b(\d{1,2})\b')
+
 
 def parse_colloquial_date(date_str: str, reference_tz: Optional[timezone] = None) -> Optional[str]:
     if not date_str:
@@ -30,28 +35,27 @@ def parse_colloquial_date(date_str: str, reference_tz: Optional[timezone] = None
         if not month:
             return None
         s = s.replace(month[0], " ")
-        year_match = re.search(r'\b(19\d{2}|20\d{2})\b', s)
-        if not year_match:
+        ym = _YEAR_RE.search(s)
+        if not ym:
             return None
-        year = int(year_match.group(1))
-        s = s.replace(year_match.group(1), " ")
+        year = int(ym.group(1))
+        s = s.replace(ym.group(1), " ")
 
-        time_match = re.search(r'\b(\d{1,2}):(\d{2})(?::(\d{2}))?\s*(am|pm)?\b', s)
         hour = minute = second = 0
-        if time_match:
-            hour, minute = int(time_match.group(1)), int(time_match.group(2))
-            if time_match.group(3): second = int(time_match.group(3))
-            ampm = time_match.group(4)
-            if ampm == 'pm' and hour < 12: hour += 12
-            elif ampm == 'am' and hour == 12: hour = 0
-            s = s[:time_match.start()] + " " + s[time_match.end():]
-        else:
-            time_match_fr = re.search(r'\b(\d{1,2})h(\d{2})\b', s)
-            if time_match_fr:
-                hour, minute = int(time_match_fr.group(1)), int(time_match_fr.group(2))
-                s = s[:time_match_fr.start()] + " " + s[time_match_fr.end():]
+        if tm := _TIME_RE.search(s):
+            hour, minute = int(tm.group(1)), int(tm.group(2))
+            if tm.group(3):
+                second = int(tm.group(3))
+            if tm.group(4) == 'pm' and hour < 12:
+                hour += 12
+            elif tm.group(4) == 'am' and hour == 12:
+                hour = 0
+            s = s[:tm.start()] + " " + s[tm.end():]
+        elif tmf := _TIME_FR_RE.search(s):
+            hour, minute = int(tmf.group(1)), int(tmf.group(2))
+            s = s[:tmf.start()] + " " + s[tmf.end():]
 
-        day = next((int(dm) for dm in re.findall(r'\b(\d{1,2})\b', s) if 1 <= int(dm) <= 31), None)
+        day = next((int(d) for d in _DAY_RE.findall(s) if 1 <= int(d) <= 31), None)
         if not day:
             return None
         return datetime(year, month[1], day, hour, minute, second, tzinfo=reference_tz or timezone.utc).isoformat()
@@ -59,18 +63,15 @@ def parse_colloquial_date(date_str: str, reference_tz: Optional[timezone] = None
         logger.warning("Failed to parse colloquial date '%s': %s", date_str, e)
         return None
 
+
 def parse_date_to_iso(date_str: Optional[str], reference_tz: Optional[timezone] = None) -> Optional[str]:
     if not date_str:
         return None
     try:
-        import email.utils
         dt = email.utils.parsedate_to_datetime(date_str)
-        if dt.tzinfo is None:
-            dt = dt.replace(tzinfo=timezone.utc)
-        return dt.isoformat()
+        return dt.replace(tzinfo=timezone.utc).isoformat() if dt.tzinfo is None else dt.isoformat()
     except Exception:
-        colloquial = parse_colloquial_date(date_str, reference_tz=reference_tz)
-        if colloquial:
-            return colloquial
-        logger.warning("Could not parse email date: %s", date_str)
-        return None
+        result = parse_colloquial_date(date_str, reference_tz=reference_tz)
+        if not result:
+            logger.warning("Could not parse email date: %s", date_str)
+        return result

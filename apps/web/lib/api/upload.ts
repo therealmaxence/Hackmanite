@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { redis, RedisKeys } from '@/lib/redis';
 
 export const UPLOAD_DIR = process.env.UPLOAD_DIR || './uploads';
-export const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB || 100) * 1024 * 1024;
+export const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB || 500) * 1024 * 1024;
 export const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export const ALLOWED_MIMES = new Set([

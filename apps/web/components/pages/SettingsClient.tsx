@@ -60,19 +60,6 @@ export default function SettingsClient() {
     return () => clearInterval(interval);
   }, [downloadingModel, fetchModels]);
 
-  const handleSelectModel = async (modelId: string) => {
-    try {
-      const res = await fetch('/api/spacy-models', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'select', model: modelId }),
-      });
-      if (res.ok) fetchModels();
-    } catch (err) {
-      console.error(err);
-    }
-  };
-
   const handleDownloadModel = async (modelId: string) => {
     setDownloadingModel(modelId);
     try {

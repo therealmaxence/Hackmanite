@@ -4,7 +4,7 @@ from models.schemas import EntityType
 from services.entity_normalizer import canonicalize
 from services.person_regex import _extract_persons
 from services.regex_patterns import ENTITY_REGEX_PATTERNS
-from services.spacy_registry import get_configured_model, get_model_for_lang
+from services.spacy_registry import get_model_for_lang
 
 logger = structlog.get_logger()
 
@@ -41,32 +41,23 @@ def _extract_mentions(text: str) -> list[dict]:
             mentions.append({"canonical": canonical, "display_name": display_name, "type": etype, "start": start, "end": end})
 
     spacy_ran = False
-    if model := get_configured_model():
-        spacy_ran = True
-        try:
-            for label, txt, s, e in _run_spacy(model, text, source="selected"):
-                if etype := SPACY_LABEL_MAP.get(label):
-                    add(txt, etype, s, e)
-        except Exception as ex:
-            logger.error("spacy_extraction_failed", error=str(ex))
-    else:
-        try:
-            from langdetect import detect_langs
-            if (langs := detect_langs(text[:3000])) and langs[0].prob >= 0.8:
-                best = langs[0]
-                if nlp := get_model_for_lang(best.lang):
-                    spacy_ran = True
-                    for label, txt, s, e in _run_spacy(nlp, text, lang=best.lang, prob=best.prob):
-                        if etype := SPACY_LABEL_MAP.get(label):
-                            add(txt, etype, s, e)
-                else:
-                    logger.info("spacy_lang_unsupported", lang=best.lang, prob=best.prob)
-            elif langs:
-                logger.info("spacy_lang_low_confidence", lang=langs[0].lang, prob=langs[0].prob)
-        except ImportError:
-            logger.warning("langdetect_not_installed")
-        except Exception as ex:
-            logger.warning("langdetect_failed", error=str(ex))
+    try:
+        from langdetect import detect_langs
+        if (langs := detect_langs(text[:3000])) and langs[0].prob >= 0.8:
+            best = langs[0]
+            if nlp := get_model_for_lang(best.lang):
+                spacy_ran = True
+                for label, txt, s, e in _run_spacy(nlp, text, lang=best.lang, prob=best.prob):
+                    if etype := SPACY_LABEL_MAP.get(label):
+                        add(txt, etype, s, e)
+            else:
+                logger.info("spacy_lang_unsupported", lang=best.lang, prob=best.prob)
+        elif langs:
+            logger.info("spacy_lang_low_confidence", lang=langs[0].lang, prob=langs[0].prob)
+    except ImportError:
+        logger.warning("langdetect_not_installed")
+    except Exception as ex:
+        logger.warning("langdetect_failed", error=str(ex))
 
     for etype, pattern in ENTITY_REGEX_PATTERNS:
         for m in pattern.finditer(text):

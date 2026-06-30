@@ -10,7 +10,7 @@ from models.schemas import ExtractionRequest, ExtractionResult
 from services.dispatcher import dispatch
 from services.spacy_registry import (
     SUPPORTED_MODELS, MODELS_DIR, SETTINGS_FILE,
-    get_selected, set_selected, is_installed, evict,
+    is_installed, evict,
 )
 
 logger = structlog.get_logger()
@@ -59,22 +59,14 @@ async def extract(req: ExtractionRequest) -> ExtractionResult:
 
 @router.get("/spacy-models")
 async def list_models():
-    selected = get_selected()
     return {
         "models": [
             {"id": m_id, "name": m_info["name"], "lang": m_info["lang"],
              "status": DOWNLOAD_STATUS.get(m_id) or ("installed" if is_installed(m_id) else "not_installed")}
             for m_id, m_info in SUPPORTED_MODELS.items()
         ],
-        "selected": selected,
+        "selected": "auto",
     }
-
-
-@router.post("/spacy-models/select")
-async def select_model(payload: dict = Body(...)):
-    model_name = payload.get("model", "auto")
-    set_selected(model_name)
-    return {"status": "ok", "selected": model_name}
 
 
 @router.post("/spacy-models/download")
@@ -108,9 +100,6 @@ async def delete_model(payload: dict = Body(...)):
 
     DOWNLOAD_STATUS.pop(model_name, None)
     evict(model_name)
-
-    if deleted_any and get_selected() == model_name:
-        set_selected("auto")
 
     return {"status": "ok", "deleted": deleted_any} | (
         {} if deleted_any else {"message": "Model was not found in local models directory"}

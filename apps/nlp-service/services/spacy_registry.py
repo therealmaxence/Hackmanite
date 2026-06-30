@@ -12,7 +12,6 @@ except Exception:
 MODELS_DIR = Path.home() / ".hackmanite" / "models"
 SETTINGS_FILE = MODELS_DIR / "settings.json"
 
-# lang → [lg, md, sm] ordered by priority
 SUPPORTED_MODELS: dict[str, dict] = {
     f"{lang}_core_{kind}_{sz}": {"name": f"{label} ({size})", "lang": lang}
     for lang, kind, label in [
@@ -31,21 +30,12 @@ SUPPORTED_MODELS: dict[str, dict] = {
     for sz, size in [("lg", "Large"), ("md", "Medium"), ("sm", "Small")]
 }
 
-# lang → ordered candidate model names
 CANDIDATES: dict[str, list[str]] = {}
 for model_id, info in SUPPORTED_MODELS.items():
     CANDIDATES.setdefault(info["lang"], []).append(model_id)
 
 _lock = threading.Lock()
 _cache: dict[str, any] = {}
-
-
-def get_selected() -> str:
-    return "auto"
-
-
-def set_selected(model_name: str) -> None:
-    pass
 
 
 def _load_local(model_name: str) -> any:
@@ -69,20 +59,6 @@ def _load_into_cache(key: str, model_name: str) -> any:
         return _cache[key]
     except Exception:
         return None
-
-
-def get_configured_model() -> any:
-    if spacy is None:
-        return None
-    selected = get_selected()
-    if selected == "auto":
-        return None
-    if selected in _cache:
-        return _cache[selected]
-    with _lock:
-        if selected not in _cache:
-            _load_into_cache(selected, selected)
-    return _cache.get(selected)
 
 
 def get_model_for_lang(lang: str) -> any:

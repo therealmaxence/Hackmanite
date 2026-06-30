@@ -321,12 +321,22 @@ export default function SettingsClient() {
                           const modelId = (lang.code === 'en' || lang.code === 'zh') ? `${lang.code}_core_web_${size}` : `${lang.code}_core_news_${size}`;
                           const model = modelSettings.models.find((m) => m.id === modelId) || { id: modelId, name: `${lang.name} (${size})`, status: 'not_installed' };
 
+                          const installedSizes = modelSettings.models
+                            .filter((m) => m.lang === lang.code && m.status === 'installed')
+                            .map((m) => m.id.split('_').pop())
+                            .filter(Boolean);
+
                           return (
                             <div key={lang.code} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.5rem 1rem', background: 'rgba(255,255,255,0.02)', borderRadius: 'var(--radius-sm)', border: '1px solid rgba(255,255,255,0.03)' }}>
                               <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
                                 <div style={{ display: 'flex', flexDirection: 'column', minWidth: '100px' }}>
                                   <span style={{ fontSize: '0.875rem', fontWeight: 500, color: 'var(--color-text)' }}>{lang.name}</span>
                                   <span style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)' }}>{modelId}</span>
+                                  {installedSizes.length > 0 && (
+                                    <span style={{ fontSize: '0.65rem', color: '#10b981', fontWeight: 500, marginTop: '2px' }}>
+                                      {language === 'fr' ? `Dispo: ${installedSizes.join(', ')}` : `Available: ${installedSizes.join(', ')}`}
+                                    </span>
+                                  )}
                                 </div>
                                 <select
                                   value={size}

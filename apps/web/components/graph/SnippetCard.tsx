@@ -19,7 +19,19 @@ export function highlightMultiple(text: string, highlights: Array<{ term: string
   return text.split(new RegExp(`(${escaped})`, 'ig')).map((part, i) => {
     const match = valid.find((h) => h.term.toLowerCase() === part.toLowerCase());
     return match ? (
-      <span key={i} style={{ color: match.color, fontWeight: 700 }}>{part}</span>
+      <mark
+        key={i}
+        style={{
+          background: `${match.color}1A`,
+          color: match.color,
+          border: `1px solid ${match.color}4D`,
+          borderRadius: '2px',
+          padding: '0 2px',
+          fontWeight: 600,
+        }}
+      >
+        {part}
+      </mark>
     ) : (
       <span key={i}>{part}</span>
     );

@@ -898,7 +898,7 @@ export const TRANSLATIONS = {
     'stats.no_active_session': 'Aucune session active',
     'stats.analyzing': 'Analyse de la structure du graphe...',
     'stats.error_title': 'Analyse interrompue',
-    'stats.error_desc': 'Échec de la récupération des statistiques de session depuis le service neuronal.',
+    'stats.error_desc': 'Échec de la récupération des statistiques de session.',
     'stats.kpi.total_files': 'Fichiers totaux',
     'stats.kpi.total_files_sub': 'Documents traités',
     'stats.kpi.total_entities': 'Entités totales',
@@ -1130,7 +1130,7 @@ export function I18nProvider({ children }: { children: React.ReactNode }) {
   const t = (key: string, variables?: Record<string, string | number>): string => {
     const dict = TRANSLATIONS[language] || TRANSLATIONS.en;
     let text = dict[key as keyof typeof dict] || TRANSLATIONS.en[key as keyof typeof TRANSLATIONS.en] || key;
-    
+
     if (variables) {
       Object.entries(variables).forEach(([k, v]) => {
         text = text.replace(new RegExp(`{${k}}`, 'g'), String(v));

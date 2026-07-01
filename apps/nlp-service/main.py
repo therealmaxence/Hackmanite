@@ -5,7 +5,7 @@ import structlog
 import uvicorn
 
 from db import kuzu_db
-from routers import extract, graph as graph_router
+from routers import extract, graph as graph_router, tesseract as tesseract_router
 
 structlog.configure(
     processors=[
@@ -25,6 +25,7 @@ app.add_middleware(
 )
 app.include_router(extract.router)
 app.include_router(graph_router.router)
+app.include_router(tesseract_router.router)
 
 @app.get("/health")
 async def health():

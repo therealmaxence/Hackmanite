@@ -111,7 +111,7 @@ async def delete_model(payload: dict = Body(...)):
 TESSERACT_INSTALL_STATUS: dict = {"state": "idle", "log": ""}
 
 
-def _run_tesseract_install() -> None:
+def _run_tesseract_install(password: str | None = None) -> None:
     TESSERACT_INSTALL_STATUS["state"] = "installing"
     try:
         if sys.platform == "darwin":
@@ -122,7 +122,7 @@ def _run_tesseract_install() -> None:
             TESSERACT_INSTALL_STATUS["log"] = result.stdout + result.stderr
             TESSERACT_INSTALL_STATUS["state"] = "done" if result.returncode == 0 else "error"
         elif sys.platform.startswith("linux"):
-            _linux_install_tesseract()
+            _linux_install_tesseract(password)
         else:
             TESSERACT_INSTALL_STATUS["state"] = "windows"
             TESSERACT_INSTALL_STATUS["log"] = "Windows requires manual installation."
@@ -131,7 +131,7 @@ def _run_tesseract_install() -> None:
         TESSERACT_INSTALL_STATUS["log"] = str(e)
 
 
-def _linux_install_tesseract() -> None:
+def _linux_install_tesseract(password: str | None = None) -> None:
     import os
     is_root = os.geteuid() == 0
     log_parts: list[str] = []
@@ -141,9 +141,19 @@ def _linux_install_tesseract() -> None:
         (["dnf", "install", "-y"], "tesseract"),
         (["yum", "install", "-y"], "tesseract"),
     ]:
-        cmd = ([] if is_root else ["sudo"]) + pkg_manager + [pkg_name]
+        if is_root:
+            cmd = pkg_manager + [pkg_name]
+        else:
+            cmd = ["sudo", "-S"] + pkg_manager + [pkg_name] if password else ["sudo"] + pkg_manager + [pkg_name]
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            stdin_val = f"{password}\n" if (not is_root and password) else None
+            result = subprocess.run(
+                cmd,
+                input=stdin_val,
+                capture_output=True,
+                text=True,
+                timeout=300
+            )
             log_parts.append(f"$ {' '.join(cmd)}\n{result.stdout}{result.stderr}")
             if result.returncode == 0:
                 TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
@@ -172,12 +182,13 @@ async def tesseract_status():
 
 
 @router.post("/tesseract/install")
-async def tesseract_install(background_tasks: BackgroundTasks):
+async def tesseract_install(background_tasks: BackgroundTasks, payload: dict = Body({})):
     if sys.platform == "win32":
         return JSONResponse({"state": "windows", "url": "https://github.com/UB-Mannheim/tesseract/wiki"})
     if TESSERACT_INSTALL_STATUS["state"] == "installing":
         return {"state": "already_installing"}
     TESSERACT_INSTALL_STATUS["state"] = "installing"
     TESSERACT_INSTALL_STATUS["log"] = ""
-    background_tasks.add_task(_run_tesseract_install)
+    password = payload.get("password")
+    background_tasks.add_task(_run_tesseract_install, password)
     return {"state": "started"}

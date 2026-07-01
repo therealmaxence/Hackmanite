@@ -179,6 +179,8 @@ export const TRANSLATIONS = {
     'tesseract.success': 'Tesseract installed successfully. Restart the NLP service to activate OCR.',
     'tesseract.error': 'Installation failed. Check the NLP service logs.',
     'tesseract.log_label': 'Installation log',
+    'tesseract.password_label': 'Admin / Sudo Password',
+    'tesseract.password_placeholder': 'Enter sudo password',
 
     // Graph Page
     'graph.empty_state': 'No entities yet — upload files first',
@@ -720,6 +722,8 @@ export const TRANSLATIONS = {
     'tesseract.success': 'Tesseract installé avec succès. Redémarrez le service NLP pour activer l\'OCR.',
     'tesseract.error': "L'installation a échoué. Consultez les journaux du service NLP.",
     'tesseract.log_label': 'Journal d\'installation',
+    'tesseract.password_label': 'Mot de passe Admin / Sudo',
+    'tesseract.password_placeholder': 'Saisissez le mot de passe sudo',
 
     // Graph Page
     'graph.empty_state': 'Aucune entité pour le moment — importez d\'abord des fichiers',

@@ -12,9 +12,17 @@ export async function GET() {
   }
 }
 
-export async function POST(_req: NextRequest) {
+export async function POST(req: NextRequest) {
   try {
-    const res = await fetch(`${NLP_URL}/tesseract/install`, { method: 'POST' });
+    let body = {};
+    try {
+      body = await req.json();
+    } catch { /* ignore */ }
+    const res = await fetch(`${NLP_URL}/tesseract/install`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(body),
+    });
     return NextResponse.json(await res.json());
   } catch (err: any) {
     return NextResponse.json({ error: err.message }, { status: 500 });

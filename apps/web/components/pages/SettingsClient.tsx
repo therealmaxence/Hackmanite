@@ -39,6 +39,7 @@ export default function SettingsClient() {
   type TesseractStatus = { found: boolean; path: string | null; platform: string; install_state: string; install_log: string };
   const [tesseract, setTesseract] = useState<TesseractStatus | null>(null);
   const [showTesseractLog, setShowTesseractLog] = useState(false);
+  const [sudoPassword, setSudoPassword] = useState('');
 
   const fetchTesseract = useCallback(async () => {
     try {
@@ -59,7 +60,11 @@ export default function SettingsClient() {
       return;
     }
     try {
-      await fetch('/api/tesseract', { method: 'POST' });
+      await fetch('/api/tesseract', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ password: sudoPassword }),
+      });
       setTesseract((prev) => prev ? { ...prev, install_state: 'installing' } : prev);
     } catch { /* ignore */ }
   };
@@ -505,6 +510,30 @@ export default function SettingsClient() {
                         {tesseract.install_log}
                       </pre>
                     )}
+                  </div>
+                )}
+
+                {tesseract.platform.startsWith('linux') && !tesseract.found && tesseract.install_state !== 'done' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', maxWidth: '280px' }}>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-text-muted)' }}>
+                      {t('tesseract.password_label')}
+                    </label>
+                    <input
+                      type="password"
+                      value={sudoPassword}
+                      onChange={(e) => setSudoPassword(e.target.value)}
+                      placeholder={t('tesseract.password_placeholder')}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem 0.75rem',
+                        background: '#120108',
+                        border: '1px solid var(--color-border)',
+                        borderRadius: 'var(--radius-sm)',
+                        color: 'var(--color-text)',
+                        fontSize: '0.8125rem',
+                        outline: 'none',
+                      }}
+                    />
                   </div>
                 )}
 

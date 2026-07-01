@@ -115,63 +115,45 @@ def _run_tesseract_install(password: str | None = None) -> None:
     TESSERACT_INSTALL_STATUS["state"] = "installing"
     try:
         if sys.platform == "darwin":
-            result = subprocess.run(
-                ["brew", "install", "tesseract"],
-                capture_output=True, text=True, timeout=300,
-            )
-            TESSERACT_INSTALL_STATUS["log"] = result.stdout + result.stderr
-            found, _ = get_tesseract_info()
-            TESSERACT_INSTALL_STATUS["state"] = "done" if (result.returncode == 0 or found) else "error"
+            res = subprocess.run(["brew", "install", "tesseract"], capture_output=True, text=True, timeout=300)
+            TESSERACT_INSTALL_STATUS["log"] = res.stdout + res.stderr
         elif sys.platform.startswith("linux"):
             _linux_install_tesseract(password)
         else:
-            TESSERACT_INSTALL_STATUS["state"] = "windows"
             TESSERACT_INSTALL_STATUS["log"] = "Windows requires manual installation."
     except Exception as e:
-        TESSERACT_INSTALL_STATUS["state"] = "error"
         TESSERACT_INSTALL_STATUS["log"] = str(e)
+    found, _ = get_tesseract_info()
+    TESSERACT_INSTALL_STATUS["state"] = "done" if found else "error"
 
 
 def _linux_install_tesseract(password: str | None = None) -> None:
     import os
     is_root = os.geteuid() == 0
-    log_parts: list[str] = []
-
-    for pkg_manager, pkg_name in [
+    log_parts = []
+    for pm, pkg in [
         (["apt-get", "install", "-y"], "tesseract-ocr"),
         (["dnf", "install", "-y"], "tesseract"),
         (["yum", "install", "-y"], "tesseract"),
     ]:
-        if is_root:
-            cmd = pkg_manager + [pkg_name]
-        else:
-            cmd = ["sudo", "-S"] + pkg_manager + [pkg_name] if password else ["sudo"] + pkg_manager + [pkg_name]
+        cmd = pm + [pkg] if is_root else (["sudo", "-S"] + pm + [pkg] if password else ["sudo"] + pm + [pkg])
         try:
-            stdin_val = f"{password}\n" if (not is_root and password) else None
-            result = subprocess.run(
+            res = subprocess.run(
                 cmd,
-                input=stdin_val,
+                input=f"{password}\n" if (not is_root and password) else None,
                 capture_output=True,
                 text=True,
                 timeout=300
             )
-            log_parts.append(f"$ {' '.join(cmd)}\n{result.stdout}{result.stderr}")
-            found, _ = get_tesseract_info()
-            if result.returncode == 0 or found:
-                TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
-                TESSERACT_INSTALL_STATUS["state"] = "done"
-                return
+            log_parts.append(f"$ {' '.join(cmd)}\n{res.stdout}{res.stderr}")
+            if res.returncode == 0 or get_tesseract_info()[0]:
+                break
         except FileNotFoundError:
-            log_parts.append(f"{cmd[0]} not found, trying next.")
-            continue
+            log_parts.append(f"{cmd[0]} not found.")
         except Exception as e:
             log_parts.append(str(e))
             break
-
-    # Final fallback check: if tesseract is now found on the system, ignore installer errors
-    found, _ = get_tesseract_info()
     TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
-    TESSERACT_INSTALL_STATUS["state"] = "done" if found else "error"
 
 
 @router.get("/tesseract/status")
@@ -192,8 +174,6 @@ async def tesseract_install(background_tasks: BackgroundTasks, payload: dict = B
         return JSONResponse({"state": "windows", "url": "https://github.com/UB-Mannheim/tesseract/wiki"})
     if TESSERACT_INSTALL_STATUS["state"] == "installing":
         return {"state": "already_installing"}
-    TESSERACT_INSTALL_STATUS["state"] = "installing"
-    TESSERACT_INSTALL_STATUS["log"] = ""
-    password = payload.get("password")
-    background_tasks.add_task(_run_tesseract_install, password)
+    TESSERACT_INSTALL_STATUS.update({"state": "installing", "log": ""})
+    background_tasks.add_task(_run_tesseract_install, payload.get("password"))
     return {"state": "started"}

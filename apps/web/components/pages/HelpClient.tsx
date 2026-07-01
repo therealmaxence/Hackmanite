@@ -16,7 +16,7 @@ const HELP_TRANSLATIONS = {
       algorithms: 'Extraction & Graphs',
       filters: 'Filters & Centrality',
       weak_signals: 'Weak Signals',
-      ai_report: 'AI Reports',
+      ai_report: 'LLM Reports',
     },
     sections: {
       guide: {
@@ -103,16 +103,16 @@ const HELP_TRANSLATIONS = {
         ]
       },
       ai_report: {
-        title: 'AI Intelligence Report Engine',
+        title: 'LLM Intelligence Report Engine',
         desc: 'How LLMs summarize and generate briefings on your data.',
         items: [
           {
             title: 'Context Assembly',
-            content: 'When you request an AI Report, Hackmanite queries the SQLite database to gather session statistics: total files, entity frequencies, high-relevance co-occurrences, and top weak signals.',
+            content: 'When you request an LLM Report, Hackmanite queries the SQLite database to gather session statistics: total files, entity frequencies, high-relevance co-occurrences, and top weak signals.',
           },
           {
             title: 'Prompt Injection',
-            content: 'This raw metadata is structured into a clean JSON/text schema and injected into a system prompt configured to prevent hallucinations and report on factual session data. Not that the AI report does not replce human analysis !',
+            content: 'This raw metadata is structured into a clean JSON/text schema and injected into a system prompt configured to prevent hallucinations and report on factual session data. Note that the LLM report does not replace human analysis!',
           },
           {
             title: 'LLM Synthesis',
@@ -130,7 +130,7 @@ const HELP_TRANSLATIONS = {
       algorithms: 'Extraction & Graphes',
       filters: 'Filtres & Centralité',
       weak_signals: 'Signaux Faibles',
-      ai_report: 'Rapports IA',
+      ai_report: 'Rapports LLM',
     },
     sections: {
       guide: {
@@ -217,12 +217,12 @@ const HELP_TRANSLATIONS = {
         ]
       },
       ai_report: {
-        title: 'Moteur de Rapports d\'Intelligence IA',
-        desc: 'Comment l\'IA synthétise vos données pour rédiger un rapport.',
+        title: 'Moteur de Rapports d\'Intelligence LLM',
+        desc: 'Comment le LLM synthétise vos données pour rédiger un rapport.',
         items: [
           {
             title: 'Rassemblement du Contexte',
-            content: 'Lorsque vous lancez un Rapport IA, Hackmanite regroupe les statistiques clés : nombre de fichiers, fréquences d\'entités, co-occurrences fortes et signaux faibles.',
+            content: 'Lorsque vous lancez un Rapport LLM, Hackmanite regroupe les statistiques clés : nombre de fichiers, fréquences d\'entités, co-occurrences fortes et signaux faibles.',
           },
           {
             title: 'Création du Prompt Factuel',
@@ -230,7 +230,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Synthèse par LLM',
-            content: 'La requête est transmise aux modèles Mistral AI (ou autre modèle compatible) afin de rédiger une analyse stratégique claire et documentée des événements clés de la session. Notez que le rapport IA ne remplace pas l\'analyse humaine !',
+            content: 'La requête est transmise aux modèles Mistral AI (ou autre modèle compatible) afin de rédiger une analyse stratégique claire et documentée des événements clés de la session. Notez que le rapport LLM ne remplace pas l\'analyse humaine !',
           },
         ]
       },

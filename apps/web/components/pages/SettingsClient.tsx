@@ -36,6 +36,34 @@ export default function SettingsClient() {
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
+  type TesseractStatus = { found: boolean; path: string | null; platform: string; install_state: string; install_log: string };
+  const [tesseract, setTesseract] = useState<TesseractStatus | null>(null);
+  const [showTesseractLog, setShowTesseractLog] = useState(false);
+
+  const fetchTesseract = useCallback(async () => {
+    try {
+      const res = await fetch('/api/tesseract');
+      if (res.ok) setTesseract(await res.json());
+    } catch { /* NLP service not reachable */ }
+  }, []);
+
+  const handleTesseractInstall = async () => {
+    if (!tesseract) return;
+    if (tesseract.platform === 'win32') {
+      const url = 'https://github.com/UB-Mannheim/tesseract/wiki';
+      if (typeof window !== 'undefined' && (window as any).electronAPI?.openExternal) {
+        (window as any).electronAPI.openExternal(url);
+      } else {
+        window.open(url, '_blank', 'noopener,noreferrer');
+      }
+      return;
+    }
+    try {
+      await fetch('/api/tesseract', { method: 'POST' });
+      setTesseract((prev) => prev ? { ...prev, install_state: 'installing' } : prev);
+    } catch { /* ignore */ }
+  };
+
   const fetchModels = useCallback(async () => {
     try {
       const res = await fetch('/api/spacy-models');
@@ -52,13 +80,20 @@ export default function SettingsClient() {
 
   useEffect(() => {
     fetchModels();
-  }, [fetchModels]);
+    fetchTesseract();
+  }, [fetchModels, fetchTesseract]);
 
   useEffect(() => {
     if (!downloadingModel) return;
     const interval = setInterval(fetchModels, 3000);
     return () => clearInterval(interval);
   }, [downloadingModel, fetchModels]);
+
+  useEffect(() => {
+    if (tesseract?.install_state !== 'installing') return;
+    const interval = setInterval(fetchTesseract, 3000);
+    return () => clearInterval(interval);
+  }, [tesseract?.install_state, fetchTesseract]);
 
   const handleDownloadModel = async (modelId: string) => {
     setDownloadingModel(modelId);
@@ -405,6 +440,93 @@ export default function SettingsClient() {
                 )}
               </div>
             </div>
+          </div>
+
+          {/* Tesseract OCR */}
+          <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: 600, color: 'var(--color-text)' }}>{t('tesseract.title')}</h3>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)' }}>{t('tesseract.desc')}</p>
+            </div>
+
+            {!tesseract ? (
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8125rem', color: 'var(--color-text-muted)' }}>
+                <Spinner size={12} />
+              </div>
+            ) : (
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                  <span style={{
+                    fontSize: '0.75rem', fontWeight: 600, padding: '0.2rem 0.6rem',
+                    borderRadius: 'var(--radius-sm)',
+                    background: tesseract.found ? 'rgba(16,185,129,0.1)' : 'rgba(239,68,68,0.1)',
+                    color: tesseract.found ? '#10b981' : '#ef4444',
+                    border: `1px solid ${tesseract.found ? 'rgba(16,185,129,0.3)' : 'rgba(239,68,68,0.3)'}`,
+                  }}>
+                    {tesseract.found ? t('tesseract.status_found') : t('tesseract.status_not_found')}
+                  </span>
+                  {tesseract.found && tesseract.path && (
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', fontFamily: 'var(--font-mono)' }}>
+                      {t('tesseract.path_label')}: {tesseract.path}
+                    </span>
+                  )}
+                  <button
+                    onClick={fetchTesseract}
+                    title={t('tesseract.btn_reload')}
+                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', padding: '0.25rem', display: 'flex', alignItems: 'center', outline: 'none', marginLeft: 'auto' }}
+                    onMouseEnter={(e) => (e.currentTarget.style.color = 'var(--color-text)')}
+                    onMouseLeave={(e) => (e.currentTarget.style.color = 'var(--color-text-muted)')}
+                  >
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polyline points="23 4 23 10 17 10" /><polyline points="1 20 1 14 7 14" />
+                      <path d="M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15" />
+                    </svg>
+                  </button>
+                </div>
+
+                {tesseract.platform === 'win32' && !tesseract.found && (
+                  <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', lineHeight: 1.6 }}>{t('tesseract.windows_note')}</p>
+                )}
+
+                {tesseract.install_state === 'done' && (
+                  <p style={{ fontSize: '0.75rem', color: '#10b981', fontWeight: 500 }}>{t('tesseract.success')}</p>
+                )}
+                {tesseract.install_state === 'error' && (
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                    <p style={{ fontSize: '0.75rem', color: '#ef4444', fontWeight: 500 }}>{t('tesseract.error')}</p>
+                    <button
+                      onClick={() => setShowTesseractLog((v) => !v)}
+                      style={{ background: 'transparent', border: 'none', cursor: 'pointer', color: 'var(--color-text-muted)', fontSize: '0.7rem', textAlign: 'left', padding: 0, outline: 'none' }}
+                    >
+                      {showTesseractLog ? '▾' : '▸'} {t('tesseract.log_label')}
+                    </button>
+                    {showTesseractLog && (
+                      <pre style={{ fontSize: '0.65rem', color: 'var(--color-text-muted)', background: 'rgba(0,0,0,0.3)', borderRadius: 'var(--radius-sm)', padding: '0.75rem', overflowX: 'auto', whiteSpace: 'pre-wrap', wordBreak: 'break-all', margin: 0 }}>
+                        {tesseract.install_log}
+                      </pre>
+                    )}
+                  </div>
+                )}
+
+                {!tesseract.found && tesseract.install_state !== 'done' && (
+                  <Button
+                    id="tesseract-install-btn"
+                    size="sm"
+                    variant="secondary"
+                    onClick={handleTesseractInstall}
+                    disabled={tesseract.install_state === 'installing'}
+                    style={{ alignSelf: 'flex-start', fontSize: '0.8125rem' }}
+                  >
+                    {tesseract.install_state === 'installing'
+                      ? <><Spinner size={12} />&nbsp;{t('tesseract.btn_installing')}</>
+                      : tesseract.platform === 'win32'
+                        ? t('tesseract.btn_open_page')
+                        : t('tesseract.btn_install')
+                    }
+                  </Button>
+                )}
+              </div>
+            )}
           </div>
 
           <div style={{ background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '1.5rem', display: 'flex', flexDirection: 'column', gap: '1rem' }}>

@@ -1,13 +1,16 @@
 import asyncio
 import structlog
-import json
+import subprocess
+import sys
 import urllib.request
 import tarfile
 import shutil
 from pathlib import Path
 from fastapi import APIRouter, BackgroundTasks, Body
+from fastapi.responses import JSONResponse
 from models.schemas import ExtractionRequest, ExtractionResult
 from services.dispatcher import dispatch
+from services.ocr import tesseract_found, _tcmd
 from services.spacy_registry import (
     SUPPORTED_MODELS, MODELS_DIR,
     is_installed, evict,
@@ -104,3 +107,77 @@ async def delete_model(payload: dict = Body(...)):
     return {"status": "ok", "deleted": deleted_any} | (
         {} if deleted_any else {"message": "Model was not found in local models directory"}
     )
+
+TESSERACT_INSTALL_STATUS: dict = {"state": "idle", "log": ""}
+
+
+def _run_tesseract_install() -> None:
+    TESSERACT_INSTALL_STATUS["state"] = "installing"
+    try:
+        if sys.platform == "darwin":
+            result = subprocess.run(
+                ["brew", "install", "tesseract"],
+                capture_output=True, text=True, timeout=300,
+            )
+            TESSERACT_INSTALL_STATUS["log"] = result.stdout + result.stderr
+            TESSERACT_INSTALL_STATUS["state"] = "done" if result.returncode == 0 else "error"
+        elif sys.platform.startswith("linux"):
+            _linux_install_tesseract()
+        else:
+            TESSERACT_INSTALL_STATUS["state"] = "windows"
+            TESSERACT_INSTALL_STATUS["log"] = "Windows requires manual installation."
+    except Exception as e:
+        TESSERACT_INSTALL_STATUS["state"] = "error"
+        TESSERACT_INSTALL_STATUS["log"] = str(e)
+
+
+def _linux_install_tesseract() -> None:
+    import os
+    is_root = os.geteuid() == 0
+    log_parts: list[str] = []
+
+    for pkg_manager, pkg_name in [
+        (["apt-get", "install", "-y"], "tesseract-ocr"),
+        (["dnf", "install", "-y"], "tesseract"),
+        (["yum", "install", "-y"], "tesseract"),
+    ]:
+        cmd = ([] if is_root else ["sudo"]) + pkg_manager + [pkg_name]
+        try:
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            log_parts.append(f"$ {' '.join(cmd)}\n{result.stdout}{result.stderr}")
+            if result.returncode == 0:
+                TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
+                TESSERACT_INSTALL_STATUS["state"] = "done"
+                return
+        except FileNotFoundError:
+            log_parts.append(f"{cmd[0]} not found, trying next.")
+            continue
+        except Exception as e:
+            log_parts.append(str(e))
+            break
+
+    TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
+    TESSERACT_INSTALL_STATUS["state"] = "error"
+
+
+@router.get("/tesseract/status")
+async def tesseract_status():
+    return {
+        "found": tesseract_found,
+        "path": _tcmd,
+        "platform": sys.platform,
+        "install_state": TESSERACT_INSTALL_STATUS["state"],
+        "install_log": TESSERACT_INSTALL_STATUS["log"],
+    }
+
+
+@router.post("/tesseract/install")
+async def tesseract_install(background_tasks: BackgroundTasks):
+    if sys.platform == "win32":
+        return JSONResponse({"state": "windows", "url": "https://github.com/UB-Mannheim/tesseract/wiki"})
+    if TESSERACT_INSTALL_STATUS["state"] == "installing":
+        return {"state": "already_installing"}
+    TESSERACT_INSTALL_STATUS["state"] = "installing"
+    TESSERACT_INSTALL_STATUS["log"] = ""
+    background_tasks.add_task(_run_tesseract_install)
+    return {"state": "started"}

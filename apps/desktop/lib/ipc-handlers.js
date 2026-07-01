@@ -1,4 +1,4 @@
-const { ipcMain } = require('electron');
+const { ipcMain, shell } = require('electron');
 
 function registerIpcHandlers(getMainWindow) {
   const getWin = () => getMainWindow();
@@ -9,6 +9,7 @@ function registerIpcHandlers(getMainWindow) {
   });
   ipcMain.on('window-close', () => getWin()?.close());
   ipcMain.handle('window-is-maximized', () => getWin()?.isMaximized() ?? false);
+  ipcMain.handle('shell-open-url', (_event, url) => shell.openExternal(url));
 }
 
 module.exports = { registerIpcHandlers };

@@ -165,6 +165,21 @@ export const TRANSLATIONS = {
     'language.en': 'English',
     'language.fr': 'Français',
 
+    // Tesseract OCR
+    'tesseract.title': 'Tesseract OCR',
+    'tesseract.desc': 'Tesseract is required to extract text from scanned PDFs and images. Install it to enable OCR support.',
+    'tesseract.status_found': 'Installed',
+    'tesseract.status_not_found': 'Not installed',
+    'tesseract.path_label': 'Path',
+    'tesseract.btn_install': 'Install Tesseract',
+    'tesseract.btn_open_page': 'Open Download Page',
+    'tesseract.btn_installing': 'Installing…',
+    'tesseract.btn_reload': 'Reload status',
+    'tesseract.windows_note': 'On Windows, Tesseract must be installed manually. Click the button below to open the official download page.',
+    'tesseract.success': 'Tesseract installed successfully. Restart the NLP service to activate OCR.',
+    'tesseract.error': 'Installation failed. Check the NLP service logs.',
+    'tesseract.log_label': 'Installation log',
+
     // Graph Page
     'graph.empty_state': 'No entities yet — upload files first',
     'graph.loading_nodes': 'Loading nodes… {loaded} / {total}',
@@ -687,9 +702,24 @@ export const TRANSLATIONS = {
 
     // Language Settings card
     'language.title': 'Paramètres de langue',
-    'language.desc': 'Sélectionnez la langue de l\'interface utilisateur.',
+    'language.desc': "Sélectionnez la langue de l'interface utilisateur.",
     'language.en': 'English',
     'language.fr': 'Français',
+
+    // Tesseract OCR
+    'tesseract.title': 'Tesseract OCR',
+    'tesseract.desc': "Tesseract est requis pour extraire le texte des PDF scannés et des images. Installez-le pour activer la reconnaissance optique de caractères.",
+    'tesseract.status_found': 'Installé',
+    'tesseract.status_not_found': 'Non installé',
+    'tesseract.path_label': 'Chemin',
+    'tesseract.btn_install': 'Installer Tesseract',
+    'tesseract.btn_open_page': 'Ouvrir la page de téléchargement',
+    'tesseract.btn_installing': 'Installation…',
+    'tesseract.btn_reload': 'Rafraîchir le statut',
+    'tesseract.windows_note': 'Sur Windows, Tesseract doit être installé manuellement. Cliquez sur le bouton ci-dessous pour ouvrir la page de téléchargement officielle.',
+    'tesseract.success': 'Tesseract installé avec succès. Redémarrez le service NLP pour activer l\'OCR.',
+    'tesseract.error': "L'installation a échoué. Consultez les journaux du service NLP.",
+    'tesseract.log_label': 'Journal d\'installation',
 
     // Graph Page
     'graph.empty_state': 'Aucune entité pour le moment — importez d\'abord des fichiers',

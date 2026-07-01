@@ -10,7 +10,7 @@ from fastapi import APIRouter, BackgroundTasks, Body
 from fastapi.responses import JSONResponse
 from models.schemas import ExtractionRequest, ExtractionResult
 from services.dispatcher import dispatch
-from services.ocr import tesseract_found, _tcmd
+from services.ocr import get_tesseract_info
 from services.spacy_registry import (
     SUPPORTED_MODELS, MODELS_DIR,
     is_installed, evict,
@@ -120,7 +120,8 @@ def _run_tesseract_install(password: str | None = None) -> None:
                 capture_output=True, text=True, timeout=300,
             )
             TESSERACT_INSTALL_STATUS["log"] = result.stdout + result.stderr
-            TESSERACT_INSTALL_STATUS["state"] = "done" if result.returncode == 0 else "error"
+            found, _ = get_tesseract_info()
+            TESSERACT_INSTALL_STATUS["state"] = "done" if (result.returncode == 0 or found) else "error"
         elif sys.platform.startswith("linux"):
             _linux_install_tesseract(password)
         else:
@@ -155,7 +156,8 @@ def _linux_install_tesseract(password: str | None = None) -> None:
                 timeout=300
             )
             log_parts.append(f"$ {' '.join(cmd)}\n{result.stdout}{result.stderr}")
-            if result.returncode == 0:
+            found, _ = get_tesseract_info()
+            if result.returncode == 0 or found:
                 TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
                 TESSERACT_INSTALL_STATUS["state"] = "done"
                 return
@@ -166,15 +168,18 @@ def _linux_install_tesseract(password: str | None = None) -> None:
             log_parts.append(str(e))
             break
 
+    # Final fallback check: if tesseract is now found on the system, ignore installer errors
+    found, _ = get_tesseract_info()
     TESSERACT_INSTALL_STATUS["log"] = "\n".join(log_parts)
-    TESSERACT_INSTALL_STATUS["state"] = "error"
+    TESSERACT_INSTALL_STATUS["state"] = "done" if found else "error"
 
 
 @router.get("/tesseract/status")
 async def tesseract_status():
+    found, path = get_tesseract_info()
     return {
-        "found": tesseract_found,
-        "path": _tcmd,
+        "found": found,
+        "path": path,
         "platform": sys.platform,
         "install_state": TESSERACT_INSTALL_STATUS["state"],
         "install_log": TESSERACT_INSTALL_STATUS["log"],

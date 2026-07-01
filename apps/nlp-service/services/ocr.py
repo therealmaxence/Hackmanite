@@ -27,11 +27,23 @@ else:
         "  Linux: sudo apt install tesseract-ocr"
     )
 
+def get_tesseract_info() -> tuple[bool, str | None]:
+    global _tcmd, tesseract_found
+    if not tesseract_found:
+        cmd = next((p for p in _paths if os.path.exists(p)), shutil.which("tesseract"))
+        if cmd:
+            _tcmd = cmd
+            tesseract_found = True
+            pytesseract.pytesseract.tesseract_cmd = cmd
+    return tesseract_found, _tcmd
+
+
 DEFAULT_OCR_LANG = "fra+eng+rus"
 
 
 def image_to_text(image_data: str | bytes | Image.Image, lang: str = DEFAULT_OCR_LANG) -> str:
-    if not tesseract_found:
+    found, _ = get_tesseract_info()
+    if not found:
         logger.error("OCR requested but Tesseract is not installed.")
         return ""
     try:

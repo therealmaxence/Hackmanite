@@ -8,13 +8,21 @@ import Spinner from '@/components/ui/Spinner';
 import SelectedNodesList from './SelectedNodesList';
 import CooccurringFileCard from './CooccurringFileCard';
 import { useTranslation } from '@/lib/i18n';
+import { ENTITY_COLORS, EntityType } from '@/types/entities';
 
 const fetcher = (url: string) => fetch(url).then((r) => r.json());
 
-function HighlightText({ text, terms }: { text: string; terms: string[] }) {
-  if (!terms || terms.length === 0) return <>{text}</>;
-  const escaped = terms
-    .map((t) => t.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
+interface NodeItem {
+  id: string;
+  label: string;
+  type: EntityType | 'FILE';
+  color: string;
+}
+
+function HighlightText({ text, selectedNodes }: { text: string; selectedNodes: NodeItem[] }) {
+  if (!selectedNodes || selectedNodes.length === 0) return <>{text}</>;
+  const escaped = selectedNodes
+    .map((n) => n.label.replace(/[-\/\\^$*+?.()|[\]{}]/g, '\\$&'))
     .filter(Boolean);
   if (escaped.length === 0) return <>{text}</>;
 
@@ -24,23 +32,27 @@ function HighlightText({ text, terms }: { text: string; terms: string[] }) {
   return (
     <>
       {parts.map((part, i) => {
-        const isMatch = terms.some((term) => term.toLowerCase() === part.toLowerCase());
-        return isMatch ? (
-          <mark
-            key={i}
-            style={{
-              background: 'rgba(245, 158, 11, 0.25)',
-              color: '#f59e0b',
-              borderRadius: '2px',
-              padding: '0 2px',
-              fontWeight: 600,
-            }}
-          >
-            {part}
-          </mark>
-        ) : (
-          part
-        );
+        const matchingNode = selectedNodes.find((n) => n.label.toLowerCase() === part.toLowerCase());
+        if (matchingNode) {
+          const nodeTypeUpper = (matchingNode.type || '').toUpperCase() as EntityType | 'FILE';
+          const color = matchingNode.color || ENTITY_COLORS[nodeTypeUpper] || '#f59e0b';
+          return (
+            <mark
+              key={i}
+              style={{
+                background: `${color}1A`,
+                color: color,
+                border: `1px solid ${color}4D`,
+                borderRadius: '2px',
+                padding: '0 2px',
+                fontWeight: 600,
+              }}
+            >
+              {part}
+            </mark>
+          );
+        }
+        return part;
       })}
     </>
   );
@@ -277,7 +289,7 @@ export default function MultiNodePanel() {
                           whiteSpace: 'pre-wrap',
                         }}
                       >
-                        <HighlightText text={snippet} terms={selectedNodes.map((n) => n.label)} />
+                        <HighlightText text={snippet} selectedNodes={selectedNodes} />
                       </div>
                     ))}
                   </div>

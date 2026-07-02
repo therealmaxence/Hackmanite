@@ -30,5 +30,13 @@ export function computeGraphCommunities(
       labels.set(id, maxLbl);
     }
   }
+
+  for (const { id } of nodes) {
+    const neighbors = adj.get(id);
+    if (!neighbors || !neighbors.size) {
+      labels.set(id, 'isolated');
+    }
+  }
+
   return labels;
 }

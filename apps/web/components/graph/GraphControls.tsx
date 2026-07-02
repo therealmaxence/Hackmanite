@@ -23,10 +23,47 @@ export default function GraphControls() {
   const sortedCommunities = useMemo(() => {
     const counts = new Map<string, number>();
     for (const label of communityMap.values()) counts.set(label, (counts.get(label) ?? 0) + 1);
-    return Array.from(counts.entries())
-      .sort((a, b) => b[1] - a[1])
-      .map(([id, count], i) => ({ id, name: t('graph.controls.community_name', { num: i + 1 }), count }));
-  }, [communityMap, t]);
+
+    const edgeCounts = new Map<string, number>();
+    for (const edge of edges) {
+      const sourceComm = communityMap.get(edge.source);
+      const targetComm = communityMap.get(edge.target);
+      if (sourceComm && sourceComm === targetComm) {
+        edgeCounts.set(sourceComm, (edgeCounts.get(sourceComm) ?? 0) + 1);
+      }
+    }
+
+    const normalComms: { id: string; count: number }[] = [];
+    let isolatedCount = 0;
+
+    for (const [id, count] of counts.entries()) {
+      if (id === 'isolated') {
+        isolatedCount = count;
+      } else {
+        normalComms.push({ id, count });
+      }
+    }
+
+    normalComms.sort((a, b) => b.count - a.count);
+
+    const results = normalComms.map((comm, i) => ({
+      id: comm.id,
+      name: t('graph.controls.community_name', { num: i + 1 }),
+      count: comm.count,
+      edgeCount: edgeCounts.get(comm.id) ?? 0,
+    }));
+
+    if (isolatedCount > 0) {
+      results.push({
+        id: 'isolated',
+        name: t('graph.controls.isolated_nodes'),
+        count: isolatedCount,
+        edgeCount: 0,
+      });
+    }
+
+    return results;
+  }, [communityMap, edges, t]);
 
   const handleSearch = (val: string) => { setLocalSearch(val); setFilter('searchQuery', val); };
 

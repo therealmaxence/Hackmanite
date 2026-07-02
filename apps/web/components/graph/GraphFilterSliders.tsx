@@ -9,7 +9,7 @@ function toLocalDateInputValue(date: Date | null) {
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 }
 
-interface Community { id: string; name: string; count: number }
+interface Community { id: string; name: string; count: number; edgeCount?: number }
 
 interface Props {
   filters: GraphFilters;
@@ -129,7 +129,13 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
                     onChange={(e) => onFilterChange('hiddenCommunities', e.target.checked ? filters.hiddenCommunities.filter((id) => id !== comm.id) : [...filters.hiddenCommunities, comm.id])}
                     style={{ accentColor: 'var(--color-primary)', cursor: 'pointer' }}
                   />
-                  <span>{comm.name} <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>({comm.count} {comm.count === 1 ? t('graph.controls.node') : t('graph.controls.nodes')})</span></span>
+                  <span>
+                    {comm.name}{' '}
+                    <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)' }}>
+                      ({comm.count} {comm.count === 1 ? t('graph.controls.node') : t('graph.controls.nodes')}
+                      {comm.edgeCount !== undefined && `, ${comm.edgeCount} ${comm.edgeCount === 1 ? t('graph.controls.edge') : t('graph.controls.edges')}`})
+                    </span>
+                  </span>
                 </label>
               );
             })}

@@ -24,19 +24,35 @@ Hackmanite is a desktop application for extracting, exploring, and visualizing *
 ```
 EntityGraph/
 ├── apps/
-│   ├── desktop/          # Electron wrapper (main process, splash screen, packaging)
-│   │   ├── main.js       # App entry point — spawns web & NLP services
-│   │   ├── splash.html   # Loading screen shown at startup
-│   │   └── builder-config.json  # electron-builder packaging configuration
-│   ├── web/              # Next.js frontend (UI, API routes, Prisma/SQLite)
-│   ├── nlp-service/      # FastAPI + spaCy NLP backend
-│   │   ├── main.py       # FastAPI app entry point
-│   │   ├── db/           # KuzuDB graph database layer (connection, schema, queries)
-│   │   ├── routers/      # API route handlers (extract, graph read endpoints)
-│   │   └── services/     # Entity extraction, OCR, file parsing logic & spec
-│   ├── tests/            # Ingestion testing files (.eml samples)
-│   └── data/             # SQLite development database location
-├── data/                 # Persistent app data and uploads mapped by Docker volumes
+│   ├── desktop/                  # Electron wrapper (main process, splash screen, packaging)
+│   │   ├── main.js               # App entry point — orchestrates startup and window lifecycle
+│   │   ├── preload.js            # Electron preload script (context bridge)
+│   │   ├── splash.html           # Loading screen shown at startup
+│   │   ├── builder-config.json   # electron-builder packaging configuration
+│   │   └── lib/                  # Desktop helper modules
+│   │       ├── boot-services.js  # Spawns and monitors NLP & web services
+│   │       ├── ipc-handlers.js   # Electron IPC channel registration
+│   │       ├── process-manager.js# Subprocess lifecycle (kill, track PIDs)
+│   │       ├── session-secret.js # Generates/persists the session secret
+│   │       ├── tray.js           # System-tray icon and context menu
+│   │       └── window-manager.js # BrowserWindow creation and management
+│   ├── web/                      # Next.js frontend (UI, API routes, Prisma/SQLite)
+│   │   └── prisma/               # Prisma schema & SQLite dev database (dev.db)
+│   ├── nlp-service/              # FastAPI + spaCy NLP backend
+│   │   ├── main.py               # FastAPI app entry point
+│   │   ├── db/                   # KuzuDB graph database layer (connection, schema, queries)
+│   │   ├── models/               # Pydantic schemas shared across the service
+│   │   ├── routers/              # API route handlers (extract, graph read endpoints)
+│   │   └── services/             # Entity extraction, OCR, file parsing logic & spec
+│   └── tests/                    # Ingestion testing files (.eml samples)
+├── data/                         # Persistent app data and uploads (Docker volume mounts)
+│   ├── uploads/                  # Uploaded documents
+│   └── db/                       # SQLite database (production / Docker)
+├── infra/                        # Infrastructure configuration
+│   └── redis/                    # Redis server config
+├── docker-compose.yml            # Production Docker Compose (web, nlp, redis, redis-insight)
+├── docker-compose.dev.yml        # Development overrides (hot-reload, volume mounts)
+├── .env.example                  # Environment variable template
 └── README.md
 ```
 
@@ -72,24 +88,32 @@ python -m spacy download ru_core_news_lg
 
 ### 3. Create the environment file
 
-Copy the example and fill in values:
+Copy the example at the **repository root** and fill in values:
 
 ```powershell
-# In apps/web/
+# From the repository root (EntityGraph/)
 copy .env.example .env   # then edit .env
 ```
 
-Minimum required content for local development (`apps/web/.env`):
+Minimum required content for local development (`.env`):
 
 ```env
-DATABASE_URL="file:./dev.db"
+DATABASE_URL="file:./apps/web/prisma/dev.db?connection_limit=1&socket_timeout=900"
 SESSION_SECRET="generate_32_char_random_string_here"
 NLP_SERVICE_URL="http://127.0.0.1:8000"
-MAX_FILE_SIZE_MB=500
+MAX_FILE_SIZE_MB=100
 UPLOAD_DIR="./uploads"
 NODE_ENV="development"
 NEXT_PUBLIC_APP_URL="http://localhost:3000"
-MISTRAL_API_KEY="your_optional_global_mistral_api_key"
+```
+
+Optional variables (see `.env.example` for the full list):
+
+```env
+REDIS_URL=redis://redis:6379          # only needed when running via Docker
+BULL_EXTRACTION_CONCURRENCY=10        # BullMQ worker concurrency
+KUZU_BUFFER_POOL_SIZE=                # leave empty for auto-scaling
+LOG_LEVEL=info
 ```
 
 Optional — override the KuzuDB data directory (default: `./kuzu_data` next to `main.py`):
@@ -106,15 +130,15 @@ cd apps/web
 npx prisma db push
 ```
 
-This creates the local SQLite database (`prisma/dev.db`). The KuzuDB graph database (`kuzu_data/`) is created automatically on first NLP service startup.
+This creates the local SQLite database (`apps/web/prisma/dev.db`). The KuzuDB graph database (`kuzu_data/`) is created automatically on first NLP service startup.
 
 ---
 
 ## Running the App
 
-### Option A — Development mode
+### Option A — Development mode (native processes)
 
-To run the application locally in development, open three separate terminals and execute the following:
+Open three separate terminals and execute the following:
 
 ```powershell
 # Terminal 1 — NLP service
@@ -130,7 +154,18 @@ cd apps/desktop
 npm start
 ```
 
-### Option B — Portable ZIP (no installation needed)
+### Option B — Development mode (Docker)
+
+Requires Docker Desktop. Uses the root `.env` for secrets and hot-reloads source changes:
+
+```powershell
+# From the repository root
+docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+```
+
+Services started: `web` (Next.js, port 3000), `nlp` (FastAPI, port 8000), `redis` (port 6379), `redis-insight` (port 5540).
+
+### Option C — Portable ZIP (no installation needed)
 
 > Use **[7-Zip](https://www.7-zip.org/)** to extract — Windows' built-in extractor can silently corrupt files in large ZIPs.
 
@@ -159,9 +194,9 @@ You can export your session's entity graph to Obsidian to explore and search nod
 
 Analyze early-warning indicators, broker connections, and niche topics across your documents:
 
-- **Methodology A (Rare Bridges)**: Identifies nodes with low global occurrences that act as critical topological links between clusters in the co-occurrence network.
-- **Methodology B (Niche Topics)**: Isolates specific, localized topics appearing in at most 2 files with high local TF-IDF salience.
-- **Methodology C (Spiking Signals)**: Detects temporal spikes anywhere across the timeline using a sliding time window (20% of total duration width, moving in steps of 10%) where $\ge 60\%$ of occurrences are concentrated.
+- **Rare Bridges**: Identifies nodes with low global occurrences that act as critical topological links between clusters in the co-occurrence network.
+- **Niche Topics**: Isolates specific, localized topics appearing in at most 2 files with high local TF-IDF salience.
+- **Spiking Signals**: Detects temporal spikes anywhere across the timeline using a sliding time window (20% of total duration width, moving in steps of 10%) where $\ge 60\%$ of occurrences are concentrated.
 - **Graph Visual Highlights**: Visualizes weak signals on the interactive graph with a dashed border and a pulsing neon purple shadow/glow.
 
 ---
@@ -298,6 +333,7 @@ chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
 |---|---|
 | Node.js | ≥ 18 |
 | Python | ≥ 3.10 |
+| Docker Desktop | Any *(optional — Docker mode only)* |
 | Tesseract OCR | Any *(optional — OCR only)* |
 
 - Tesseract download: https://github.com/UB-Mannheim/tesseract/wiki

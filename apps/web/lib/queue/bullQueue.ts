@@ -2,6 +2,7 @@ import { logger } from "@/lib/logger";
 import { Queue, Worker } from "bullmq";
 import Redis from "ioredis";
 import { executeExtraction } from "./executor";
+import { executePipeline } from "@/lib/pipeline/executor";
 
 export let isRedisAvailable = false;
 export let redisConnection: Redis | null = null;
@@ -53,6 +54,9 @@ if (redisUrl && !isBuildPhase) {
       const controller = new AbortController();
       activeControllers.set(job.id!, controller);
       try {
+        if (job.name === "pipeline") {
+          return await executePipeline(job.data.pipelineRunId);
+        }
         return await executeExtraction(job.id!, job.data, controller);
       } finally {
         activeControllers.delete(job.id!);

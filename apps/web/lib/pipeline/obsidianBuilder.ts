@@ -28,10 +28,18 @@ function makeUniqueName(baseName: string, seen: Set<string>): string {
   return name;
 }
 
+function appendMapValue<K, V>(map: Map<K, V[]>, key: K, value: V) {
+  const bucket = map.get(key);
+  if (bucket) bucket.push(value);
+  else map.set(key, [value]);
+}
+
 export function buildObsidianZip(data: { nodes: any[]; edges: any[]; emails?: any[] }): JSZip {
   const zip = new JSZip();
   const entityNames = new Map<string, string>();
   const documentNames = new Map<string, string>();
+  const edgesByNodeId = new Map<string, any[]>();
+  const entitiesByDocumentId = new Map<string, any[]>();
   const seenEntityNames = new Set<string>();
   const seenDocumentNames = new Set<string>();
 
@@ -46,6 +54,12 @@ export function buildObsidianZip(data: { nodes: any[]; edges: any[]; emails?: an
     );
   }
 
+  for (const edge of edges) {
+    if (!edge?.source || !edge?.target) continue;
+    appendMapValue(edgesByNodeId, edge.source, edge);
+    if (edge.target !== edge.source) appendMapValue(edgesByNodeId, edge.target, edge);
+  }
+
   const documents = new Map<string, { id: string; name: string; mimeType: string; sizeBytes: number; uploadedAt: string | null }>();
   for (const node of nodes) {
     for (const occ of node.occurrences || []) {
@@ -58,6 +72,7 @@ export function buildObsidianZip(data: { nodes: any[]; edges: any[]; emails?: an
           uploadedAt: occ.originalCreatedAt || null,
         });
       }
+      if (occ.fileId) appendMapValue(entitiesByDocumentId, occ.fileId, node);
     }
   }
 
@@ -77,7 +92,7 @@ export function buildObsidianZip(data: { nodes: any[]; edges: any[]; emails?: an
 
   for (const node of nodes) {
     const entityName = entityNames.get(node.id)!;
-    const relatedEdges = edges.filter((e) => e.source === node.id || e.target === node.id);
+    const relatedEdges = edgesByNodeId.get(node.id) || [];
 
     let md = `---\nid: "${node.id}"\ntype: "${node.type}"\ncanonical: "${node.canonical || node.label}"\n---\n\n`;
     md += `# ${node.label || node.displayName}\n\n- **Type**: ${node.type}\n- **Canonical Name**: ${node.canonical || node.label}\n\n`;
@@ -113,7 +128,7 @@ export function buildObsidianZip(data: { nodes: any[]; edges: any[]; emails?: an
   for (const doc of documents.values()) {
     const docName = documentNames.get(doc.id)!;
     const matchingEmail = emails.find((e) => e.fileId === doc.id);
-    const docEntities = nodes.filter((n) => n.occurrences?.some((o: any) => o.fileId === doc.id));
+    const docEntities = entitiesByDocumentId.get(doc.id) || [];
 
     let md = `---\nid: "${doc.id}"\nmimeType: "${doc.mimeType}"\nsizeBytes: ${doc.sizeBytes}\n---\n\n`;
     md += `# ${doc.name}\n\n- **MIME Type**: ${doc.mimeType}\n- **Size**: ${(doc.sizeBytes / 1024).toFixed(2)} KB\n\n`;

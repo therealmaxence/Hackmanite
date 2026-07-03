@@ -20,7 +20,7 @@ interface Props {
 
 export default function GraphActions({ sessionId, onResetFilters, onResetGraph, onExplodeGraph, onImportSuccess }: Props) {
   const { t } = useTranslation();
-  const [exportModalType, setExportModalType] = useState<'json' | 'obsidian' | null>(null);
+  const [exportModalType, setExportModalType] = useState<'json' | 'obsidian' | 'graphml' | null>(null);
   const [showHiddenNodesModal, setShowHiddenNodesModal] = useState(false);
   const [isImporting, setIsImporting] = useState(false);
   const [importError, setImportError] = useState<string | null>(null);
@@ -82,7 +82,11 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
       </div>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <Button id="save-session-obsidian" variant="secondary" size="xs" onClick={handleSaveObsidian} disabled={!sessionId}>{t('graph.controls.btn_export_obsidian')}</Button>
+        <Button id="save-session-graphml" variant="secondary" size="xs" onClick={() => setExportModalType('graphml')} disabled={!sessionId}>Export GraphML</Button>
+      </div>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <Button id="show-hidden-nodes" variant="secondary" size="xs" onClick={() => setShowHiddenNodesModal(true)} disabled={!sessionId}>{t('graph.controls.btn_hidden_nodes')}</Button>
+        <Button id="reset-graph-filters" variant="secondary" size="xs" onClick={onResetFilters}>{t('graph.controls.btn_reset_view')}</Button>
       </div>
       <input id="import-graph-file-input" type="file" accept=".json" onChange={handleFileChange} style={{ display: 'none' }} />
       {importError && <span style={{ fontSize: '0.72rem', color: 'var(--error)', marginTop: 4, display: 'block', textAlign: 'center' }}>{importError}</span>}
@@ -107,7 +111,6 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
           {t('graph.controls.btn_explode_graph')}
         </Button>
       )}
-      <Button id="reset-graph-filters" variant="ghost" size="xs" onClick={onResetFilters}>{t('graph.controls.btn_reset_view')}</Button>
       <Button id="reset-graph-data" variant="ghost" size="xs" onClick={onResetGraph} style={{ color: 'var(--error)' }}>{t('graph.controls.btn_reset_graph')}</Button>
 
       {exportModalType && sessionId && (

@@ -30,9 +30,17 @@ interface GraphCanvasProps {
   nodes: GraphNode[];
   edges: GraphEdge[];
   onNodeExpand?: (nodeId: string) => void;
+  isStandalone?: boolean;
+  overrideFilters?: any;
 }
 
-export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasProps) {
+export default function GraphCanvas({
+  nodes,
+  edges,
+  onNodeExpand,
+  isStandalone = false,
+  overrideFilters,
+}: GraphCanvasProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const { t } = useTranslation();
   const [contextMenu, setContextMenu] = useState<{
@@ -49,23 +57,18 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
   const renderedNodeIds = useRef<Set<string>>(new Set());
   const renderedEdgeKeys = useRef<Set<string>>(new Set());
 
-  const {
-    filters,
-    selectedNodeId,
-    selectedNodeIds,
-    layout,
-    layoutTrigger,
-    removeNode,
-    togglePanel,
-    selectNode,
-    changeNodeType,
-    isPanelOpen,
-  } = useGraphStore();
+  const store = useGraphStore();
+  const filters = isStandalone
+    ? (overrideFilters || { searchQuery: '', minConnections: 0, minOccurrences: 0, minTfidf: 0, minEdgeWeight: 0, entityTypes: [] })
+    : store.filters;
+  const selectedNodeId = isStandalone ? null : store.selectedNodeId;
+  const selectedNodeIds = isStandalone ? [] : store.selectedNodeIds;
+  const layout = isStandalone ? 'cose-bilkent' : store.layout;
+  const layoutTrigger = isStandalone ? 0 : store.layoutTrigger;
+  const { selectNode, removeNode, togglePanel, changeNodeType } = store;
 
   const { sessionId } = useUploadStore();
   const { mutate } = useSWRConfig();
-
-
 
   const cyInstance = useCytoscapeInit({
     containerRef,
@@ -73,11 +76,13 @@ export default function GraphCanvas({ nodes, edges, onNodeExpand }: GraphCanvasP
     renderedNodeIds,
     renderedEdgeKeys,
     onNodeRightClick: (nodeId, nodeType, nodeLabel, x, y) => {
+      if (isStandalone) return;
       setContextMenu({ visible: true, x, y, nodeId, nodeType, nodeLabel });
     },
     onCanvasTap: () => {
       setContextMenu(null);
     },
+    isStandalone,
   });
 
   const zoomIn = () => {

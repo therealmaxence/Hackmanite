@@ -1,5 +1,5 @@
 from __future__ import annotations
-import logging
+import logging, re
 from typing import Optional
 from fastapi import APIRouter, Query, HTTPException
 from pydantic import BaseModel
@@ -7,6 +7,7 @@ from db import kuzu_db
 
 logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/graph", tags=["graph"])
+_WRITE_KEYWORDS = re.compile(r"\b(CREATE|DELETE|SET|MERGE|DETACH|DROP)\b", re.IGNORECASE)
 
 class NodeOut(BaseModel):
     id: str
@@ -96,6 +97,9 @@ class OccurrenceTfidfUpdate(BaseModel):
 class RecomputeTfidfRequest(BaseModel):
     updates: list[OccurrenceTfidfUpdate]
 
+class QueryRequest(BaseModel):
+    query: str
+    params: Optional[dict] = None
 
 def _to_nodes_response(rows: list, total: int, limit: int, offset: int) -> NodesResponse:
     nodes = [NodeOut(**{**r, "tfidf": r.get("tfidf", 0.0)}) for r in rows]
@@ -284,4 +288,15 @@ async def delete_files(req: DeleteFilesRequest):
         return {"success": True}
     except Exception as exc:
         logger.error("delete_files failed: %s", exc, exc_info=True)
+        raise HTTPException(status_code=500, detail=str(exc))
+
+@router.post("/query", response_model=dict)
+async def run_query(req: QueryRequest):
+    """Execute an arbitrary read-only Cypher query against KuzuDB."""
+    if _WRITE_KEYWORDS.search(req.query):
+        raise HTTPException(status_code=400, detail="Only read-only queries are permitted on this endpoint")
+    try:
+        return {"rows": kuzu_db.execute_read_query(req.query, req.params)}
+    except Exception as exc:
+        logger.error("run_query failed: %s", exc, exc_info=True)
         raise HTTPException(status_code=500, detail=str(exc))

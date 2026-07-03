@@ -3,14 +3,14 @@
 import { useState, useEffect } from 'react';
 import Button from '@/components/ui/Button';
 import Spinner from '@/components/ui/Spinner';
-import { downloadJsonData } from '@/lib/sessionExport';
+import { downloadJsonData, downloadGraphmlData } from '@/lib/sessionExport';
 import { generateAndDownloadObsidianZip } from '@/lib/obsidianExport';
 import { filterGraphExportData } from '@/lib/export-filter';
 import { useTranslation } from '@/lib/i18n';
 
 interface ExportModalProps {
   sessionId: string;
-  exportType: 'json' | 'obsidian';
+  exportType: 'json' | 'obsidian' | 'graphml';
   onClose: () => void;
 }
 
@@ -95,6 +95,8 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
 
       if (exportType === 'json') {
         downloadJsonData(filteredPayload, sessionId);
+      } else if (exportType === 'graphml') {
+        downloadGraphmlData(filteredPayload, sessionId);
       } else {
         await generateAndDownloadObsidianZip(filteredPayload, sessionId);
       }
@@ -146,7 +148,7 @@ export default function ExportModal({ sessionId, exportType, onClose }: ExportMo
           </h2>
           <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)' }}>
             {t('graph.export.format_prefix')}{' '}
-            {exportType === 'json' ? t('graph.export.format_json') : t('graph.export.format_obsidian')}
+            {exportType === 'json' ? t('graph.export.format_json') : exportType === 'graphml' ? 'GraphML' : t('graph.export.format_obsidian')}
           </span>
         </div>
 

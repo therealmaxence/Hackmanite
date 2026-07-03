@@ -5,31 +5,37 @@ import { useSWRConfig } from 'swr';
 import { useGraphStore } from '@/store/graphStore';
 import { useUploadStore } from '@/store/uploadStore';
 import { useTranslation } from '@/lib/i18n';
-import { GraphNode } from '@/lib/graph-builder';
+import { GraphNode, GraphEdge } from '@/lib/graph-builder';
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
 
 interface EntityTableViewProps {
   nodes: GraphNode[];
+  edges?: GraphEdge[];
+  isStandalone?: boolean;
+  overrideFilters?: any;
 }
 
 type SortField = 'label' | 'type' | 'totalOccurrences' | 'fileCount' | 'tfidf';
 type SortOrder = 'asc' | 'desc';
 
-export default function EntityTableView({ nodes }: EntityTableViewProps) {
+export default function EntityTableView({
+  nodes,
+  edges: edgesProp,
+  isStandalone = false,
+  overrideFilters,
+}: EntityTableViewProps) {
   const { t } = useTranslation();
   const { sessionId } = useUploadStore();
   const { mutate } = useSWRConfig();
-  const {
-    selectedNodeId,
-    selectedNodeIds,
-    selectNode,
-    setSelectedNodeIds,
-    removeNode,
-    togglePanel,
-    changeNodeType,
-    filters,
-    edges,
-  } = useGraphStore();
+
+  const store = useGraphStore();
+  const edges = isStandalone ? (edgesProp || []) : store.edges;
+  const filters = isStandalone
+    ? (overrideFilters || { searchQuery: '', minConnections: 0, minOccurrences: 0, minTfidf: 0, minEdgeWeight: 0, entityTypes: [], crossDocumentOnly: false })
+    : store.filters;
+  const selectedNodeId = isStandalone ? null : store.selectedNodeId;
+  const selectedNodeIds = isStandalone ? [] : store.selectedNodeIds;
+  const { selectNode, setSelectedNodeIds, removeNode, togglePanel, changeNodeType } = store;
 
   const [sortField, setSortField] = useState<SortField>('totalOccurrences');
   const [sortOrder, setSortOrder] = useState<SortOrder>('desc');
@@ -207,6 +213,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
   };
 
   const handleRowClick = (e: React.MouseEvent, id: string) => {
+    if (isStandalone) return;
     const isMulti = e.ctrlKey || e.metaKey;
     if (isMulti) {
       if (selectedNodeIds.includes(id)) {
@@ -283,9 +290,11 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
                 <th onClick={() => handleSort('tfidf')} style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500, cursor: 'pointer', userSelect: 'none' }}>
                   {t('graph.table.col_tfidf')}{renderSortIndicator('tfidf')}
                 </th>
-                <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
-                  {t('graph.table.col_actions')}
-                </th>
+                {!isStandalone && (
+                  <th style={{ position: 'sticky', top: 0, zIndex: 1, background: 'var(--color-surface-raised)', padding: '0.75rem 1rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>
+                    {t('graph.table.col_actions')}
+                  </th>
+                )}
               </tr>
             </thead>
           <tbody>
@@ -300,7 +309,7 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
                   onMouseLeave={() => setHoveredRowId(null)}
                   style={{
                     borderBottom: 'none',
-                    cursor: 'pointer',
+                    cursor: isStandalone ? 'default' : 'pointer',
                     transition: 'background 200ms ease',
                     background: isSelected
                       ? 'color-mix(in srgb, var(--color-secondary) 15%, var(--color-surface-raised))'
@@ -324,62 +333,62 @@ export default function EntityTableView({ nodes }: EntityTableViewProps) {
                   <td style={{ padding: '0.75rem 1rem', color: 'var(--color-text-muted)' }}>
                     {node.tfidf ? Number(node.tfidf).toFixed(2) : node.totalOccurrences}
                   </td>
-                  <td style={{ padding: '0.5rem 1rem', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                      <select
-                        value={node.type}
-                        onChange={(e) => handleChangeNodeType(e, node.id)}
-                        style={{
-                          background: 'var(--color-surface-raised)',
-                          border: '1px solid var(--color-border)',
-                          color: 'var(--color-text)',
-                          borderRadius: 'var(--radius-sm)',
-                          padding: '2px 4px',
-                          fontSize: '0.75rem',
-                          outline: 'none',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <option value="PERSON">PERSON</option>
-                        <option value="ORGANIZATION">ORGANIZATION</option>
-                        <option value="LOCATION">LOCATION</option>
-                        <option value="EMAIL">EMAIL</option>
-                        <option value="PHONE">PHONE</option>
-                        <option value="IP_ADDRESS">IP_ADDRESS</option>
-                        <option value="URL">URL</option>
-                        <option value="DATE">DATE</option>
-                        <option value="ADDRESS">ADDRESS</option>
-                      </select>
+                  {!isStandalone && (
+                    <td style={{ padding: '0.5rem 1rem', whiteSpace: 'nowrap' }} onClick={(e) => e.stopPropagation()}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                        <select
+                          value={node.type}
+                          onChange={(e) => handleChangeNodeType(e, node.id)}
+                          style={{
+                            background: 'var(--color-surface-raised)',
+                            border: '1px solid var(--color-border)',
+                            color: 'var(--color-text)',
+                            borderRadius: 'var(--radius-sm)',
+                            padding: '2px 4px',
+                            fontSize: '0.75rem',
+                            outline: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <option value="PERSON">PERSON</option>
+                          <option value="ORGANIZATION">ORGANIZATION</option>
+                          <option value="LOCATION">LOCATION</option>
+                          <option value="EMAIL">EMAIL</option>
+                          <option value="PHONE">PHONE</option>
+                          <option value="IP_ADDRESS">IP_ADDRESS</option>
+                          <option value="URL">URL</option>
+                          <option value="DATE">DATE</option>
+                          <option value="ADDRESS">ADDRESS</option>
+                        </select>
 
+                        <button
+                          onClick={(e) => handleHideNode(e, node.id)}
+                          title={t('graph.canvas.hide_node')}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: 4 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
+                            <line x1="1" y1="1" x2="23" y2="23" />
+                          </svg>
+                        </button>
 
-
-                      <button
-                        onClick={(e) => handleHideNode(e, node.id)}
-                        title={t('graph.canvas.hide_node')}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--color-text-muted)', cursor: 'pointer', display: 'flex', padding: 4 }}
-                        onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-primary-hover)'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-muted)'; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24" />
-                          <line x1="1" y1="1" x2="23" y2="23" />
-                        </svg>
-                      </button>
-
-                      <button
-                        onClick={(e) => handleDeleteNode(e, node.id, node.label)}
-                        title={t('graph.canvas.delete_node')}
-                        style={{ background: 'transparent', border: 'none', color: 'var(--color-error)', cursor: 'pointer', display: 'flex', padding: 4 }}
-                        onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
-                        onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
-                      >
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <polyline points="3 6 5 6 21 6" />
-                          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                        </svg>
-                      </button>
-                    </div>
-                  </td>
+                        <button
+                          onClick={(e) => handleDeleteNode(e, node.id, node.label)}
+                          title={t('graph.canvas.delete_node')}
+                          style={{ background: 'transparent', border: 'none', color: 'var(--color-error)', cursor: 'pointer', display: 'flex', padding: 4 }}
+                          onMouseEnter={(e) => { e.currentTarget.style.opacity = '0.8'; }}
+                          onMouseLeave={(e) => { e.currentTarget.style.opacity = '1'; }}
+                        >
+                          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                            <polyline points="3 6 5 6 21 6" />
+                            <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                          </svg>
+                        </button>
+                      </div>
+                    </td>
+                  )}
                 </tr>
               );
             })}

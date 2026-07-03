@@ -10,6 +10,7 @@ interface UseCytoscapeInitProps {
   renderedEdgeKeys: React.MutableRefObject<Set<string>>;
   onNodeRightClick?: (nodeId: string, nodeType: string, nodeLabel: string, x: number, y: number) => void;
   onCanvasTap?: () => void;
+  isStandalone?: boolean;
 }
 
 export function useCytoscapeInit({
@@ -19,6 +20,7 @@ export function useCytoscapeInit({
   renderedEdgeKeys,
   onNodeRightClick,
   onCanvasTap,
+  isStandalone = false,
 }: UseCytoscapeInitProps) {
   const [cy, setCy] = useState<cytoscape.Core | null>(null);
   const { selectNode, setSelectedNodeIds } = useGraphStore();
@@ -46,6 +48,10 @@ export function useCytoscapeInit({
     setCy(instance);
 
     instance.on('tap', 'node', (e) => {
+      if (isStandalone) {
+        onCanvasTapRef.current?.();
+        return;
+      }
       const nodeId = e.target.id();
       const origEvent = e.originalEvent;
       const isMulti = origEvent && (origEvent.ctrlKey || origEvent.metaKey);
@@ -65,6 +71,10 @@ export function useCytoscapeInit({
     });
 
     instance.on('tap', (e) => {
+      if (isStandalone) {
+        onCanvasTapRef.current?.();
+        return;
+      }
       if (e.target === instance) {
         instance.elements().removeClass('faded highlighted');
         setSelectedNodeIds([]);

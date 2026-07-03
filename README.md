@@ -15,6 +15,9 @@ Hackmanite is a desktop application for extracting, exploring, and visualizing *
 - **Session management** — save, reload, and switch between multiple named sessions (SQLite-backed)
 - **Entity dashboard** — browse, filter, and manage all extracted entities
 - **AI Intelligence Report** — generate structured analytical briefings on session data using Mistral AI models
+- **Pipeline Builder** — compose reusable graph-processing workflows with sources, filters, transforms, visualizers, and export nodes
+- **LLM graph transforms** — annotate graph entities with custom AI prompts inside a pipeline
+- **Multi-format graph exports** — export filtered graph data as JSON, GraphML, Obsidian vaults, or AI-generated Markdown reports
 - **Standalone desktop app** — no Docker, no Python, no Node.js required on end-user machines
 
 ---
@@ -37,12 +40,14 @@ EntityGraph/
 │   │       ├── tray.js           # System-tray icon and context menu
 │   │       └── window-manager.js # BrowserWindow creation and management
 │   ├── web/                      # Next.js frontend (UI, API routes, Prisma/SQLite)
+│   │   ├── components/pipeline/  # Pipeline canvas and node configuration UI
+│   │   ├── lib/pipeline/         # Pipeline executor, node handlers, exports, weak-signal transforms
 │   │   └── prisma/               # Prisma schema & SQLite dev database (dev.db)
 │   ├── nlp-service/              # FastAPI + spaCy NLP backend
 │   │   ├── main.py               # FastAPI app entry point
 │   │   ├── db/                   # KuzuDB graph database layer (connection, schema, queries)
 │   │   ├── models/               # Pydantic schemas shared across the service
-│   │   ├── routers/              # API route handlers (extract, graph read endpoints)
+│   │   ├── routers/              # API route handlers (extract, graph read/query endpoints)
 │   │   └── services/             # Entity extraction, OCR, file parsing logic & spec
 │   └── tests/                    # Ingestion testing files (.eml samples)
 ├── data/                         # Persistent app data and uploads (Docker volume mounts)
@@ -190,6 +195,34 @@ You can export your session's entity graph to Obsidian to explore and search nod
 
 ---
 
+## Pipeline Builder
+
+The **Pipelines** page lets you build reusable graph-processing workflows from visual nodes. Nodes are connected directly on the canvas by dragging from the right-side connector area of one node to another node, inspired by node editors such as Blender and n8n.
+
+### Node categories
+
+| Category | Available nodes |
+|---|---|
+| Sources | SQLite Query, KuzuDB Query, Document File, Email File, Active Session Graph |
+| Filters | Entity Category, Top N Nodes, Min TF-IDF, Min Occurrences, Min Connections, Edge Weight, Weak Signal, Denylist |
+| Transforms | Rare Bridges, Niche Topics, Spiking Signals, LLM Annotate, Community Detection, Centrality Score |
+| Visualizers | Graph Preview, Table Preview |
+| Outputs | JSON Export, GraphML Export, Obsidian Export, AI Report, Commit to KuzuDB |
+
+### Pipeline highlights
+
+- **Curved graph canvas**: pipeline edges render as curved arrows, and running nodes glow while execution is in progress.
+- **Configurable document extraction**: Document File and Email File sources expose the NLP extraction `windowSize` instead of using a hidden fixed value.
+- **Min TF-IDF filtering**: prune entities below a configurable TF-IDF threshold.
+- **Weak-signal parameters**: rare bridge occurrence caps, niche topic file caps, and spiking signal window/concentration settings are editable and used at runtime.
+- **LLM Annotate transform**: send a bounded graph context to an OpenAI-compatible LLM endpoint and merge returned annotations or metadata back into graph nodes.
+- **AI Report output**: generate a Markdown analytical report from pipeline graph data using the same shared report-building logic as the AI Report page.
+- **Export destinations**: JSON, GraphML, and Obsidian outputs can download directly in the browser, write to the active session export folder, or write to a custom server folder.
+
+The KuzuDB Query source uses a read-only NLP service endpoint. Write-like Cypher keywords are rejected before execution.
+
+---
+
 ## Weak Signals Discovery
 
 Analyze early-warning indicators, broker connections, and niche topics across your documents:
@@ -204,6 +237,8 @@ Analyze early-warning indicators, broker connections, and niche topics across yo
 ## AI Intelligence Report (LLM Integration)
 
 Generate executive intelligence briefings based on your session's entity graph, document contents, and selected weak signals:
+
+The AI Report page and the pipeline **AI Report** output share the same report data builder, so session reports and pipeline-generated reports use a consistent graph summary, bridge analysis, entity counts, file metadata, and timeline context.
 
 1. Navigate to the **AI Report** page from the header bar.
 2. Configure your **AI Connection Setup**:
@@ -220,6 +255,8 @@ Generate executive intelligence briefings based on your session's entity graph, 
 5. Tune extraction limits using the custom sliders (Top Entities count, Salient TF-IDF Entities, and Central Bridge Nodes) and add optional analyst directives.
 6. Click **Run AI Analysis** (always visible at the bottom of the config column) to generate the briefing.
 7. Use the briefing panel header to **Copy** the report, **Download MD** (save as Markdown file), or **Print PDF** (compiled with a custom printer-friendly stylesheet).
+
+Pipeline reports can also be generated as part of an automated workflow from the **Pipelines** page. The pipeline output supports Mistral or a custom OpenAI-compatible endpoint, model override, focus type, and analyst directives.
 
 ---
 

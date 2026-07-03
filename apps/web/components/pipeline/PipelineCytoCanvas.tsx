@@ -162,7 +162,8 @@ export default function PipelineCytoCanvas({
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const tempPathRef = useRef<SVGPathElement>(null);
-  const connectingRef = useRef<{ sourceId: string; start: { x: number; y: number } } | null>(null);
+  const connectionSourceRef = useRef<string | null>(null);
+  const dragConnectionRef = useRef<{ sourceId: string; start: { x: number; y: number } } | null>(null);
 
   useEffect(() => {
     if (!containerRef.current) return;
@@ -191,7 +192,7 @@ export default function PipelineCytoCanvas({
       })[0];
 
     const setTempPath = (end: { x: number; y: number }) => {
-      const current = connectingRef.current;
+      const current = dragConnectionRef.current;
       if (!current || !tempPathRef.current) return;
       const dx = Math.max(80, Math.abs(end.x - current.start.x) * 0.5);
       tempPathRef.current.setAttribute('d', `M ${current.start.x} ${current.start.y} C ${current.start.x + dx} ${current.start.y}, ${end.x - dx} ${end.y}, ${end.x} ${end.y}`);
@@ -199,7 +200,8 @@ export default function PipelineCytoCanvas({
     };
 
     const clearConnection = () => {
-      connectingRef.current = null;
+      connectionSourceRef.current = null;
+      dragConnectionRef.current = null;
       cy.autoungrabify(false);
       cy.nodes().removeClass('connection-source connection-target');
       if (tempPathRef.current) tempPathRef.current.style.opacity = '0';
@@ -212,23 +214,35 @@ export default function PipelineCytoCanvas({
       setTempPath(point);
       const target = nodeAtPoint(point);
       cy.nodes().removeClass('connection-target');
-      if (target && target.id() !== connectingRef.current?.sourceId) target.addClass('connection-target');
+      if (target && target.id() !== dragConnectionRef.current?.sourceId) target.addClass('connection-target');
     };
 
     const onPointerUp = (event: PointerEvent) => {
-      const current = connectingRef.current;
+      const current = dragConnectionRef.current;
       const target = nodeAtPoint(pointFromEvent(event));
       if (current && target && target.id() !== current.sourceId) onConnect(current.sourceId, target.id());
       clearConnection();
     };
 
-    cy.on('tap', 'node', (e) => onNodeSelect(e.target.id()));
+    cy.on('tap', 'node', (e) => {
+      const sourceId = connectionSourceRef.current;
+      const targetId = e.target.id();
+      if (sourceId) {
+        if (sourceId !== targetId) onConnect(sourceId, targetId);
+        clearConnection();
+        return;
+      }
+      onNodeSelect(targetId);
+    });
 
     cy.on('tap', (e) => {
-      if (e.target === cy) onNodeSelect(null);
+      if (e.target !== cy) return;
+      if (connectionSourceRef.current) clearConnection();
+      else onNodeSelect(null);
     });
 
     cy.on('dragfree', 'node', (e) => {
+      if (dragConnectionRef.current) return;
       const pos = e.target.position();
       onPositionChange?.(e.target.id(), { x: pos.x, y: pos.y });
     });
@@ -238,17 +252,29 @@ export default function PipelineCytoCanvas({
       if (original.button !== 0) return;
       const node = e.target;
       const box = node.renderedBoundingBox({ includeLabels: false, includeOverlays: false });
-      const start = { x: box.x2, y: (box.y1 + box.y2) / 2 };
       const point = e.renderedPosition || pointFromEvent(original);
       if (point.x < box.x2 - 28) return;
       original.preventDefault();
       original.stopPropagation();
-      connectingRef.current = { sourceId: node.id(), start };
+      clearConnection();
+      const start = { x: box.x2, y: (box.y1 + box.y2) / 2 };
+      dragConnectionRef.current = { sourceId: node.id(), start };
       cy.autoungrabify(true);
       node.addClass('connection-source');
       setTempPath(point);
       window.addEventListener('pointermove', onPointerMove);
       window.addEventListener('pointerup', onPointerUp);
+    });
+
+    cy.on('cxttap', 'node', (e) => {
+      e.originalEvent?.preventDefault?.();
+      e.originalEvent?.stopPropagation?.();
+      clearConnection();
+      const node = e.target;
+      connectionSourceRef.current = node.id();
+      node.addClass('connection-source');
+      cy.nodes().not(node).addClass('connection-target');
+      onNodeSelect(node.id());
     });
 
     return () => {
@@ -311,6 +337,7 @@ export default function PipelineCytoCanvas({
         padding: 40,
         animate: true,
         animationDuration: 300,
+        transform: (_node: cytoscape.NodeSingular, position: cytoscape.Position) => ({ x: position.y, y: position.x }),
       } as any)).run();
     }
   }, [nodes, edges]);

@@ -26,6 +26,7 @@ const CATEGORY_META = {
 } as const;
 
 type CategoryKey = keyof typeof CATEGORY_META;
+type PipelineDownload = { label: string; path: string; fileName: string };
 
 const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
   sources: [
@@ -70,11 +71,14 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
 
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error('API Error'); return r.json(); });
 
-function extractExportPaths(logs: string[]): string[] {
-  const exportPathPattern = /Successfully wrote (?:JSON output|GraphML output|Obsidian vault) to: (.+)$/;
-  return logs
-    .map((log) => log.match(exportPathPattern)?.[1]?.trim())
-    .filter((path): path is string => Boolean(path));
+function extractExportDownloads(logs: string[]): PipelineDownload[] {
+  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault) to: (.+)$/;
+  return logs.flatMap((log) => {
+    const match = log.match(pattern);
+    if (!match?.[2]) return [];
+    const path = match[2].trim();
+    return [{ label: match[1], path, fileName: path.split(/[\\/]/).pop() || 'export.file' }];
+  });
 }
 
 async function downloadExportPath(relativePath: string) {
@@ -215,6 +219,7 @@ export default function PipelinesClient() {
   const [activeRunId, setActiveRunId] = useState<string | null>(null);
   const [runLogs, setRunLogs] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string | null>(null);
+  const [runDownloads, setRunDownloads] = useState<PipelineDownload[]>([]);
 
   // ── Selected node memo ──
   const selectedNode = useMemo(() => nodes.find((n) => n.id === selectedNodeId), [nodes, selectedNodeId]);
@@ -428,6 +433,7 @@ export default function PipelinesClient() {
     }
     try {
       downloadedExportPathsRef.current = new Set();
+      setRunDownloads([]);
       setRunLogs(['Queuing pipeline execution…']);
       setRunStatus('RUNNING');
       const res = await fetch(`/api/pipelines/${selectedPipelineId}/run`, { method: 'POST' });
@@ -472,16 +478,16 @@ export default function PipelinesClient() {
         }
         setRunLogs(clientLogs);
 
-        if (run.status === 'COMPLETED' && run.logs) {
-          const logLines = Array.isArray(run.logs) ? run.logs : run.logs.split('\n');
-          const exportPaths = extractExportPaths(logLines);
-          const newPaths = exportPaths.filter((path) => !downloadedExportPathsRef.current.has(path));
+        const downloads: PipelineDownload[] = Array.isArray(run.downloads) ? run.downloads : extractExportDownloads(clientLogs);
+        setRunDownloads(downloads);
 
-          if (newPaths.length > 0) {
-            newPaths.forEach((path) => downloadedExportPathsRef.current.add(path));
+        if (run.status === 'COMPLETED' && downloads.length > 0) {
+          const newDownloads = downloads.filter((download) => !downloadedExportPathsRef.current.has(download.path));
+          if (newDownloads.length > 0) {
+            newDownloads.forEach((download) => downloadedExportPathsRef.current.add(download.path));
             void Promise.all(
-              newPaths.map((path) => downloadExportPath(path).catch((err) => {
-                console.error(`Failed to download export ${path}:`, err);
+              newDownloads.map((download) => downloadExportPath(download.path).catch((err) => {
+                console.error(`Failed to download export ${download.path}:`, err);
               }))
             );
           }
@@ -698,6 +704,21 @@ export default function PipelinesClient() {
                     )}
                   </div>
                 </div>
+                {runDownloads.length > 0 && (
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '1rem' }}>
+                    {runDownloads.map((download) => (
+                      <Button
+                        key={download.path}
+                        variant="secondary"
+                        size="xs"
+                        onClick={() => downloadExportPath(download.path)}
+                        style={{ minHeight: '30px', padding: '0 0.875rem' }}
+                      >
+                        Download {download.fileName}
+                      </Button>
+                    ))}
+                  </div>
+                )}
                 <div style={{ background: 'var(--color-surface-input)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: '1rem', fontFamily: 'var(--font-mono)', fontSize: '0.75rem', lineHeight: 1.6, color: 'var(--color-text)', display: 'flex', flexDirection: 'column', gap: '0.375rem' }}>
                   {runLogs.length === 0
                     ? <p style={{ color: 'var(--color-text-dim)', fontStyle: 'italic', margin: 0 }}>{t('pipeline.no_logs')}</p>

@@ -372,6 +372,10 @@ export default function NodeConfigDrawer({
   const type = selectedNode.data.type;
   const config = selectedNode.data.config || {};
   const isVisualizeNode = type === 'visualize.graph' || type === 'visualize.table';
+  const isHtmlDashboard = type === 'output.html_dashboard';
+  const exportLocationValue = isHtmlDashboard && (config.exportLocation || 'downloads') === 'downloads'
+    ? 'custom'
+    : config.exportLocation || (isHtmlDashboard ? 'custom' : 'downloads');
 
   const emailFiles = sessionFiles.filter(
     (f) => f.originalName.endsWith('.eml') || f.originalName.endsWith('.pst') || f.mimeType.includes('email') || f.mimeType.includes('outlook')
@@ -855,14 +859,14 @@ export default function NodeConfigDrawer({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
               <label style={fieldLabelStyle}>Export Target Destination</label>
-              <select value={config.exportLocation || 'downloads'} onChange={(e) => handleConfigChange('exportLocation', e.target.value)} style={inputStyle}>
-                <option value="downloads">Browser Downloads folder (Default)</option>
+              <select value={exportLocationValue} onChange={(e) => handleConfigChange('exportLocation', e.target.value)} style={inputStyle}>
+                {!isHtmlDashboard && <option value="downloads">Browser Downloads folder (Default)</option>}
                 <option value="session">Current Active Session folder</option>
                 <option value="custom">Custom folder on server...</option>
               </select>
             </div>
 
-            {config.exportLocation === 'custom' && (
+            {exportLocationValue === 'custom' && (
               <div>
                 <label style={fieldLabelStyle}>Export Folder (Server Path)</label>
                 <input

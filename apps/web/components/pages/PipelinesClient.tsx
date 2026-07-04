@@ -7,7 +7,6 @@ import { useTranslation } from '@/lib/i18n';
 import useSWR, { mutate } from 'swr';
 import NodeConfigDrawer from '@/components/pipeline/NodeConfigDrawer';
 import Button from '@/components/ui/Button';
-import { downloadBlob } from '@/lib/download';
 
 // Lazy-load Cytoscape canvas (client-only)
 const PipelineCytoCanvas = dynamic(
@@ -69,7 +68,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'output.graphml',        label: 'GraphML Export',      desc: 'Export dataset to GraphML format',       inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.graphml', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.json',           label: 'JSON Export',         desc: 'Export datasets to JSON format',         inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.json', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.kuzudb_write',   label: 'Commit to KuzuDB',   desc: 'Write changes back to graph database',    inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { confirmCommit: false } },
-    { type: 'output.html_dashboard', label: 'HTML Dashboard',     desc: 'Generate standalone HTML dashboard',     inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'dashboard.html', exportLocation: 'downloads' } },
+    { type: 'output.html_dashboard', label: 'HTML Dashboard',     desc: 'Generate standalone HTML dashboard',     inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'dashboard.html', exportLocation: 'custom', exportFolder: 'uploads/exports' } },
   ],
 };
 
@@ -78,7 +77,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error('API Error'); return r.json(); });
 
 function extractExportDownloads(logs: string[]): PipelineDownload[] {
-  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report|HTML Dashboard output) to: (.+)$/;
+  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report) to: (.+)$/;
   return logs.flatMap((log) => {
     const match = log.match(pattern);
     if (!match?.[2]) return [];
@@ -87,9 +86,10 @@ function extractExportDownloads(logs: string[]): PipelineDownload[] {
   });
 }
 
-async function downloadExportPath(relativePath: string) {
+async function downloadExportPath(relativePath: string, fileName?: string) {
   const link = document.createElement('a');
   link.href = `/api/pipelines/download?path=${encodeURIComponent(relativePath)}`;
+  link.download = fileName || relativePath.split(/[\\/]/).pop() || 'export.file';
   document.body.appendChild(link);
   link.click();
   link.remove();
@@ -510,7 +510,7 @@ export default function PipelinesClient() {
           if (newDownloads.length > 0) {
             newDownloads.forEach((download) => downloadedExportPathsRef.current.add(download.path));
             void Promise.all(
-              newDownloads.map((download) => downloadExportPath(download.path).catch((err) => {
+              newDownloads.map((download) => downloadExportPath(download.path, download.fileName).catch((err) => {
                 console.error(`Failed to download export ${download.path}:`, err);
               }))
             );
@@ -743,7 +743,7 @@ export default function PipelinesClient() {
                         key={download.path}
                         variant="secondary"
                         size="xs"
-                        onClick={() => downloadExportPath(download.path)}
+                        onClick={() => downloadExportPath(download.path, download.fileName)}
                         style={{ minHeight: '30px', padding: '0 0.875rem' }}
                       >
                         Download {download.fileName}

@@ -190,7 +190,8 @@ export const htmlDashboardHandler: NodeHandler = {
 </html>
 `;
 
-    const { absolutePath, relativePath } = await resolveExportPath(finalFileName, config, context);
+    const exportConfig = config?.exportLocation === 'downloads' ? { ...config, exportLocation: 'custom' } : config;
+    const { absolutePath, relativePath } = await resolveExportPath(finalFileName, exportConfig, context);
     await writeFile(absolutePath, html, 'utf8');
     await context.log(`Successfully wrote HTML Dashboard output to: ${relativePath}`);
     return buildDownloadResult(finalFileName, html, 'text/html', relativePath);

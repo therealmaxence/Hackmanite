@@ -13,7 +13,11 @@ export const kuzuDbWriteHandler: NodeHandler = {
     }
 
     await context.log('Sending graph payload for bulk import transaction in KuzuDB...');
-    const fileIds = Array.from(new Set(input.nodes.flatMap((node) => (node.occurrences || []).map((occ: any) => occ.fileId)).filter(Boolean))) as string[];
+    const fileIds = Array.from(new Set([
+      ...input.nodes.flatMap((node) => (node.occurrences || []).map((occ: any) => occ.fileId)),
+      ...input.edges.map((edge: any) => edge.fileId),
+    ].filter(Boolean))) as string[];
+    const fallbackFileId = fileIds[0] || 'pipeline-run';
     const nodes = input.nodes.map((node: any) => ({
       id: node.id,
       canonical: node.canonical || node.label || '',
@@ -30,13 +34,13 @@ export const kuzuDbWriteHandler: NodeHandler = {
       snippet: edge.snippet || '',
       source_offset: edge.sourceOffset || 0,
       target_offset: edge.targetOffset || 0,
-      file_id: edge.fileId || 'pipeline-run',
+      file_id: edge.fileId || fallbackFileId,
     }));
 
     const res = await fetch(`${NLP_URL}/graph/import`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ file_ids: fileIds.length > 0 ? fileIds : ['pipeline-run'], nodes, edges }),
+      body: JSON.stringify({ file_ids: fileIds.length > 0 ? fileIds : [fallbackFileId], nodes, edges }),
     });
 
     if (!res.ok) throw new Error(`KuzuDB Write failed: status ${res.status} | ${await res.text()}`);

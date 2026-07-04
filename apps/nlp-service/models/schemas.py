@@ -66,3 +66,4 @@ class ExtractionRequest(BaseModel):
     storage_path: str
     mime_type: str
     window_size: Optional[int] = 400
+    persist: Optional[bool] = True

@@ -7,7 +7,7 @@ import { logger } from '@/lib/logger';
 import { ErrorCodes } from '@/types/api';
 import {
   UPLOAD_DIR, SESSION_TTL_MS,
-  resolveMime, validateFile, saveFileToDisk, createFileRecordAndEnqueue, sortByProcessingSpeed,
+  resolveMime, validateFile, saveFileToDisk, createFileRecord, createFileRecordAndEnqueue, sortByProcessingSpeed,
 } from '@/lib/api/upload';
 
 export const runtime = 'nodejs';
@@ -20,6 +20,7 @@ export async function POST(req: NextRequest) {
     const formData = await req.formData();
     const files = formData.getAll('files') as File[];
     const existingSessionId = formData.get('sessionId') as string | null;
+    const pipelineOnly = formData.get('pipelineOnly') === 'true';
 
     if (!files.length) {
       return NextResponse.json({ error: 'No files provided', code: ErrorCodes.VALIDATION_ERROR }, { status: 400 });
@@ -58,7 +59,12 @@ export async function POST(req: NextRequest) {
     const jobs = [];
     for (const { file, mime } of sortByProcessingSpeed(pending) as { file: File; mime: string }[]) {
       const { storagePath, originalCreatedAt } = await saveFileToDisk(file, session.id);
-      jobs.push(await createFileRecordAndEnqueue(file, mime, session.id, storagePath, originalCreatedAt, windowSize));
+      if (pipelineOnly) {
+        const fileRecord = await createFileRecord(file, mime, session.id, storagePath, originalCreatedAt, 'DONE');
+        jobs.push({ fileId: fileRecord.id, jobId: `pipeline-${fileRecord.id}`, originalName: fileRecord.originalName });
+      } else {
+        jobs.push(await createFileRecordAndEnqueue(file, mime, session.id, storagePath, originalCreatedAt, windowSize));
+      }
     }
 
     return NextResponse.json({ sessionId: session.id, jobs, skipped }, { status: 202 });

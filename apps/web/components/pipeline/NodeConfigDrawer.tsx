@@ -1,10 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import dynamic from 'next/dynamic';
 import Button from '@/components/ui/Button';
-import { useUploadStore } from '@/store/uploadStore';
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
 import { useTranslation } from '@/lib/i18n';
+import { useUploadStore } from '@/store/uploadStore';
 
 const GraphCanvas = dynamic(
   () => import('@/components/graph/GraphCanvas'),
@@ -156,7 +156,14 @@ function FileSourceFields({
         {loadingFiles ? (
           <p style={dimTextStyle}>Loading files...</p>
         ) : (
-          <select value={config.filePath || ''} onChange={(e) => handleConfigChange('filePath', e.target.value)} style={inputStyle}>
+          <select
+            value={config.filePath || ''}
+            onChange={(e) => {
+              handleConfigChange('fileIds', []);
+              handleConfigChange('filePath', e.target.value);
+            }}
+            style={inputStyle}
+          >
             <option value="">{emptyOption}</option>
             {files.map((file) => (
               <option key={file.fileId} value={file.originalName}>
@@ -182,7 +189,10 @@ function FileSourceFields({
         <input
           type="text"
           value={config.filePath || ''}
-          onChange={(e) => handleConfigChange('filePath', e.target.value)}
+          onChange={(e) => {
+            handleConfigChange('fileIds', []);
+            handleConfigChange('filePath', e.target.value);
+          }}
           placeholder="Or input custom path manually..."
           style={inputStyle}
         />
@@ -234,6 +244,7 @@ export default function NodeConfigDrawer({
   handleDeleteNode,
 }: NodeConfigDrawerProps) {
   const { t } = useTranslation();
+  const { sessionId, setSessionId } = useUploadStore();
   const [testing, setTesting] = useState(false);
   const [testData, setTestData] = useState<any>(null);
   const [testError, setTestError] = useState<string | null>(null);
@@ -243,8 +254,6 @@ export default function NodeConfigDrawer({
   const [sessions, setSessions] = useState<any[]>([]);
   const [loadingFiles, setLoadingFiles] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
-
-  const { sessionId, setSessionId, addFiles } = useUploadStore();
 
   const fetchSessionFiles = async () => {
     setLoadingFiles(true);
@@ -283,6 +292,7 @@ export default function NodeConfigDrawer({
     try {
       const form = new FormData();
       for (let i = 0; i < targetFiles.length; i++) form.append('files', targetFiles[i]);
+      form.append('pipelineOnly', 'true');
       if (sessionId) form.append('sessionId', sessionId);
 
       const res = await fetch('/api/upload', { method: 'POST', body: form });
@@ -293,24 +303,13 @@ export default function NodeConfigDrawer({
       if (!sessionId && data.sessionId) setSessionId(data.sessionId);
 
       if (data.jobs && data.jobs.length > 0) {
-        const newFiles = data.jobs.map((job: any, index: number) => ({
-          fileId: job.fileId,
-          jobId: job.jobId,
-          originalName: job.originalName,
-          status: 'PENDING',
-          entityCount: 0,
-          error: null,
-          sizeBytes: targetFiles[index]?.size || 0,
-          mimeType: targetFiles[index]?.type || 'application/octet-stream',
-          addedAt: Date.now(),
-        }));
-        addFiles(newFiles);
         await fetchSessionFiles();
 
         handleConfigChange(
           'filePath',
-          targetFiles.length > 1 ? `uploads/${activeSessionId}` : data.jobs[0].originalName
+          targetFiles.length > 1 && activeSessionId ? `uploads/${activeSessionId}` : data.jobs[0].originalName
         );
+        handleConfigChange('fileIds', data.jobs.map((job: any) => job.fileId));
       }
     } catch (err: any) {
       console.error(err);
@@ -738,7 +737,7 @@ export default function NodeConfigDrawer({
           </div>
         )}
 
-        {(type === 'output.json' || type === 'output.graphml' || type === 'output.obsidian_vault') && (
+        {(type === 'output.json' || type === 'output.graphml' || type === 'output.obsidian_vault' || type === 'output.ai_report') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
               <label style={fieldLabelStyle}>Export Target Destination</label>
@@ -771,54 +770,115 @@ export default function NodeConfigDrawer({
           <>
             <div>
               <label style={fieldLabelStyle}>Model Focus</label>
-              <select value={config.focusType || 'executive_summary'} onChange={(e) => handleConfigChange('focusType', e.target.value)} style={inputStyle}>
-                <option value="executive_summary">Executive Summary</option>
-                <option value="threat_actor">Threat Actor Focus</option>
-                <option value="network_clusters">Network Clusters</option>
-                <option value="temporal_timeline">Temporal Timeline</option>
+              <select value={config.focusType || 'general'} onChange={(e) => handleConfigChange('focusType', e.target.value)} style={inputStyle}>
+                <option value="general">General Analysis</option>
+                <option value="actors">Key Actors & Identifiers</option>
+                <option value="networks">Linkage & Clusters</option>
+                <option value="timeline">Timeline</option>
+              </select>
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Output Language</label>
+              <select value={config.language || 'en'} onChange={(e) => handleConfigChange('language', e.target.value)} style={inputStyle}>
+                <option value="en">English</option>
+                <option value="fr">French</option>
               </select>
             </div>
             <div>
               <label style={fieldLabelStyle}>{t('pipeline.llm.provider')}</label>
-              <select value={config.provider || 'mistral'} onChange={(e) => handleConfigChange('provider', e.target.value)} style={inputStyle}>
+              <select value={config.apiProvider || config.provider || 'mistral'} onChange={(e) => handleConfigChange('apiProvider', e.target.value)} style={inputStyle}>
                 <option value="mistral">Mistral</option>
                 <option value="custom">Custom</option>
               </select>
             </div>
-            {config.provider === 'custom' && (
+            {(config.apiProvider || config.provider) === 'custom' && (
               <div>
                 <label style={fieldLabelStyle}>{t('pipeline.llm.endpoint')}</label>
                 <input
                   type="text"
-                  value={config.endpoint || 'http://localhost:11434/v1'}
-                  onChange={(e) => handleConfigChange('endpoint', e.target.value)}
+                  value={config.apiEndpoint || config.endpoint || 'http://localhost:11434/v1'}
+                  onChange={(e) => handleConfigChange('apiEndpoint', e.target.value)}
                   style={inputStyle}
                 />
               </div>
             )}
             <div>
-              <label style={fieldLabelStyle}>{t('pipeline.llm.model')}</label>
+              <label style={fieldLabelStyle}>API Key</label>
               <input
-                type="text"
-                value={config.model || (config.provider === 'custom' ? 'llama3' : 'mistral-large-latest')}
-                onChange={(e) => handleConfigChange('model', e.target.value)}
+                type="password"
+                value={config.apiKey || ''}
+                onChange={(e) => handleConfigChange('apiKey', e.target.value)}
+                placeholder="Use MISTRAL_API_KEY if empty"
                 style={inputStyle}
               />
             </div>
             <div>
+              <label style={fieldLabelStyle}>{t('pipeline.llm.model')}</label>
+              {(config.apiProvider || config.provider || 'mistral') === 'mistral' ? (
+                <select value={config.model || 'mistral-large-latest'} onChange={(e) => handleConfigChange('model', e.target.value)} style={inputStyle}>
+                  <option value="mistral-large-latest">Mistral Large</option>
+                  <option value="mistral-small-latest">Mistral Small</option>
+                  <option value="open-mixtral-8x22b">Open Mixtral 8x22B</option>
+                </select>
+              ) : (
+                <input
+                  type="text"
+                  value={config.model || 'llama3'}
+                  onChange={(e) => handleConfigChange('model', e.target.value)}
+                  style={inputStyle}
+                />
+              )}
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Top Entities Limit</label>
+              <input type="number" min={10} max={100} step={5} value={config.topEntitiesLimit ?? 30} onChange={(e) => handleConfigChange('topEntitiesLimit', Math.max(1, Number(e.target.value) || 1))} style={inputStyle} />
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Top TF-IDF Entities Limit</label>
+              <input type="number" min={10} max={100} step={5} value={config.topTfidfLimit ?? 30} onChange={(e) => handleConfigChange('topTfidfLimit', Math.max(1, Number(e.target.value) || 1))} style={inputStyle} />
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Bridge Nodes Limit</label>
+              <input type="number" min={5} max={30} step={1} value={config.bridgesLimit ?? 10} onChange={(e) => handleConfigChange('bridgesLimit', Math.max(1, Number(e.target.value) || 1))} style={inputStyle} />
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Selected Weak Signals</label>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem', marginTop: '0.5rem' }}>
+                {[
+                  ['includeBridgeSignals', 'Bridge'],
+                  ['includeNicheSignals', 'Niche'],
+                  ['includeEmergingSignals', 'Emerging'],
+                ].map(([key, label]) => (
+                  <label key={key} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.75rem', color: 'var(--color-text)' }}>
+                    <input
+                      type="checkbox"
+                      checked={config[key] !== false}
+                      onChange={(e) => handleConfigChange(key, e.target.checked)}
+                      style={{ accentColor: 'var(--color-primary)', width: 14, height: 14 }}
+                    />
+                    {label}
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>Weak Signals Per Category</label>
+              <input type="number" min={0} max={50} step={1} value={config.weakSignalsLimit ?? 10} onChange={(e) => handleConfigChange('weakSignalsLimit', Math.max(0, Number(e.target.value) || 0))} style={inputStyle} />
+            </div>
+            <div>
               <label style={fieldLabelStyle}>Analyst Directives</label>
               <textarea
-                rows={3}
-                value={config.directives || ''}
-                onChange={(e) => handleConfigChange('directives', e.target.value)}
+                rows={4}
+                value={config.customInstructions ?? config.directives ?? ''}
+                onChange={(e) => handleConfigChange('customInstructions', e.target.value)}
                 placeholder="e.g. Focus on connections between person A and B"
-                style={inputStyle}
+                style={textareaStyle}
               />
             </div>
           </>
         )}
 
-        {(type === 'output.json' || type === 'output.graphml') && (
+        {(type === 'output.json' || type === 'output.graphml' || type === 'output.ai_report') && (
           <div>
             <label style={fieldLabelStyle}>Export File Name</label>
             <input type="text" value={config.fileName || ''} onChange={(e) => handleConfigChange('fileName', e.target.value)} style={inputStyle} />

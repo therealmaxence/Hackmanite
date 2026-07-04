@@ -19,7 +19,7 @@ const PipelineCytoCanvas = dynamic(
 
 const CATEGORY_META = {
   sources:     { label: 'Sources',      color: '#00f0ff' },
-  filters:     { label: 'Filters',      color: '#34d399' },
+  filters:     { label: 'Filters',      color: '#f59e0b' },
   transforms:  { label: 'Transforms',   color: '#a78bfa' },
   visualizers: { label: 'Visualizers',  color: '#fb923c' },
   outputs:     { label: 'Outputs',      color: '#ff2a85' },
@@ -60,7 +60,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
   ],
   outputs: [
     { type: 'output.obsidian_vault', label: 'Obsidian Export',   desc: 'Generate Obsidian vault ZIP',             inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { zipName: 'obsidian-export', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
-    { type: 'output.ai_report',      label: 'AI Report',          desc: 'Generate markdown analytical report',     inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'tabular' }], config: { focusType: 'executive_summary', provider: 'mistral', model: 'mistral-large-latest', directives: '' } },
+    { type: 'output.ai_report',      label: 'AI Report',          desc: 'Generate markdown analytical report',     inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'ai-report.md', exportLocation: 'downloads', exportFolder: 'uploads/exports', focusType: 'general', language: 'en', apiProvider: 'mistral', apiEndpoint: 'https://api.mistral.ai/v1', apiKey: '', model: 'mistral-large-latest', topEntitiesLimit: 30, topTfidfLimit: 30, bridgesLimit: 10, weakSignalsLimit: 10, includeBridgeSignals: true, includeNicheSignals: true, includeEmergingSignals: true, customInstructions: '' } },
     { type: 'output.graphml',        label: 'GraphML Export',      desc: 'Export dataset to GraphML format',       inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.graphml', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.json',           label: 'JSON Export',         desc: 'Export datasets to JSON format',         inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.json', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.kuzudb_write',   label: 'Commit to KuzuDB',   desc: 'Write changes back to graph database',    inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { confirmCommit: false } },
@@ -72,7 +72,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error('API Error'); return r.json(); });
 
 function extractExportDownloads(logs: string[]): PipelineDownload[] {
-  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault) to: (.+)$/;
+  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report) to: (.+)$/;
   return logs.flatMap((log) => {
     const match = log.match(pattern);
     if (!match?.[2]) return [];
@@ -220,6 +220,7 @@ export default function PipelinesClient() {
   const [runLogs, setRunLogs] = useState<string[]>([]);
   const [runStatus, setRunStatus] = useState<string | null>(null);
   const [runDownloads, setRunDownloads] = useState<PipelineDownload[]>([]);
+  const [runNotice, setRunNotice] = useState<string | null>(null);
 
   // ── Selected node memo ──
   const selectedNode = useMemo(() => nodes.find((n) => n.id === selectedNodeId), [nodes, selectedNodeId]);
@@ -252,6 +253,7 @@ export default function PipelinesClient() {
         inputs: item.inputs,
         outputs: item.outputs,
         state: 'idle',
+        disabled: false,
         config: { ...item.config },
         // no position -> let the canvas layout place it
       },
@@ -266,6 +268,20 @@ export default function PipelinesClient() {
     setEdges((es) => es.filter((e) => e.source !== selectedNodeId && e.target !== selectedNodeId));
     setSelectedNodeId(null);
   }, [selectedNodeId]);
+
+  const deleteNodeById = useCallback((nodeId: string) => {
+    setNodes((ns) => ns.filter((n) => n.id !== nodeId));
+    setEdges((es) => es.filter((e) => e.source !== nodeId && e.target !== nodeId));
+    setSelectedNodeId((current) => current === nodeId ? null : current);
+  }, []);
+
+  const deleteEdgeById = useCallback((edgeId: string) => {
+    setEdges((es) => es.filter((e) => e.id !== edgeId));
+  }, []);
+
+  const toggleNodeDisabled = useCallback((nodeId: string) => {
+    setNodes((ns) => ns.map((n) => n.id === nodeId ? { ...n, disabled: !n.disabled } : n));
+  }, []);
 
   // ── Connect two nodes ──
   const handleConnect = useCallback((sourceId: string, targetId: string) => {
@@ -308,6 +324,7 @@ export default function PipelinesClient() {
         inputs: n.data?.inputs || n.inputs || [],
         outputs: n.data?.outputs || n.outputs || [],
         position: n.position,
+        disabled: !!(n.data?.disabled ?? n.disabled),
       }));
 
       // Merge in latest run node states
@@ -357,6 +374,7 @@ export default function PipelinesClient() {
         inputs: n.inputs,
         outputs: n.outputs,
         state: n.state,
+        disabled: !!n.disabled,
       }
     }));
 
@@ -427,11 +445,13 @@ export default function PipelinesClient() {
   // ── Run pipeline ──
   const runPipeline = async () => {
     if (!selectedPipelineId) {
-      setRunLogs(['Error: Please save the pipeline first.']);
+      setRunNotice('Please save the pipeline before running it.');
+      setRunLogs(['Error: Please save the pipeline before running it.']);
       setRunStatus('FAILED');
       return;
     }
     try {
+      setRunNotice(null);
       downloadedExportPathsRef.current = new Set();
       setRunDownloads([]);
       setRunLogs(['Queuing pipeline execution…']);
@@ -666,6 +686,11 @@ export default function PipelinesClient() {
               <Button variant="primary"   size="xs" onClick={runPipeline}  style={{ minHeight: 30, padding: '0 0.875rem' }}>{t('pipeline.run')}</Button>
             </div>
           </div>
+          {runNotice && (
+            <div style={{ padding: '0.5rem 1rem', borderBottom: '1px solid var(--color-surface-raised)', background: 'rgba(225,29,72,0.12)', color: 'var(--color-error)', fontSize: '0.75rem', fontWeight: 600 }}>
+              {runNotice}
+            </div>
+          )}
 
           {/* Canvas or logs */}
           <div style={{ flex: 1, position: 'relative', overflow: 'hidden' }}>
@@ -676,6 +701,9 @@ export default function PipelinesClient() {
                 selectedNodeId={selectedNodeId}
                 onNodeSelect={setSelectedNodeId}
                 onConnect={handleConnect}
+                onNodeDelete={deleteNodeById}
+                onEdgeDelete={deleteEdgeById}
+                onNodeToggleDisabled={toggleNodeDisabled}
                 onPositionChange={handlePositionChange}
               />
             ) : (
@@ -764,6 +792,7 @@ export default function PipelinesClient() {
                     config: selectedNode.config,
                     inputs: selectedNode.inputs,
                     outputs: selectedNode.outputs,
+                    disabled: selectedNode.disabled,
                   },
                 }}
                 selectedPipelineId={selectedPipelineId}

@@ -3,7 +3,7 @@ import { registerAllNodes } from './nodes';
 
 export interface TabularData { type: 'tabular'; data: any[]; }
 export interface GraphData { type: 'graph'; nodes: any[]; edges: any[]; emails?: any[]; }
-export interface FileDownloadData { type: 'file_download'; value: { fileName: string; content: string; mimeType: string; isBase64?: boolean }; }
+export interface FileDownloadData { type: 'file_download'; value: { fileName: string; content: string; mimeType: string; isBase64?: boolean; relativePath?: string }; }
 export type PipelineData = TabularData | GraphData | FileDownloadData;
 
 export interface ExecutionContext {
@@ -135,6 +135,7 @@ function computeGraphTfidf(graph: any) {
 }
 
 function outputHandlesFor(node: any): { id: string }[] { return node.data.outputs?.length ? node.data.outputs : [{ id: 'output' }]; }
+function isNodeDisabled(node: any): boolean { return !!(node.data?.disabled ?? node.disabled); }
 function formatPipelineLog(level: 'INFO' | 'ERROR', message: string): string { return `[${new Date().toLocaleTimeString()}][${level}] ${message}`; }
 
 async function runNode(node: any, nodeById: Map<string, any>, edges: any[], intermediateOutputs: Record<string, PipelineData>, context: ExecutionContext): Promise<void> {
@@ -146,6 +147,16 @@ async function runNode(node: any, nodeById: Map<string, any>, edges: any[], inte
       if (merged.type === 'graph') computeGraphTfidf(merged);
       inputs[input.id] = merged;
     }
+  }
+
+  if (isNodeDisabled(node)) {
+    const passthrough = Object.values(inputs);
+    if (passthrough.length > 0) {
+      const result = mergePipelineData(passthrough);
+      for (const out of outputHandlesFor(node)) intermediateOutputs[`${node.id}.${out.id}`] = result;
+    }
+    await context.log(`Node [${node.data.label}] is deactivated; bypassed without changing the pipeline data.`);
+    return;
   }
 
   const handler = NODE_HANDLERS[node.data.type];

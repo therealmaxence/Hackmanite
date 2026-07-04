@@ -52,8 +52,9 @@ def _sanitize(val):
 
 @router.post("/extract", response_model=ExtractionResult)
 async def extract(req: ExtractionRequest) -> ExtractionResult:
-    logger.info("Starting extraction", file_id=req.file_id, mime=req.mime_type, window_size=req.window_size)
-    return _sanitize(await asyncio.to_thread(dispatch, req.file_id, req.storage_path, req.mime_type, req.window_size))
+    persist = req.persist is not False
+    logger.info("Starting extraction", file_id=req.file_id, mime=req.mime_type, window_size=req.window_size, persist=persist)
+    return _sanitize(await asyncio.to_thread(dispatch, req.file_id, req.storage_path, req.mime_type, req.window_size, persist))
 
 
 @router.get("/spacy-models")

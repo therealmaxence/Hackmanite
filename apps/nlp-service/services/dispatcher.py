@@ -8,7 +8,7 @@ from db import kuzu_db
 
 logger = logging.getLogger(__name__)
 
-def dispatch(file_id: str, file_path: str, mime_type: str, window_size: int = 400) -> ExtractionResult:
+def dispatch(file_id: str, file_path: str, mime_type: str, window_size: int = 400, persist: bool = True) -> ExtractionResult:
     start = time.monotonic()
     entities, neighborhoods, emails, extractor, error = [], [], [], "unknown", None
     tier = decide_routing(file_path, mime_type)
@@ -48,7 +48,7 @@ def dispatch(file_id: str, file_path: str, mime_type: str, window_size: int = 40
     logger.info(f"Dispatch complete | file={file_id} tier={tier} entities={len(entities)} neighborhoods={len(neighborhoods)} emails={len(emails)} time={elapsed_ms}ms")
 
     res = ExtractionResult(file_id=file_id, entities=entities, neighborhoods=neighborhoods, emails=emails, processing_time_ms=elapsed_ms, extractor_used=extractor, error=error)
-    if not error and entities:
+    if persist and not error and entities:
         try:
             kuzu_db.save_extraction_results(file_id, res.entities, res.neighborhoods)
             logger.info(f"KuzuDB write complete | file={file_id} entities={len(res.entities)} neighborhoods={len(res.neighborhoods)}")

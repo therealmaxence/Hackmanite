@@ -67,18 +67,7 @@ export async function createFileRecordAndEnqueue(
 ) {
   await redis.del(RedisKeys.sessionCancellation(sessionId));
 
-  const fileRecord = await prisma.file.create({
-    data: {
-      sessionId,
-      originalName: file.name,
-      storagePath,
-      mimeType: mime,
-      sizeBytes: BigInt(file.size),
-      status: 'PENDING',
-      originalCreatedAt: originalCreatedAt ?? undefined,
-    },
-  });
-
+  const fileRecord = await createFileRecord(file, mime, sessionId, storagePath, originalCreatedAt);
   const priority = mime.startsWith('image/') || mime.startsWith('application/pdf') ? 10 : 1;
   const job = await extractionQueue.add(
     { fileId: fileRecord.id, sessionId, storagePath, mimeType: mime, windowSize },
@@ -87,6 +76,27 @@ export async function createFileRecordAndEnqueue(
 
   logger.info('File queued', { fileId: fileRecord.id, name: fileRecord.originalName, sessionId, priority });
   return { fileId: fileRecord.id, jobId: String(job.id), originalName: fileRecord.originalName };
+}
+
+export async function createFileRecord(
+  file: File,
+  mime: string,
+  sessionId: string,
+  storagePath: string,
+  originalCreatedAt: Date | null,
+  status = 'PENDING'
+) {
+  return prisma.file.create({
+    data: {
+      sessionId,
+      originalName: file.name,
+      storagePath,
+      mimeType: mime,
+      sizeBytes: BigInt(file.size),
+      status,
+      originalCreatedAt: originalCreatedAt ?? undefined,
+    },
+  });
 }
 
 export function sortByProcessingSpeed(files: { mime: string; [k: string]: unknown }[]) {

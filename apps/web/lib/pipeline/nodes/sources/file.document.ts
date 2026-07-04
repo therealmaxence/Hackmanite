@@ -19,6 +19,23 @@ async function resolveDbFile(filePath: string) {
   return prisma.file.findFirst({ where: { OR: [{ storagePath: filePath }, { originalName: filePath }, { id: filePath }] } });
 }
 
+async function resolveSessionFiles(filePath: string) {
+  const sessionId = filePath.replace(/\\/g, '/').split('/').filter(Boolean).pop();
+  if (!sessionId) return [];
+  return prisma.file.findMany({
+    where: { sessionId },
+    select: { id: true, originalName: true, storagePath: true, mimeType: true },
+  });
+}
+
+async function resolveFilesByIds(fileIds: string[]) {
+  if (!fileIds.length) return [];
+  return prisma.file.findMany({
+    where: { id: { in: fileIds } },
+    select: { id: true, originalName: true, storagePath: true, mimeType: true },
+  });
+}
+
 function mergeNodesAndEdges(allNodes: any[], allEdges: any[]) {
   const uniqueNodes: Record<string, any> = {};
   for (const node of allNodes) {
@@ -43,32 +60,48 @@ export const documentSourceHandler: NodeHandler = {
     if (!filePath) throw new Error('Missing parameter: filePath');
     const windowSize = Math.max(1, parseInt(config?.windowSize ?? config?.window_size ?? 400, 10) || 400);
 
+    const filesToProcess: Array<{ id: string; path: string; name: string; mime: string }> = [];
+
     let mimeType = config?.mimeType;
-    if (!mimeType) {
-      const dbFile = await resolveDbFile(filePath);
-      mimeType = dbFile?.mimeType || detectMimeType(filePath);
-    }
-
-    let diskPath = filePath;
-    if (!existsSync(resolve(process.cwd(), diskPath))) {
-      const dbFile = await resolveDbFile(filePath);
-      if (dbFile) diskPath = dbFile.storagePath;
-    }
-
-    const absolutePath = resolve(process.cwd(), diskPath);
-    if (!existsSync(absolutePath)) throw new Error(`Path does not exist: ${filePath}`);
-
-    const filesToProcess: Array<{ path: string; name: string; mime: string }> = [];
-    if (lstatSync(absolutePath).isDirectory()) {
-      await context.log(`Path ${diskPath} is a directory. Scanning for files...`);
-      for (const fname of readdirSync(absolutePath)) {
-        const fullPath = join(absolutePath, fname);
-        if (lstatSync(fullPath).isDirectory()) continue;
-        const dbFile = await prisma.file.findFirst({ where: { OR: [{ storagePath: join(diskPath, fname) }, { originalName: fname }] } });
-        filesToProcess.push({ path: fullPath, name: fname, mime: dbFile?.mimeType || detectMimeType(fname) });
+    const configuredFileIds = Array.isArray(config?.fileIds) ? config.fileIds.filter(Boolean).map(String) : [];
+    const sessionFiles = configuredFileIds.length > 0 ? await resolveFilesByIds(configuredFileIds) : await resolveSessionFiles(filePath);
+    if (sessionFiles.length > 0) {
+      await context.log(`Resolved ${sessionFiles.length} uploaded files for document source.`);
+      for (const file of sessionFiles) {
+        const absoluteStoragePath = resolve(process.cwd(), file.storagePath);
+        if (!existsSync(absoluteStoragePath)) {
+          await context.log(`Warning: Uploaded file is missing on disk: ${file.originalName}`);
+          continue;
+        }
+        filesToProcess.push({ id: file.id, path: absoluteStoragePath, name: file.originalName, mime: file.mimeType || detectMimeType(file.originalName) });
       }
     } else {
-      filesToProcess.push({ path: absolutePath, name: filePath.split(/[/\\]/).pop() || '', mime: mimeType });
+      if (!mimeType) {
+        const dbFile = await resolveDbFile(filePath);
+        mimeType = dbFile?.mimeType || detectMimeType(filePath);
+      }
+
+      let diskPath = filePath;
+      if (!existsSync(resolve(process.cwd(), diskPath))) {
+        const dbFile = await resolveDbFile(filePath);
+        if (dbFile) diskPath = dbFile.storagePath;
+      }
+
+      const absolutePath = resolve(process.cwd(), diskPath);
+      if (!existsSync(absolutePath)) throw new Error(`Path does not exist: ${filePath}`);
+
+      if (lstatSync(absolutePath).isDirectory()) {
+        await context.log(`Path ${diskPath} is a directory. Scanning for files...`);
+        for (const fname of readdirSync(absolutePath)) {
+          const fullPath = join(absolutePath, fname);
+          if (lstatSync(fullPath).isDirectory()) continue;
+          const dbFile = await prisma.file.findFirst({ where: { OR: [{ storagePath: join(diskPath, fname) }, { originalName: fname }] } });
+          filesToProcess.push({ id: dbFile?.id || `pipeline-${fname}`, path: fullPath, name: fname, mime: dbFile?.mimeType || detectMimeType(fname) });
+        }
+      } else {
+        const dbFile = await resolveDbFile(filePath);
+        filesToProcess.push({ id: dbFile?.id || 'pipeline-run-doc', path: absolutePath, name: filePath.split(/[/\\]/).pop() || '', mime: mimeType });
+      }
     }
 
     if (filesToProcess.length === 0) throw new Error(`No files found to process in: ${filePath}`);
@@ -83,10 +116,11 @@ export const documentSourceHandler: NodeHandler = {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            file_id: `pipeline_${Date.now()}`,
+            file_id: fileToProc.id,
             storage_path: fileToProc.path,
             mime_type: fileToProc.mime,
             window_size: windowSize,
+            persist: false,
           }),
         });
         if (!res.ok) {
@@ -107,7 +141,7 @@ export const documentSourceHandler: NodeHandler = {
             type: entity.type,
             canonical,
             metadata: entity.metadata ? JSON.stringify(entity.metadata) : '{}',
-            occurrences: [{ fileId: 'pipeline-run-doc', fileName: fileToProc.name, mimeType: fileToProc.mime, count: entity.count, excerpts: entity.excerpts ? JSON.stringify(entity.excerpts) : '[]' }],
+            occurrences: [{ fileId: fileToProc.id, fileName: fileToProc.name, mimeType: fileToProc.mime, count: entity.count, excerpts: entity.excerpts ? JSON.stringify(entity.excerpts) : '[]' }],
           };
         }));
 
@@ -117,7 +151,7 @@ export const documentSourceHandler: NodeHandler = {
           weight: nb.weight,
           distance: nb.distance,
           snippet: nb.snippet,
-          fileId: 'pipeline-run-doc',
+          fileId: fileToProc.id,
           fileName: fileToProc.name,
         })));
       } catch (err: any) {

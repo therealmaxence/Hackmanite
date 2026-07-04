@@ -1,13 +1,14 @@
 'use client';
 
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
+import type { CSSProperties } from 'react';
 import cytoscape from 'cytoscape';
 import ZoomControls from '@/components/ui/ZoomControls';
 import { useTranslation } from '@/lib/i18n';
 
 const CATEGORY_COLORS: Record<string, string> = {
   source: '#00f0ff',
-  filter: '#34d399',
+  filter: '#f59e0b',
   transform: '#a78bfa',
   visualizer: '#fb923c',
   output: '#ff2a85',
@@ -20,6 +21,19 @@ function getCategory(type: string) {
   if (type.startsWith('visualize.')) return 'visualizer';
   return 'output';
 }
+
+const menuButtonStyle: CSSProperties = {
+  width: '100%',
+  border: 'none',
+  borderRadius: 'var(--radius-sm)',
+  padding: '0.45rem 0.55rem',
+  background: 'transparent',
+  color: 'var(--color-text)',
+  cursor: 'pointer',
+  textAlign: 'left',
+  fontSize: '0.75rem',
+  fontWeight: 600,
+};
 
 const buildStylesheet = (): cytoscape.StylesheetStyle[] => [
   {
@@ -63,6 +77,15 @@ const buildStylesheet = (): cytoscape.StylesheetStyle[] => [
       'overlay-color': '#7c3aed' as any,
       'overlay-opacity': 0.06 as any,
     },
+  },
+  {
+    selector: 'node.disabled',
+    style: {
+      opacity: 0.42,
+      'background-color': '#17161d',
+      'border-style': 'dashed',
+      'text-opacity': 0.72,
+    } as any,
   },
   {
     selector: 'node[state = "running"]',
@@ -132,6 +155,7 @@ interface PipelineNode {
   label: string;
   desc: string;
   state?: string;
+  disabled?: boolean;
   position?: { x: number; y: number };
 }
 
@@ -147,6 +171,9 @@ interface PipelineCytoCanvasProps {
   selectedNodeId: string | null;
   onNodeSelect: (id: string | null) => void;
   onConnect: (sourceId: string, targetId: string) => void;
+  onNodeDelete: (id: string) => void;
+  onEdgeDelete: (id: string) => void;
+  onNodeToggleDisabled: (id: string) => void;
   onPositionChange?: (id: string, position: { x: number; y: number }) => void;
 }
 
@@ -156,13 +183,20 @@ export default function PipelineCytoCanvas({
   selectedNodeId,
   onNodeSelect,
   onConnect,
+  onNodeDelete,
+  onEdgeDelete,
+  onNodeToggleDisabled,
   onPositionChange,
 }: PipelineCytoCanvasProps) {
   const { t } = useTranslation();
+  const [actionMenu, setActionMenu] = useState<
+    | { type: 'node'; id: string; x: number; y: number; disabled: boolean }
+    | { type: 'edge'; id: string; x: number; y: number }
+    | null
+  >(null);
   const containerRef = useRef<HTMLDivElement>(null);
   const cyRef = useRef<cytoscape.Core | null>(null);
   const tempPathRef = useRef<SVGPathElement>(null);
-  const connectionSourceRef = useRef<string | null>(null);
   const dragConnectionRef = useRef<{ sourceId: string; start: { x: number; y: number } } | null>(null);
 
   useEffect(() => {
@@ -200,8 +234,8 @@ export default function PipelineCytoCanvas({
     };
 
     const clearConnection = () => {
-      connectionSourceRef.current = null;
       dragConnectionRef.current = null;
+      setActionMenu(null);
       cy.autoungrabify(false);
       cy.nodes().removeClass('connection-source connection-target');
       if (tempPathRef.current) tempPathRef.current.style.opacity = '0';
@@ -225,23 +259,23 @@ export default function PipelineCytoCanvas({
     };
 
     cy.on('tap', 'node', (e) => {
-      const sourceId = connectionSourceRef.current;
       const targetId = e.target.id();
-      if (sourceId) {
-        if (sourceId !== targetId) onConnect(sourceId, targetId);
-        clearConnection();
-        return;
-      }
+      clearConnection();
       onNodeSelect(targetId);
+    });
+
+    cy.on('tap', 'edge', () => {
+      clearConnection();
     });
 
     cy.on('tap', (e) => {
       if (e.target !== cy) return;
-      if (connectionSourceRef.current) clearConnection();
-      else onNodeSelect(null);
+      clearConnection();
+      onNodeSelect(null);
     });
 
     cy.on('dragfree', 'node', (e) => {
+      setActionMenu(null);
       if (dragConnectionRef.current) return;
       const pos = e.target.position();
       onPositionChange?.(e.target.id(), { x: pos.x, y: pos.y });
@@ -256,6 +290,7 @@ export default function PipelineCytoCanvas({
       if (point.x < box.x2 - 28) return;
       original.preventDefault();
       original.stopPropagation();
+      setActionMenu(null);
       clearConnection();
       const start = { x: box.x2, y: (box.y1 + box.y2) / 2 };
       dragConnectionRef.current = { sourceId: node.id(), start };
@@ -271,10 +306,21 @@ export default function PipelineCytoCanvas({
       e.originalEvent?.stopPropagation?.();
       clearConnection();
       const node = e.target;
-      connectionSourceRef.current = node.id();
-      node.addClass('connection-source');
-      cy.nodes().not(node).addClass('connection-target');
       onNodeSelect(node.id());
+      setActionMenu({
+        type: 'node',
+        id: node.id(),
+        x: e.renderedPosition.x,
+        y: e.renderedPosition.y,
+        disabled: !!node.hasClass('disabled'),
+      });
+    });
+
+    cy.on('cxttap', 'edge', (e) => {
+      e.originalEvent?.preventDefault?.();
+      e.originalEvent?.stopPropagation?.();
+      clearConnection();
+      setActionMenu({ type: 'edge', id: e.target.id(), x: e.renderedPosition.x, y: e.renderedPosition.y });
     });
 
     return () => {
@@ -307,11 +353,14 @@ export default function PipelineCytoCanvas({
       const category = getCategory(node.type);
       if (existingNodeIds.has(node.id)) {
         const cyNode = cy.getElementById(node.id);
-        cyNode.data({ label: node.label, category, state: node.state || 'idle' });
+        cyNode.data({ label: node.label, category, state: node.state || 'idle', disabled: !!node.disabled });
+        if (node.disabled) cyNode.addClass('disabled');
+        else cyNode.removeClass('disabled');
       } else {
         cy.add({
           group: 'nodes',
-          data: { id: node.id, label: node.label, category, state: node.state || 'idle', nodeType: node.type },
+          data: { id: node.id, label: node.label, category, state: node.state || 'idle', nodeType: node.type, disabled: !!node.disabled },
+          classes: node.disabled ? 'disabled' : '',
           position: node.position ?? { x: 300, y: 300 },
         });
         needLayout = !node.position;
@@ -369,6 +418,63 @@ export default function PipelineCytoCanvas({
         </defs>
         <path ref={tempPathRef} fill="none" stroke="#a78bfa" strokeWidth="3" markerEnd="url(#pipeline-temp-arrow)" filter="url(#pipeline-edge-glow)" style={{ opacity: 0, transition: 'opacity 0.12s ease' }} />
       </svg>
+
+      {actionMenu && (
+        <div
+          style={{
+            position: 'absolute',
+            left: Math.min(actionMenu.x + 12, Math.max(12, (containerRef.current?.clientWidth || 0) - 172)),
+            top: Math.min(actionMenu.y + 12, Math.max(12, (containerRef.current?.clientHeight || 0) - 92)),
+            zIndex: 20,
+            minWidth: 148,
+            padding: '0.35rem',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '0.25rem',
+            background: 'var(--color-surface)',
+            border: '1px solid var(--color-surface-hover)',
+            borderRadius: 'var(--radius-sm)',
+            boxShadow: '0 14px 36px rgba(0,0,0,0.32)',
+          }}
+          onMouseDown={(e) => e.stopPropagation()}
+        >
+          {actionMenu.type === 'node' ? (
+            <>
+              <button
+                type="button"
+                onClick={() => {
+                  onNodeToggleDisabled(actionMenu.id);
+                  setActionMenu(null);
+                }}
+                style={menuButtonStyle}
+              >
+                {actionMenu.disabled ? t('pipeline.node.activate') : t('pipeline.node.deactivate')}
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  onNodeDelete(actionMenu.id);
+                  setActionMenu(null);
+                }}
+                style={{ ...menuButtonStyle, color: 'var(--color-error)' }}
+              >
+                {t('pipeline.node.delete')}
+              </button>
+            </>
+          ) : (
+            <button
+              type="button"
+              onClick={() => {
+                onEdgeDelete(actionMenu.id);
+                setActionMenu(null);
+              }}
+              style={{ ...menuButtonStyle, color: 'var(--color-error)' }}
+            >
+              {t('pipeline.edge.delete')}
+            </button>
+          )}
+        </div>
+      )}
 
       <ZoomControls
         onZoomIn={() => cyRef.current?.zoom(cyRef.current.zoom() * 1.2)}

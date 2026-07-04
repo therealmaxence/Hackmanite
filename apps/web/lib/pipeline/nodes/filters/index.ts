@@ -6,6 +6,7 @@ import { minOccurrencesHandler } from './min_occurrences';
 import { minConnectionsHandler } from './min_connections';
 import { edgeWeightThresholdHandler } from './edge_weight_threshold';
 import { weakSignalFlagHandler } from './weak_signal_flag';
+import { dateRangeFilterHandler } from './date_range';
 
 export const handlers = [
   entityCategoryHandler,
@@ -16,4 +17,5 @@ export const handlers = [
   minConnectionsHandler,
   edgeWeightThresholdHandler,
   weakSignalFlagHandler,
+  dateRangeFilterHandler,
 ];

@@ -5,6 +5,27 @@ import { ENTITY_COLORS, EntityType } from '@/types/entities';
 import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
 import { useTranslation } from '@/lib/i18n';
 import { useUploadStore } from '@/store/uploadStore';
+import { createPortal } from 'react-dom';
+import { ResponsiveContainer, BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
+
+function getTimelineData(testData: any) {
+  const nodes = testData?.nodes || [];
+  const groups: Record<string, number> = {};
+  for (const node of nodes) {
+    for (const occ of node.occurrences || []) {
+      if (occ.originalCreatedAt) {
+        try {
+          const dateStr = new Date(occ.originalCreatedAt).toISOString().split('T')[0];
+          groups[dateStr] = (groups[dateStr] || 0) + (occ.count || 1);
+        } catch (_) {}
+      }
+    }
+  }
+  return Object.keys(groups).map((date) => ({
+    date,
+    Mentions: groups[date],
+  })).sort((a, b) => a.date.localeCompare(b.date));
+}
 
 const GraphCanvas = dynamic(
   () => import('@/components/graph/GraphCanvas'),
@@ -409,6 +430,50 @@ export default function NodeConfigDrawer({
           />
         )}
 
+        {type === 'source.file.csv' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <FileSourceFields
+              selectLabel="Select CSV File"
+              emptyOption="-- Choose uploaded CSV --"
+              uploadLabel="Or Upload New CSV File"
+              inputId="drawer-csv-upload"
+              accept=".csv,.tsv,.txt"
+              files={sessionFiles}
+              loadingFiles={loadingFiles}
+              config={config}
+              handleConfigChange={handleConfigChange}
+              isUploading={isUploading}
+              onUpload={handleUpload}
+            />
+            <div>
+              <label style={fieldLabelStyle}>Delimiter</label>
+              <input
+                type="text"
+                maxLength={1}
+                value={config.delimiter ?? ','}
+                onChange={(e) => handleConfigChange('delimiter', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+        )}
+
+        {type === 'source.web.scraper' && (
+          <div>
+            <label style={fieldLabelStyle}>Web Page / RSS Feed URL</label>
+            <input
+              type="url"
+              placeholder="https://example.com/feed.xml or https://example.com/article"
+              value={config.url || ''}
+              onChange={(e) => handleConfigChange('url', e.target.value)}
+              style={inputStyle}
+            />
+            <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+              Fetches raw HTML page text or RSS feed contents directly on the server.
+            </p>
+          </div>
+        )}
+
         {type === 'source.session' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
@@ -682,6 +747,29 @@ export default function NodeConfigDrawer({
           </div>
         )}
 
+        {type === 'filter.date_range' && (
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <label style={fieldLabelStyle}>Start Date</label>
+              <input
+                type="date"
+                value={config.startDate || ''}
+                onChange={(e) => handleConfigChange('startDate', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+            <div>
+              <label style={fieldLabelStyle}>End Date</label>
+              <input
+                type="date"
+                value={config.endDate || ''}
+                onChange={(e) => handleConfigChange('endDate', e.target.value)}
+                style={inputStyle}
+              />
+            </div>
+          </div>
+        )}
+
         {type === 'transform.llm_annotate' && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
@@ -730,6 +818,24 @@ export default function NodeConfigDrawer({
           </div>
         )}
 
+        {type === 'transform.entity_resolver' && (
+          <div>
+            <label style={fieldLabelStyle}>Similarity Threshold ({config.threshold ?? 0.85})</label>
+            <input
+              type="range"
+              min={0.5}
+              max={1.0}
+              step={0.01}
+              value={config.threshold ?? 0.85}
+              onChange={(e) => handleConfigChange('threshold', parseFloat(e.target.value))}
+              style={{ width: '100%', accentColor: 'var(--color-primary)' }}
+            />
+            <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+              Higher values merge only extremely similar names. Lower values are more aggressive.
+            </p>
+          </div>
+        )}
+
         {type === 'output.obsidian_vault' && (
           <div>
             <label style={fieldLabelStyle}>Zip File Name</label>
@@ -737,7 +843,7 @@ export default function NodeConfigDrawer({
           </div>
         )}
 
-        {(type === 'output.json' || type === 'output.graphml' || type === 'output.obsidian_vault' || type === 'output.ai_report') && (
+        {(type === 'output.json' || type === 'output.graphml' || type === 'output.obsidian_vault' || type === 'output.ai_report' || type === 'output.html_dashboard') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
               <label style={fieldLabelStyle}>Export Target Destination</label>
@@ -878,7 +984,7 @@ export default function NodeConfigDrawer({
           </>
         )}
 
-        {(type === 'output.json' || type === 'output.graphml' || type === 'output.ai_report') && (
+        {(type === 'output.json' || type === 'output.graphml' || type === 'output.ai_report' || type === 'output.html_dashboard') && (
           <div>
             <label style={fieldLabelStyle}>Export File Name</label>
             <input type="text" value={config.fileName || ''} onChange={(e) => handleConfigChange('fileName', e.target.value)} style={inputStyle} />
@@ -906,6 +1012,8 @@ export default function NodeConfigDrawer({
           'source.file.document',
           'source.file.email',
           'source.session',
+          'source.file.csv',
+          'source.web.scraper',
           'filter.entity_category',
           'filter.top_n_nodes',
           'filter.min_tfidf',
@@ -914,15 +1022,18 @@ export default function NodeConfigDrawer({
           'filter.edge_weight_threshold',
           'filter.weak_signal_flag',
           'filter.allow_deny_list',
+          'filter.date_range',
           'transform.rare_bridges',
           'transform.niche_topics',
           'transform.spiking_signals',
           'transform.llm_annotate',
+          'transform.entity_resolver',
           'output.obsidian_vault',
           'output.ai_report',
           'output.json',
           'output.graphml',
           'output.kuzudb_write',
+          'output.html_dashboard',
         ].includes(type) && (
           <p style={{ fontSize: '0.75rem', color: 'var(--color-text-dim)', fontStyle: 'italic', margin: 0 }}>This node has no configurable parameters.</p>
         )}
@@ -1027,8 +1138,8 @@ export default function NodeConfigDrawer({
         </Button>
       </div>
 
-      {showVisualizerModal && testData && (
-        <div style={{ position: 'fixed', inset: 0, background: 'rgba(10, 9, 12, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, padding: '2rem' }}>
+      {showVisualizerModal && testData && createPortal(
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(10, 9, 12, 0.85)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 2000, padding: '2rem' }}>
           <div style={{ width: '90vw', height: '85vh', background: 'var(--color-surface)', border: '1px solid var(--color-surface-hover)', borderRadius: 'var(--radius-lg)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
             <div style={{ padding: '1.25rem 1.5rem', borderBottom: '1px solid var(--color-surface-hover)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexShrink: 0 }}>
               <div>
@@ -1045,11 +1156,37 @@ export default function NodeConfigDrawer({
               </button>
             </div>
 
-            <div style={{ flex: 1, padding: '1.5rem', minHeight: 0, overflow: 'hidden' }}>
+            <div style={{ flex: 1, padding: '1.5rem', minHeight: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
               {type === 'visualize.graph' ? (
                 <GraphPreview data={testData} view={GraphCanvas} />
               ) : type === 'visualize.table' && testData.nodes ? (
                 <GraphPreview data={testData} view={EntityTableView} />
+              ) : type === 'visualize.timeline' ? (
+                (() => {
+                  const chartData = getTimelineData(testData);
+                  if (chartData.length === 0) {
+                    return <p style={{ color: 'var(--color-text-muted)', fontStyle: 'italic', textAlign: 'center', marginTop: '2rem' }}>No date/temporal metadata available in graph occurrences.</p>;
+                  }
+                  return (
+                    <div style={{ flex: 1, minHeight: 0, display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                      <h4 style={{ fontSize: '0.875rem', fontWeight: 600, color: 'var(--color-text-muted)', margin: 0 }}>Mentions Over Time</h4>
+                      <div style={{ flex: 1, minHeight: 0 }}>
+                        <ResponsiveContainer width="100%" height="100%">
+                          <BarChart data={chartData}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="var(--color-surface-hover)" />
+                            <XAxis dataKey="date" stroke="var(--color-text-muted)" fontSize={10} />
+                            <YAxis stroke="var(--color-text-muted)" fontSize={10} />
+                            <Tooltip
+                              contentStyle={{ background: 'var(--color-surface-raised)', border: '1px solid var(--color-surface-hover)', borderRadius: 'var(--radius)' }}
+                              labelStyle={{ color: 'var(--color-text)', fontWeight: 'bold' }}
+                            />
+                            <Bar dataKey="Mentions" fill="var(--color-primary)" radius={[4, 4, 0, 0]} />
+                          </BarChart>
+                        </ResponsiveContainer>
+                      </div>
+                    </div>
+                  );
+                })()
               ) : (
                 (() => {
                   const dataRows = testData.data || [];
@@ -1087,7 +1224,8 @@ export default function NodeConfigDrawer({
               )}
             </div>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </div>
   );

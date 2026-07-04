@@ -7,12 +7,15 @@ export function enrichNodeMetadata(node: any, fields: any) {
   return { ...node, metadata: JSON.stringify({ ...meta, ...fields }) };
 }
 
-export function extractSignals(input: any, signals: any[]) {
+export function enrichSignals(input: any, signals: any[], metricKey: string) {
   const signalMap = new Map(signals.map((signal) => [signal.id, signal.score || 0] as const));
   return {
     type: 'graph' as const,
-    nodes: input.nodes.filter((node: any) => signalMap.has(node.id)).map((node: any) => ({ ...node, score: signalMap.get(node.id) || 0 })),
-    edges: input.edges.filter((edge: any) => signalMap.has(edge.source) && signalMap.has(edge.target)),
+    nodes: input.nodes.map((node: any) => {
+      const score = signalMap.get(node.id) || 0;
+      return enrichNodeMetadata({ ...node, score }, { [metricKey]: score });
+    }),
+    edges: input.edges,
     emails: input.emails || [],
   };
 }
@@ -21,6 +24,7 @@ export function buildWeakSignalHandler(
   type: string,
   startMessage: string,
   resultLabel: string,
+  metricKey: string,
   pickSignals: (result: WeakSignalsResult) => any[]
 ): NodeHandler {
   return {
@@ -28,8 +32,8 @@ export function buildWeakSignalHandler(
     async run(inputs, config, context) {
       const input = requireGraphInput(inputs);
       await context.log(startMessage);
-      const result = extractSignals(input, pickSignals(computeWeakSignals(input, config || {})));
-      await context.log(`Extracted ${result.nodes.length} ${resultLabel} nodes from the graph.`);
+      const result = enrichSignals(input, pickSignals(computeWeakSignals(input, config || {})), metricKey);
+      await context.log(`Enriched graph with ${resultLabel} scores.`);
       return result;
     },
   };

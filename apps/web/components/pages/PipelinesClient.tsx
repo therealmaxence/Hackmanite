@@ -35,6 +35,8 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'source.file.email',     label: 'Email File',           desc: 'EML/PST email format ingestion',            inputs: [], outputs: [{ id: 'output', type: 'graph' }],   config: { filePath: '', windowSize: 400 } },
     { type: 'source.session',        label: 'Active Session Graph', desc: 'Load graph data from a session',            inputs: [], outputs: [{ id: 'output', type: 'graph' }],   config: { sessionId: '' } },
     { type: 'source.kuzudb.query',   label: 'KuzuDB Query',         desc: 'Custom Cypher query against KuzuDB',        inputs: [], outputs: [{ id: 'output', type: 'tabular' }], config: { query: 'MATCH (a:Entity)-[r:CO_OCCURS]->(b:Entity) RETURN a, r, b LIMIT 50;' } },
+    { type: 'source.file.csv',       label: 'CSV Ingestor',         desc: 'Ingest tabular data from a CSV file',       inputs: [], outputs: [{ id: 'output', type: 'tabular' }], config: { filePath: '', delimiter: ',' } },
+    { type: 'source.web.scraper',    label: 'Web Scraper',          desc: 'Ingest and run NLP extraction on web contents', inputs: [], outputs: [{ id: 'output', type: 'graph' }], config: { url: '' } },
   ],
   filters: [
     { type: 'filter.entity_category',    label: 'Filter Category',  desc: 'Filter entities by category',             inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { categories: ['PERSON', 'ORGANIZATION'] } },
@@ -45,6 +47,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'filter.edge_weight_threshold', label: 'Edge Weight',   desc: 'Filter by connection weight',             inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { min: 0.1 } },
     { type: 'filter.weak_signal_flag',   label: 'Weak Signal',      desc: 'Keep only flagged signal entities',        inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { rareBridges: true, nicheTopics: true, spikingSignals: true } },
     { type: 'filter.allow_deny_list',    label: 'Denylist',         desc: 'Filter out specific entity names',         inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { deniedNames: '' } },
+    { type: 'filter.date_range',         label: 'Date Range',       desc: 'Filter entities by date range',           inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { startDate: '', endDate: '' } },
   ],
   transforms: [
     { type: 'transform.rare_bridges',     label: 'Rare Bridges',        desc: 'Identify bridge signals in graph',       inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { maxOccurrence: 10 } },
@@ -53,10 +56,12 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'transform.llm_annotate',    label: 'LLM Annotate',         desc: 'Annotate nodes using AI',                inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { provider: 'mistral', model: 'mistral-large-latest', maxNodes: 80, prompt: 'Add a concise llmAnnotation metadata field to the most relevant nodes.' } },
     { type: 'transform.community_detect',label: 'Community Detection',  desc: 'Group modular communities',              inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { iterations: 4 } },
     { type: 'transform.centrality_score',label: 'Centrality Score',     desc: 'Calculate betweenness centrality',        inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: {} },
+    { type: 'transform.entity_resolver', label: 'Entity Resolver',     desc: 'Deduplicate similar entities',            inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { threshold: 0.85 } },
   ],
   visualizers: [
     { type: 'visualize.graph', label: 'Graph Preview', desc: 'Render the intermediate graph at this stage', inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: {} },
     { type: 'visualize.table', label: 'Table Preview', desc: 'Preview tabular records as a spreadsheet table', inputs: [{ id: 'input', type: 'tabular' }], outputs: [{ id: 'output', type: 'tabular' }], config: {} },
+    { type: 'visualize.timeline', label: 'Timeline Preview', desc: 'View temporal entity occurrence trends', inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: {} },
   ],
   outputs: [
     { type: 'output.obsidian_vault', label: 'Obsidian Export',   desc: 'Generate Obsidian vault ZIP',             inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { zipName: 'obsidian-export', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
@@ -64,6 +69,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'output.graphml',        label: 'GraphML Export',      desc: 'Export dataset to GraphML format',       inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.graphml', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.json',           label: 'JSON Export',         desc: 'Export datasets to JSON format',         inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.json', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.kuzudb_write',   label: 'Commit to KuzuDB',   desc: 'Write changes back to graph database',    inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { confirmCommit: false } },
+    { type: 'output.html_dashboard', label: 'HTML Dashboard',     desc: 'Generate standalone HTML dashboard',     inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'dashboard.html', exportLocation: 'downloads' } },
   ],
 };
 

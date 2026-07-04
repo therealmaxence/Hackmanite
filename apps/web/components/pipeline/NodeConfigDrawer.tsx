@@ -110,8 +110,16 @@ function formatDryRunOutput(outputData: any) {
 
   switch (outputData.type) {
     case 'file_download': {
-      const { fileName, content, mimeType, isBase64 } = outputData.value || {};
-      if (fileName && content) triggerDownload(fileName, content, mimeType, isBase64);
+      const { fileName, content, mimeType, isBase64, relativePath } = outputData.value || {};
+      if (relativePath) {
+        const link = document.createElement('a');
+        link.href = `/api/pipelines/download?path=${encodeURIComponent(relativePath)}`;
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      } else if (fileName && content) {
+        triggerDownload(fileName, content, mimeType, isBase64);
+      }
       return {
         type: 'file_download',
         fileName: fileName || 'export.file',

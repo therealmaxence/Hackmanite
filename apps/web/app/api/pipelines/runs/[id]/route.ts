@@ -6,7 +6,7 @@ export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 function extractDownloads(logs: string[]) {
-  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report) to: (.+)$/;
+  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report|HTML Dashboard output) to: (.+)$/;
   return logs.flatMap((log) => {
     const match = log.match(pattern);
     if (!match?.[2]) return [];

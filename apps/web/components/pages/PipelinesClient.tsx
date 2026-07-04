@@ -88,13 +88,11 @@ function extractExportDownloads(logs: string[]): PipelineDownload[] {
 }
 
 async function downloadExportPath(relativePath: string) {
-  const response = await fetch(`/api/pipelines/download?path=${encodeURIComponent(relativePath)}`);
-  if (!response.ok) {
-    throw new Error(`Failed to download ${relativePath}`);
-  }
-
-  const blob = await response.blob();
-  downloadBlob(blob, relativePath.split(/[\\/]/).pop() || 'export.file');
+  const link = document.createElement('a');
+  link.href = `/api/pipelines/download?path=${encodeURIComponent(relativePath)}`;
+  document.body.appendChild(link);
+  link.click();
+  link.remove();
 }
 
 // ─── Collapsible Palette Category ────────────────────────────────────────────

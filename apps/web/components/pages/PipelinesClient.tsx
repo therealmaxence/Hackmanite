@@ -78,7 +78,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
 const fetcher = (url: string) => fetch(url).then((r) => { if (!r.ok) throw new Error('API Error'); return r.json(); });
 
 function extractExportDownloads(logs: string[]): PipelineDownload[] {
-  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report) to: (.+)$/;
+  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report|HTML Dashboard output) to: (.+)$/;
   return logs.flatMap((log) => {
     const match = log.match(pattern);
     if (!match?.[2]) return [];

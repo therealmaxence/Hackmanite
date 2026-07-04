@@ -15,11 +15,19 @@ export function buildAdj(
 
 export function brandes(nodes: string[], adj: Map<string, Set<string>>): Map<string, number> {
   const centrality = new Map<string, number>(nodes.map((v) => [v, 0]));
+  const P = new Map<string, string[]>();
+  const sigma = new Map<string, number>();
+  const d = new Map<string, number>();
+  const delta = new Map<string, number>();
+
   for (const s of nodes) {
     const S: string[] = [];
-    const P = new Map<string, string[]>(nodes.map((w) => [w, []]));
-    const sigma = new Map<string, number>(nodes.map((w) => [w, 0]));
-    const d = new Map<string, number>(nodes.map((w) => [w, -1]));
+    for (const w of nodes) {
+      P.set(w, []);
+      sigma.set(w, 0);
+      d.set(w, -1);
+      delta.set(w, 0);
+    }
     sigma.set(s, 1);
     d.set(s, 0);
 
@@ -40,7 +48,6 @@ export function brandes(nodes: string[], adj: Map<string, Set<string>>): Map<str
       }
     }
 
-    const delta = new Map<string, number>(nodes.map((w) => [w, 0]));
     while (S.length) {
       const w = S.pop()!;
       const coeff = (1 + delta.get(w)!) / sigma.get(w)!;

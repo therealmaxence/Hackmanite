@@ -10,7 +10,9 @@ function parseMetadata(metadata: any) {
 
 function extractJson(text: string) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/i)?.[1];
-  const raw = fenced || text.slice(text.indexOf('{'), text.lastIndexOf('}') + 1);
+  const start = text.indexOf('{');
+  if (start === -1) throw new Error('LLM response did not contain a valid JSON object');
+  const raw = fenced || text.slice(start, text.lastIndexOf('}') + 1);
   return JSON.parse(raw);
 }
 

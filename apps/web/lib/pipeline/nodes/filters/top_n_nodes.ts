@@ -11,7 +11,16 @@ export const topNNodesHandler: NodeHandler = {
 
     await context.log(`Pruning graph: keeping top ${limit} nodes based on metric: ${metric}`);
     const degreeMap = computeDegreeMap(input.nodes, input.edges);
-    const topNodes = [...input.nodes].sort((a, b) => getMetricValue(b, metric, degreeMap) - getMetricValue(a, metric, degreeMap)).slice(0, limit);
+
+    const values = new Map<string, number>();
+    for (const node of input.nodes) {
+      values.set(node.id, getMetricValue(node, metric, degreeMap));
+    }
+
+    const topNodes = [...input.nodes]
+      .sort((a, b) => (values.get(b.id) ?? 0) - (values.get(a.id) ?? 0))
+      .slice(0, limit);
+
     return pruneGraphByNodes(input, topNodes, context);
   },
 };

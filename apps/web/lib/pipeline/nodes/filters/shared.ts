@@ -1,3 +1,6 @@
+import { NodeHandler } from '../../executor';
+import { requireGraphInput } from '../shared';
+
 export function pruneGraphByNodes(input: any, filteredNodes: any[], context: any) {
   const keptNodeIds = new Set(filteredNodes.map((node) => node.id));
   const filteredEdges = input.edges.filter((edge: any) => keptNodeIds.has(edge.source) && keptNodeIds.has(edge.target));
@@ -48,4 +51,23 @@ export function getMetricValue(node: any, metric: string, degreeMap: Map<string,
     default:
       return (node.score ?? getTfidfValue(node)) || degree;
   }
+}
+
+export function buildThresholdFilterHandler(
+  type: string,
+  logPrefix: string,
+  getNodeVal: (node: any, degreeMap: Map<string, number>) => number,
+  defaultMin = 2,
+  needsDegreeMap = false
+): NodeHandler {
+  return {
+    type,
+    async run(inputs, config, context) {
+      const input = requireGraphInput(inputs);
+      const min = Math.max(0, Number(config?.min) || defaultMin);
+      const degreeMap = needsDegreeMap ? computeDegreeMap(input.nodes, input.edges) : new Map<string, number>();
+      await context.log(`${logPrefix} >= ${min}`);
+      return pruneGraphByNodes(input, input.nodes.filter((node: any) => getNodeVal(node, degreeMap) >= min), context);
+    },
+  };
 }

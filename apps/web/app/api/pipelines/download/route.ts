@@ -14,6 +14,7 @@ const CONTENT_TYPES: Record<string, string> = {
   '.zip': 'application/zip',
   '.txt': 'text/plain; charset=utf-8',
   '.md': 'text/markdown; charset=utf-8',
+  '.html': 'text/html; charset=utf-8',
 };
 
 function toAbsolutePath(path: string) {

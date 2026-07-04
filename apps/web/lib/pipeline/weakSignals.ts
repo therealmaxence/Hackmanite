@@ -122,13 +122,15 @@ export function computeWeakSignals(graphData: { nodes: any[]; edges: any[] }, op
         windows.push({ start: maxTime - windowWidth, end: maxTime });
       }
 
+      const datedFilesWithTime = datedFiles.map((f) => ({
+        id: f.id,
+        time: new Date(f.originalCreatedAt!).getTime(),
+      }));
+
       const winFileIdSets = windows.map((win) =>
         new Set(
-          datedFiles
-            .filter((f) => {
-              const t = new Date(f.originalCreatedAt!).getTime();
-              return t >= win.start && t <= win.end;
-            })
+          datedFilesWithTime
+            .filter((f) => f.time >= win.start && f.time <= win.end)
             .map((f) => f.id)
         )
       );

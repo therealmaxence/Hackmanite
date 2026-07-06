@@ -2,8 +2,8 @@ import { NodeHandler } from '../../executor';
 import { NLP_URL } from '@/lib/nlp-url';
 import { uuid5 } from '@/lib/uuid5';
 import { writeFile, rm } from 'fs/promises';
-import { tmpdir } from 'os';
-import { join } from 'path';
+import { resolve } from 'path';
+import { UPLOAD_DIR } from '@/lib/api/upload';
 
 function stripHtml(html: string): string {
   let text = html.replace(/<script[^>]*>[\s\S]*?<\/script>/gi, '');
@@ -47,7 +47,7 @@ export const webScraperHandler: NodeHandler = {
 
     if (!text) throw new Error('Scraped document contains no readable text.');
 
-    const tempPath = join(process.env.UPLOAD_DIR || tmpdir(), `scrape_${Date.now()}.txt`);
+    const tempPath = resolve(UPLOAD_DIR, `scrape_${Date.now()}.txt`);
     await writeFile(tempPath, text, 'utf8');
 
     const fileId = `scrape-${Date.now()}`;

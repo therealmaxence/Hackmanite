@@ -133,17 +133,26 @@ export default function Header() {
           const active = group.items.some((item) => item.href === pathname);
           const expanded = openMenu === group.key;
           return (
-            <div key={group.key} style={{ position: 'relative', zIndex: 2 }} onMouseEnter={() => setOpenMenu(group.key)} onMouseLeave={() => setOpenMenu(null)}>
+            <div
+              key={group.key}
+              id={group.id}
+              style={{ position: 'relative', zIndex: 2 }}
+              onMouseEnter={(e) => {
+                setOpenMenu(group.key);
+                hoverSurface(e.currentTarget, active);
+              }}
+              onMouseLeave={() => setOpenMenu(null)}
+            >
               <button
-                id={group.id}
                 type="button"
                 aria-haspopup="menu"
                 aria-expanded={expanded}
-                style={navButtonStyle(active)}
+                style={navButtonStyle(active || expanded)}
                 onClick={() => setOpenMenu(expanded ? null : group.key)}
-                onFocus={(e) => { setOpenMenu(group.key); hoverSurface(e.currentTarget, active); }}
-                onMouseEnter={(e) => hoverSurface(e.currentTarget, active)}
-                onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-text-muted)'; }}
+                onFocus={(e) => {
+                  setOpenMenu(group.key);
+                  hoverSurface(e.currentTarget.parentElement!, active);
+                }}
               >
                 {t(group.labelKey)}
                 <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" style={{ transform: expanded ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 160ms ease' }}>
@@ -151,15 +160,17 @@ export default function Header() {
                 </svg>
               </button>
               {expanded && (
-                <div role="menu" style={{ position: 'absolute', top: 'calc(100% + 8px)', left: 0, minWidth: 190, background: 'var(--color-surface)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: 6, boxShadow: '0 16px 34px rgba(0, 0, 0, 0.48)', display: 'flex', flexDirection: 'column', gap: 2 }}>
-                  {group.items.map((item) => {
-                    const itemActive = pathname === item.href;
-                    return (
-                      <Link key={item.href} href={item.href} role="menuitem" onClick={() => setOpenMenu(null)} style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', fontWeight: 500, textDecoration: 'none', color: itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: itemActive ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 120ms ease, color 120ms ease' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-raised)'; e.currentTarget.style.color = 'var(--color-primary-hover)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = itemActive ? 'var(--color-surface-raised)' : 'transparent'; e.currentTarget.style.color = itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)'; }}>
-                        {t(item.labelKey)}
-                      </Link>
-                    );
-                  })}
+                <div style={{ position: 'absolute', top: '100%', left: 0, paddingTop: 8, zIndex: 10 }}>
+                  <div role="menu" style={{ minWidth: 190, background: 'var(--color-surface)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: 6, boxShadow: '0 16px 34px rgba(0, 0, 0, 0.48)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                    {group.items.map((item) => {
+                      const itemActive = pathname === item.href;
+                      return (
+                        <Link key={item.href} href={item.href} role="menuitem" onClick={() => setOpenMenu(null)} style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', fontWeight: 500, textDecoration: 'none', color: itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: itemActive ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 120ms ease, color 120ms ease' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-raised)'; e.currentTarget.style.color = 'var(--color-primary-hover)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = itemActive ? 'var(--color-surface-raised)' : 'transparent'; e.currentTarget.style.color = itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)'; }}>
+                          {t(item.labelKey)}
+                        </Link>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
             </div>

@@ -269,17 +269,16 @@ function PaletteCategory({ categoryKey, items, onAdd, labelFor, descFor }: {
             return (
               <div
                 key={item.type}
-                style={{ ...PALETTE_ITEM_STYLE, position: 'relative', padding: '0.375rem 0.5rem 0.375rem 0.75rem' }}
-                onMouseEnter={(e) => {
-                  setHoveredType(item.type);
-                  e.currentTarget.style.background = 'var(--color-surface-hover)';
-                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                style={{
+                  ...PALETTE_ITEM_STYLE,
+                  position: 'relative',
+                  padding: '0.375rem 0.5rem 0.375rem 0.75rem',
+                  zIndex: isHovered ? 10 : 1,
+                  background: isHovered ? 'var(--color-surface-hover)' : 'var(--color-surface-raised)',
+                  borderColor: isHovered ? 'var(--color-primary)' : 'var(--color-surface-raised)',
                 }}
-                onMouseLeave={(e) => {
-                  setHoveredType(null);
-                  e.currentTarget.style.background = 'var(--color-surface-raised)';
-                  e.currentTarget.style.borderColor = 'var(--color-surface-raised)';
-                }}
+                onMouseEnter={() => setHoveredType(item.type)}
+                onMouseLeave={() => setHoveredType(null)}
               >
                 <button
                   onClick={() => onAdd(item)}
@@ -290,7 +289,7 @@ function PaletteCategory({ categoryKey, items, onAdd, labelFor, descFor }: {
                   <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelText}</span>
                 </button>
                 <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)' }}>
-                  <InfoHint title={labelText} body={descText} detail={item.type} visible={isHovered} placement="bottom" align="right" panelWidth={236} />
+                  <InfoHint title={labelText} body={descText} detail={item.type} visible={isHovered} placement="right" panelWidth={236} />
                 </span>
               </div>
             );

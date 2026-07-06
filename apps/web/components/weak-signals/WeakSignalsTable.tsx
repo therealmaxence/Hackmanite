@@ -181,6 +181,8 @@ export default function WeakSignalsTable({
                 fontWeight: isActive ? 600 : 500,
                 transition: 'all 0.2s ease',
                 marginBottom: '-1px',
+                position: 'relative',
+                zIndex: isHovered || isActive ? 10 : 1,
               }}
             >
               <button

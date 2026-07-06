@@ -168,7 +168,7 @@ async function runNode(node: any, nodeById: Map<string, any>, edges: any[], inte
   for (const out of outputHandlesFor(node)) intermediateOutputs[`${node.id}.${out.id}`] = result;
 }
 
-export async function executePipeline(runId: string): Promise<void> {
+export async function executePipeline(runId: string, activeSessionId?: string): Promise<void> {
   const run = await prisma.pipelineRun.findUnique({ where: { id: runId }, include: { pipeline: true } });
   if (!run) throw new Error(`Pipeline run record not found for ID: ${runId}`);
 
@@ -178,7 +178,7 @@ export async function executePipeline(runId: string): Promise<void> {
   const nodes = definition.nodes || [];
   const edges = definition.edges || [];
   const nodeById = buildNodeIndex(nodes);
-  const sessionId = resolveSessionId(nodes);
+  const sessionId = resolveSessionId(nodes) || activeSessionId;
   const logsList: string[] = [];
   const nodeStatesMap: Record<string, { state: 'idle' | 'running' | 'success' | 'error'; error?: string }> = {};
 

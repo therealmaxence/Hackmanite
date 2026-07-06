@@ -3,16 +3,19 @@ import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
 import { isRedisAvailable, bullQueue } from '@/lib/queue/bullQueue';
 import { executePipeline } from '@/lib/pipeline/executor';
+import { SESSION_TTL_MS } from '@/lib/api/upload';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
 
 export async function POST(
-  _req: NextRequest,
+  req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id: pipelineId } = await params;
+    const body = await req.json().catch(() => ({}));
+    let sessionId = typeof body.sessionId === 'string' && body.sessionId.trim() ? body.sessionId.trim() : undefined;
 
     const pipeline = await prisma.pipeline.findUnique({
       where: { id: pipelineId },
@@ -25,7 +28,19 @@ export async function POST(
       );
     }
 
-    // Create the pipeline run in database
+    const definition = JSON.parse(pipeline.definition);
+    const needsGraphSession = (definition.nodes || []).some((node: any) => {
+      const data = node.data || node;
+      return data.type === 'output.kuzudb_write' && data.config?.confirmCommit;
+    });
+    if (sessionId || needsGraphSession) {
+      const expiresAt = new Date(Date.now() + SESSION_TTL_MS);
+      const session = sessionId
+        ? await prisma.session.upsert({ where: { id: sessionId }, update: { expiresAt }, create: { id: sessionId, expiresAt } })
+        : await prisma.session.create({ data: { expiresAt } });
+      sessionId = session.id;
+    }
+
     const run = await prisma.pipelineRun.create({
       data: {
         pipelineId,
@@ -35,15 +50,13 @@ export async function POST(
       },
     });
 
-    // Queue or run the job
     if (isRedisAvailable && bullQueue) {
-      await bullQueue.add('pipeline', { pipelineRunId: run.id });
+      await bullQueue.add('pipeline', { pipelineRunId: run.id, sessionId });
       console.log(`[Pipeline] Dispatched run ${run.id} to BullMQ.`);
     } else {
-      // Async in-memory run
       Promise.resolve().then(async () => {
         try {
-          await executePipeline(run.id);
+          await executePipeline(run.id, sessionId);
         } catch (err) {
           console.error(`In-memory execution failed for run ${run.id}:`, err);
         }
@@ -51,7 +64,7 @@ export async function POST(
       console.log(`[Pipeline] Dispatched run ${run.id} in-memory (async).`);
     }
 
-    return NextResponse.json({ id: run.id, status: run.status }, { status: 201 });
+    return NextResponse.json({ id: run.id, status: run.status, sessionId }, { status: 201 });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';
     return NextResponse.json({ error: msg, code: ErrorCodes.INTERNAL_ERROR }, { status: 500 });

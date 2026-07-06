@@ -55,7 +55,7 @@ if (redisUrl && !isBuildPhase) {
       activeControllers.set(job.id!, controller);
       try {
         if (job.name === "pipeline") {
-          return await executePipeline(job.data.pipelineRunId);
+          return await executePipeline(job.data.pipelineRunId, job.data.sessionId);
         }
         return await executeExtraction(job.id!, job.data, controller);
       } finally {

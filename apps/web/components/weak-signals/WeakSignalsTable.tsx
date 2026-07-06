@@ -3,6 +3,7 @@
 import { useState, useMemo, useEffect } from 'react';
 import { useTranslation } from '@/lib/i18n';
 import { ENTITY_COLORS, EntityType } from '@/types/entities';
+import InfoHint from '@/components/ui/InfoHint';
 
 interface Signal {
   id: string;
@@ -37,7 +38,6 @@ export default function WeakSignalsTable({
   const [hoveredRowId, setHoveredRowId] = useState<string | null>(null);
   const [hoveredBtn, setHoveredBtn] = useState<string | number | null>(null);
   const [hoveredTab, setHoveredTab] = useState<TabKey | null>(null);
-  const [activeTooltip, setActiveTooltip] = useState<TabKey | null>(null);
 
   const PAGE_SIZE = 15;
 
@@ -199,73 +199,7 @@ export default function WeakSignalsTable({
                 {tab.label}
               </button>
               
-              <div style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
-                <span
-                  onMouseEnter={() => setActiveTooltip(tab.key)}
-                  onMouseLeave={() => setActiveTooltip(null)}
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '14px',
-                    height: '14px',
-                    borderRadius: '50%',
-                    border: '1px solid var(--color-text-muted)',
-                    color: 'var(--color-text-muted)',
-                    fontSize: '9px',
-                    cursor: 'help',
-                    opacity: isHovered || isActive ? 0.8 : 0.4,
-                    transition: 'all 0.15s ease',
-                    userSelect: 'none',
-                  }}
-                >
-                  i
-                </span>
-                
-                {activeTooltip === tab.key && (
-                  <div
-                    style={{
-                      position: 'absolute',
-                      bottom: 'calc(100% + 8px)',
-                      left: '50%',
-                      transform: 'translateX(-50%)',
-                      background: 'var(--color-surface-raised)',
-                      border: '1px solid var(--color-border)',
-                      borderRadius: 'var(--radius-sm)',
-                      padding: '0.75rem 1rem',
-                      width: '280px',
-                      boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.5)',
-                      zIndex: 100,
-                      pointerEvents: 'none',
-                      display: 'flex',
-                      flexDirection: 'column',
-                      gap: '0.5rem',
-                      textAlign: 'left',
-                      whiteSpace: 'normal',
-                    }}
-                  >
-                    <div style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>
-                      {tab.label}
-                    </div>
-                    <div style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', lineHeight: 1.5 }}>
-                      {t(`weak_signals.${tab.key}.desc`)}
-                    </div>
-                    <div style={{
-                      fontFamily: 'var(--font-mono)',
-                      fontSize: '9px',
-                      color: 'var(--color-primary-hover)',
-                      background: 'rgba(255,255,255,0.02)',
-                      border: '1px solid rgba(255,255,255,0.04)',
-                      padding: '0.25rem 0.5rem',
-                      borderRadius: '2px',
-                      marginTop: '2px',
-                      wordBreak: 'break-word',
-                    }}>
-                      {t(`weak_signals.${tab.key}.formula`)}
-                    </div>
-                  </div>
-                )}
-              </div>
+              <InfoHint title={tab.label} body={t(`weak_signals.${tab.key}.desc`)} detail={t(`weak_signals.${tab.key}.formula`)} idleOpacity={isHovered || isActive ? 0.8 : 0.4} panelWidth={280} />
             </div>
           );
         })}

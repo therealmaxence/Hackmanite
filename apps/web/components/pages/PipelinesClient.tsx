@@ -10,6 +10,7 @@ import NodeConfigDrawer from '@/components/pipeline/NodeConfigDrawer';
 import Button from '@/components/ui/Button';
 import { useUploadStore } from '@/store/uploadStore';
 import { downloadBlob } from '@/lib/download';
+import InfoHint from '@/components/ui/InfoHint';
 
 const PipelineCytoCanvas = dynamic(
   () => import('@/components/pipeline/PipelineCytoCanvas'),
@@ -244,6 +245,7 @@ function PaletteCategory({ categoryKey, items, onAdd, labelFor, descFor }: {
   descFor: (item: any) => string;
 }) {
   const [open, setOpen] = useState(true);
+  const [hoveredType, setHoveredType] = useState<string | null>(null);
   if (items.length === 0) return null;
   const { color, label } = CATEGORY_META[categoryKey];
 
@@ -260,27 +262,39 @@ function PaletteCategory({ categoryKey, items, onAdd, labelFor, descFor }: {
       </button>
       {open && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.375rem', marginBottom: '0.5rem' }}>
-          {items.map((item) => (
-            <button
-              key={item.type}
-              onClick={() => onAdd(item)}
-              title={descFor(item)}
-              style={PALETTE_ITEM_STYLE}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = 'var(--color-surface-hover)';
-                e.currentTarget.style.borderColor = 'var(--color-primary)';
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = 'var(--color-surface-raised)';
-                e.currentTarget.style.borderColor = 'var(--color-surface-raised)';
-              }}
-            >
-              <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: color }} />
-                <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)' }}>{labelFor(item)}</span>
+          {items.map((item) => {
+            const labelText = labelFor(item);
+            const descText = descFor(item);
+            const isHovered = hoveredType === item.type;
+            return (
+              <div
+                key={item.type}
+                style={{ ...PALETTE_ITEM_STYLE, position: 'relative', padding: '0.375rem 0.5rem 0.375rem 0.75rem' }}
+                onMouseEnter={(e) => {
+                  setHoveredType(item.type);
+                  e.currentTarget.style.background = 'var(--color-surface-hover)';
+                  e.currentTarget.style.borderColor = 'var(--color-primary)';
+                }}
+                onMouseLeave={(e) => {
+                  setHoveredType(null);
+                  e.currentTarget.style.background = 'var(--color-surface-raised)';
+                  e.currentTarget.style.borderColor = 'var(--color-surface-raised)';
+                }}
+              >
+                <button
+                  onClick={() => onAdd(item)}
+                  title={descText}
+                  style={{ flex: 1, minWidth: 0, minHeight: 30, padding: 0, background: 'transparent', border: 'none', color: 'inherit', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '0.5rem', textAlign: 'left' }}
+                >
+                  <span style={{ width: 6, height: 6, borderRadius: '50%', background: color, flexShrink: 0 }} />
+                  <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{labelText}</span>
+                </button>
+                <span style={{ position: 'absolute', right: '0.5rem', top: '50%', transform: 'translateY(-50%)' }}>
+                  <InfoHint title={labelText} body={descText} detail={item.type} visible={isHovered} placement="bottom" align="right" panelWidth={236} />
+                </span>
               </div>
-            </button>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,5 +1,6 @@
 'use client';
 import CustomSlider from '@/components/ui/CustomSlider';
+import InfoHint from '@/components/ui/InfoHint';
 import { useTranslation } from '@/lib/i18n';
 
 interface Props {
@@ -15,10 +16,17 @@ export default function AnalysisScopeCard({
   setCustomInstructions, promptPreview, showPreview, setShowPreview, isOpen, onToggle
 }: Props) {
   const { t } = useTranslation();
-  
-  const selectWrapper = (label: string, value: string, onChange: (val: string) => void, options: Array<{ val: string; labelKey: string }>) => (
+
+  const fieldLabel = (label: string, help?: string) => (
+    <div className="flex items-center gap-2 min-w-0">
+      <span className="text-[11px] text-white/40 font-mono font-medium">{label}</span>
+      {help && <InfoHint title={label} body={help} placement="top" align="left" panelWidth={270} />}
+    </div>
+  );
+
+  const selectWrapper = (label: string, value: string, onChange: (val: string) => void, options: Array<{ val: string; labelKey: string }>, help?: string) => (
     <div className="flex flex-col gap-2.5">
-      <label className="text-[11px] text-white/40 font-mono font-medium">{label}</label>
+      {fieldLabel(label, help)}
       <div className="relative">
         <select
           value={value}
@@ -39,17 +47,22 @@ export default function AnalysisScopeCard({
 
   return (
     <div className="signature-card flex flex-col" style={{ padding: '0' }}>
-      <button
-        type="button"
-        onClick={onToggle}
-        className="flex justify-between items-center w-full cursor-pointer hover:bg-white/5 transition-colors"
+      <div
+        className="flex justify-between items-center w-full hover:bg-white/5 transition-colors"
         style={{ padding: '1.5rem 2rem', background: 'none', border: 'none', outline: 'none' }}
       >
-        <h3 className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">{t('ai.analysis_scope')}</h3>
-        <svg className="w-4 h-4 text-white/40 transition-transform duration-300" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m6 9 6 6 6-6" />
-        </svg>
-      </button>
+        <span className="flex items-center gap-2">
+          <button type="button" onClick={onToggle} className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0, outline: 'none' }}>
+            <span className="text-sm font-mono uppercase text-white/50 font-semibold tracking-wider">{t('ai.analysis_scope')}</span>
+          </button>
+          <InfoHint title={t('ai.analysis_scope')} body={t('ai.analysis_scope_help')} placement="bottom" align="left" panelWidth={300} />
+        </span>
+        <button type="button" onClick={onToggle} aria-label={t('ai.analysis_scope')} className="cursor-pointer" style={{ background: 'none', border: 'none', padding: 0, outline: 'none' }}>
+          <svg className="w-4 h-4 text-white/40 transition-transform duration-300" style={{ transform: isOpen ? 'rotate(180deg)' : 'rotate(0deg)' }} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="m6 9 6 6 6-6" />
+          </svg>
+        </button>
+      </div>
 
       {isOpen && (
         <div className="flex flex-col border-t border-white/5" style={{ padding: '1.5rem 2rem 2rem', gap: '2rem' }}>
@@ -58,18 +71,18 @@ export default function AnalysisScopeCard({
             { val: 'actors', labelKey: 'ai.focus.actors' },
             { val: 'networks', labelKey: 'ai.focus.networks' },
             { val: 'timeline', labelKey: 'ai.focus.timeline' }
-          ])}
+          ], t('ai.focus_mode_help'))}
           {selectWrapper(t('ai.output_lang'), language, onSaveLanguage, [
             { val: 'en', labelKey: 'language.en' },
             { val: 'fr', labelKey: 'language.fr' }
-          ])}
+          ], t('ai.output_lang_help'))}
 
-          <CustomSlider label={t('ai.top_entities')} value={topEntitiesLimit} min={10} max={100} step={5} onChange={onSaveTopEntitiesLimit} unit=" nodes" />
-          <CustomSlider label={t('ai.top_tfidf')} value={topTfidfLimit} min={10} max={100} step={5} onChange={onSaveTopTfidfLimit} unit=" nodes" />
-          <CustomSlider label={t('ai.bridges')} value={bridgesLimit} min={5} max={30} step={1} onChange={onSaveBridgesLimit} unit=" nodes" />
+          <CustomSlider label={t('ai.top_entities')} value={topEntitiesLimit} min={10} max={100} step={5} onChange={onSaveTopEntitiesLimit} unit=" nodes" help={t('ai.top_entities_help')} />
+          <CustomSlider label={t('ai.top_tfidf')} value={topTfidfLimit} min={10} max={100} step={5} onChange={onSaveTopTfidfLimit} unit=" nodes" help={t('ai.top_tfidf_help')} />
+          <CustomSlider label={t('ai.bridges')} value={bridgesLimit} min={5} max={30} step={1} onChange={onSaveBridgesLimit} unit=" nodes" help={t('ai.bridges_help')} />
 
           <div className="flex flex-col gap-2.5">
-            <label className="text-[11px] text-white/40 font-mono font-medium">{t('ai.custom_directives')}</label>
+            {fieldLabel(t('ai.custom_directives'), t('ai.custom_directives_help'))}
             <textarea
               value={customInstructions}
               onChange={(e) => setCustomInstructions(e.target.value)}

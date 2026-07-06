@@ -1,5 +1,6 @@
 'use client';
 import React from 'react';
+import InfoHint from '@/components/ui/InfoHint';
 
 interface CustomSliderProps {
   value: number;
@@ -10,11 +11,12 @@ interface CustomSliderProps {
   label: string;
   unit?: string;
   description?: string;
+  help?: string;
   isLog?: boolean;
 }
 
 export default function CustomSlider({
-  value, min, max, step = 1, onChange, label, unit = '', description, isLog = false,
+  value, min, max, step = 1, onChange, label, unit = '', description, help, isLog = false,
 }: CustomSliderProps) {
   const valToPos = (val: number) => (val <= 0 ? 0 : (Math.log10(Math.max(val, 0.1)) + 1) * 20);
   const posToVal = (pos: number) => {
@@ -73,7 +75,10 @@ export default function CustomSlider({
       `}</style>
 
       <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-        <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)', letterSpacing: '0.01em' }}>{label}</span>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+          <span style={{ fontSize: '0.8125rem', fontWeight: 600, color: 'var(--color-text)', letterSpacing: '0.01em' }}>{label}</span>
+          {help && <InfoHint title={label} body={help} placement="top" align="left" panelWidth={270} />}
+        </span>
         <span style={{ fontFamily: 'var(--font-mono)', fontSize: '0.875rem', fontWeight: 700, color: '#ec4899', textShadow: '0 0 8px rgba(236, 72, 153, 0.2)' }}>
           {value.toLocaleString()}
           {unit && <span style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', marginLeft: '2px' }}>{unit}</span>}

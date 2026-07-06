@@ -3,6 +3,7 @@
 import { GraphFilters } from '@/types/graph';
 import { EntityType } from '@/types/entities';
 import { useTranslation } from '@/lib/i18n';
+import InfoHint from '@/components/ui/InfoHint';
 
 function toLocalDateInputValue(date: Date | null) {
   if (!date) return '';
@@ -18,13 +19,22 @@ interface Props {
   onDateChange: (key: 'from' | 'to', value: string) => void;
 }
 
+function LabelWithInfo({ htmlFor, label, help }: { htmlFor?: string; label: string; help: string }) {
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 6, minWidth: 0 }}>
+      <label htmlFor={htmlFor} style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{label}</label>
+      <InfoHint title={label} body={help} idleOpacity={0.5} placement="top" align="left" panelWidth={250} />
+    </div>
+  );
+}
+
 export default function GraphFilterSliders({ filters, sortedCommunities, onFilterChange, onDateChange }: Props) {
   const { t } = useTranslation();
   return (
     <>
       <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="graph-min-conn-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={t('graph.controls.min_connections_tooltip')}>{t('graph.controls.min_connections')}</label>
+          <LabelWithInfo htmlFor="graph-min-conn-input" label={t('graph.controls.min_connections')} help={t('graph.controls.min_connections_help')} />
           <input
             id="graph-min-conn-input"
             type="number"
@@ -40,7 +50,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="graph-min-occ-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={t('graph.controls.min_occurrences_tooltip')}>{t('graph.controls.min_occurrences')}</label>
+          <LabelWithInfo htmlFor="graph-min-occ-input" label={t('graph.controls.min_occurrences')} help={t('graph.controls.min_occurrences_help')} />
           <input
             id="graph-min-occ-input"
             type="number"
@@ -56,7 +66,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="graph-min-weight-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={t('graph.controls.min_weight_tooltip')}>{t('graph.controls.min_weight')}</label>
+          <LabelWithInfo htmlFor="graph-min-weight-input" label={t('graph.controls.min_weight')} help={t('graph.controls.min_weight_help')} />
           <input
             id="graph-min-weight-input"
             type="number"
@@ -74,7 +84,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
         </div>
 
         <div style={{ display: 'flex', flexDirection: 'column', gap: 6 }}>
-          <label htmlFor="graph-min-tfidf-input" style={{ fontSize: '0.74rem', color: 'var(--color-text-muted)', fontWeight: 500, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }} title={t('graph.controls.min_tfidf_tooltip')}>{t('graph.controls.min_tfidf')}</label>
+          <LabelWithInfo htmlFor="graph-min-tfidf-input" label={t('graph.controls.min_tfidf')} help={t('graph.controls.min_tfidf_help')} />
           <input
             id="graph-min-tfidf-input"
             type="number"
@@ -92,7 +102,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.cross_doc')}</span>
+        <LabelWithInfo label={t('graph.controls.cross_doc')} help={t('graph.controls.cross_doc_help')} />
         <div
           id="graph-cross-doc-toggle"
           onClick={() => onFilterChange('crossDocumentOnly', !filters.crossDocumentOnly)}
@@ -104,7 +114,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
       </div>
 
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
-        <span style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.weak_signals')}</span>
+        <LabelWithInfo label={t('graph.controls.weak_signals')} help={t('graph.controls.weak_signals_help')} />
         <div
           id="graph-weak-signals-toggle"
           onClick={() => onFilterChange('showWeakSignals', !filters.showWeakSignals)}
@@ -117,7 +127,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
 
       {sortedCommunities.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          <label style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.community_filter')}</label>
+          <LabelWithInfo label={t('graph.controls.community_filter')} help={t('graph.controls.community_filter_help')} />
           <div style={{ display: 'flex', flexDirection: 'column', gap: 8, background: 'rgba(16,0,43,0.4)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', padding: '0.75rem 1rem', maxHeight: 130, overflowY: 'auto' }} className="custom-scrollbar">
             {sortedCommunities.map((comm) => {
               const isHidden = filters.hiddenCommunities.includes(comm.id);
@@ -144,7 +154,7 @@ export default function GraphFilterSliders({ filters, sortedCommunities, onFilte
       )}
 
       <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-        <label style={{ fontSize: '0.78rem', color: 'var(--color-text-muted)', fontWeight: 500 }}>{t('graph.controls.date_range')}</label>
+        <LabelWithInfo label={t('graph.controls.date_range')} help={t('graph.controls.date_range_help')} />
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
           {(['from', 'to'] as const).map((key) => (
             <label key={key} style={{ display: 'flex', flexDirection: 'column', gap: 6, fontSize: '0.78rem', color: 'var(--color-text-muted)', textTransform: 'capitalize' }}>

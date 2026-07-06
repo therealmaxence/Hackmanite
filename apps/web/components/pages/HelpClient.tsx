@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/lib/i18n';
 
-type TabKey = 'guide' | 'algorithms' | 'filters' | 'weak_signals' | 'ai_report';
+type TabKey = 'guide' | 'algorithms' | 'filters' | 'weak_signals' | 'pipelines' | 'ai_report';
 
 const HELP_TRANSLATIONS = {
   en: {
@@ -16,6 +16,7 @@ const HELP_TRANSLATIONS = {
       algorithms: 'Extraction & Graphs',
       filters: 'Filters & Centrality',
       weak_signals: 'Weak Signals',
+      pipelines: 'Pipelines',
       ai_report: 'LLM Reports',
     },
     sections: {
@@ -38,6 +39,10 @@ const HELP_TRANSLATIONS = {
           {
             title: 'Emails Dashboard',
             content: 'Dedicated interface to browse, visualize and filter extracted email data, metadata (From, To, Subject, Date), and find source documents.',
+          },
+          {
+            title: 'Pipeline Builder',
+            content: 'Build repeatable analysis workflows from the Custom Analysis menu. Pipelines can load documents, scrape web pages, reuse the active session graph, filter entities, run weak-signal transforms, call an LLM annotation prompt, preview intermediate results, and export or commit the final graph.',
           },
           {
             title: 'Session Export (JSON & Obsidian)',
@@ -102,6 +107,36 @@ const HELP_TRANSLATIONS = {
           },
         ]
       },
+      pipelines: {
+        title: 'Pipeline Builder',
+        desc: 'Pipelines let you assemble reusable analysis flows from sources, filters, transformations, previews, and output nodes.',
+        items: [
+          {
+            title: 'Palette, Node Help, and Configuration',
+            content: 'The left palette groups nodes into Sources, Filters, Transforms, Visualizers, and Outputs. Hover a node and use its small **i** button to read what it does. Click a palette node to add it to the canvas, then select it to edit its parameters in the right configuration panel.',
+          },
+          {
+            title: 'Connecting, Moving, and Editing Nodes',
+            content: 'Drag from the right-side port of one node to another node to create a curved connection. Left-click a node to select it. Right-click a node to deactivate/reactivate it or delete it. Right-click an edge to delete the connection. Deactivated nodes remain visible but are bypassed during execution when possible.',
+          },
+          {
+            title: 'Document Sources and Extraction',
+            content: 'Document and email source nodes can use uploaded session files, including multiple files in the same document source. They run through the same Python/spaCy extraction backend as the regular upload page, but they do not write entities to the main graph unless you explicitly add and confirm a Commit to KuzuDB output node.',
+          },
+          {
+            title: 'Filters and AI Transforms',
+            content: 'Pipeline filters include category filtering, Top N, minimum TF-IDF, minimum occurrences, minimum connections, edge weight, weak-signal flags, deny lists, and date ranges. Transform nodes can compute rare bridges, niche topics, spiking signals, communities, centrality, entity resolution, or use **LLM Annotate** to apply a custom AI prompt to graph metadata.',
+          },
+          {
+            title: 'Outputs, Downloads, and Graph Commit',
+            content: 'Output nodes can export JSON, GraphML, Obsidian vaults, HTML dashboards, and Markdown AI reports. JSON, GraphML, Obsidian, and AI Report outputs are downloadable from the run logs. Commit to KuzuDB requires explicit confirmation and makes the pipeline result visible on the main Graph page, including occurrence excerpts and co-occurrence snippets.',
+          },
+          {
+            title: 'Running a Pipeline',
+            content: 'Save a pipeline before running it. If it has not been saved, Hackmanite will ask you to save first. Running a pipeline keeps you on the current tab; open Logs when you want to inspect progress, download exports, or troubleshoot failures. Running nodes glow on the canvas while work is in progress.',
+          },
+        ]
+      },
       ai_report: {
         title: 'LLM Intelligence Report Engine',
         desc: 'How LLMs summarize and generate briefings on your data.',
@@ -130,6 +165,7 @@ const HELP_TRANSLATIONS = {
       algorithms: 'Extraction & Graphes',
       filters: 'Filtres & Centralité',
       weak_signals: 'Signaux Faibles',
+      pipelines: 'Pipelines',
       ai_report: 'Rapports LLM',
     },
     sections: {
@@ -152,6 +188,10 @@ const HELP_TRANSLATIONS = {
           {
             title: 'Registre des E-mails',
             content: 'Interface dédiée à la consultation, visualisation et au filtrage des e-mails (Expéditeur, Destinataire, Objet, Date) et à la recherche de leurs documents sources.',
+          },
+          {
+            title: 'Constructeur de Pipelines',
+            content: 'Créez des workflows d’analyse réutilisables depuis le menu Analyse personnalisée. Les pipelines peuvent charger des documents, scraper des pages web, réutiliser le graphe de session actif, filtrer les entités, exécuter des transformations de signaux faibles, appeler un prompt d’annotation LLM, prévisualiser les résultats intermédiaires et exporter ou écrire le graphe final.',
           },
           {
             title: 'Export de Session (JSON & Obsidian)',
@@ -216,6 +256,36 @@ const HELP_TRANSLATIONS = {
           },
         ]
       },
+      pipelines: {
+        title: 'Constructeur de Pipelines',
+        desc: 'Les pipelines permettent d’assembler des flux d’analyse réutilisables à partir de sources, filtres, transformations, aperçus et nœuds de sortie.',
+        items: [
+          {
+            title: 'Palette, aide des nœuds et configuration',
+            content: 'La palette de gauche regroupe les nœuds en Sources, Filtres, Transformations, Visualisations et Sorties. Survolez un nœud puis utilisez le petit bouton **i** pour comprendre son rôle. Cliquez sur un nœud de la palette pour l’ajouter au canvas, puis sélectionnez-le pour modifier ses paramètres dans le panneau de droite.',
+          },
+          {
+            title: 'Connexion, déplacement et édition',
+            content: 'Glissez depuis le port droit d’un nœud vers un autre nœud pour créer une connexion courbe. Cliquez gauche sur un nœud pour le sélectionner. Faites un clic droit sur un nœud pour le désactiver/réactiver ou le supprimer. Faites un clic droit sur une arête pour supprimer la connexion. Les nœuds désactivés restent visibles mais sont contournés pendant l’exécution lorsque c’est possible.',
+          },
+          {
+            title: 'Sources documentaires et extraction',
+            content: 'Les nœuds source Document et E-mail peuvent utiliser les fichiers téléversés dans la session, y compris plusieurs fichiers dans une même source document. Ils passent par le même backend Python/spaCy que la page d’import classique, mais n’écrivent pas les entités dans le graphe principal sauf si vous ajoutez et confirmez explicitement un nœud de sortie Écrire KuzuDB.',
+          },
+          {
+            title: 'Filtres et transformations IA',
+            content: 'Les filtres de pipeline incluent les catégories, Top N, TF-IDF minimum, occurrences minimum, connexions minimum, poids d’arête, signaux faibles, listes d’exclusion et plages de dates. Les transformations peuvent calculer les ponts rares, sujets de niche, pics temporels, communautés, centralités, résolution d’entités, ou utiliser **Annotation LLM** pour appliquer un prompt IA personnalisé aux métadonnées du graphe.',
+          },
+          {
+            title: 'Sorties, téléchargements et écriture graphe',
+            content: 'Les nœuds de sortie peuvent exporter en JSON, GraphML, coffre Obsidian, tableau de bord HTML et rapport IA Markdown. Les sorties JSON, GraphML, Obsidian et Rapport IA sont téléchargeables depuis les logs d’exécution. Écrire KuzuDB exige une confirmation explicite et rend le résultat visible sur la page Graphe, avec les extraits d’occurrences et les snippets de cooccurrence.',
+          },
+          {
+            title: 'Exécuter un pipeline',
+            content: 'Enregistrez un pipeline avant de le lancer. S’il n’a pas encore été sauvegardé, Hackmanite vous demandera de le faire. Le lancement d’un pipeline ne vous bascule pas automatiquement vers les logs ; ouvrez l’onglet Logs lorsque vous voulez suivre la progression, télécharger les exports ou diagnostiquer une erreur. Les nœuds en cours d’exécution brillent sur le canvas.',
+          },
+        ]
+      },
       ai_report: {
         title: 'Moteur de Rapports d\'Intelligence LLM',
         desc: 'Comment le LLM synthétise vos données pour rédiger un rapport.',
@@ -250,6 +320,7 @@ export default function HelpClient() {
     { key: 'algorithms', label: content.tabs.algorithms },
     { key: 'filters', label: content.tabs.filters },
     { key: 'weak_signals', label: content.tabs.weak_signals },
+    { key: 'pipelines', label: content.tabs.pipelines },
     { key: 'ai_report', label: content.tabs.ai_report },
   ];
 

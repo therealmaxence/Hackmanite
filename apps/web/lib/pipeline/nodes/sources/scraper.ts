@@ -66,7 +66,7 @@ export const webScraperHandler: NodeHandler = {
     const rawUrl = config?.url;
     if (!rawUrl) throw new Error('Missing parameter: url');
 
-    const urls = String(rawUrl).split(',').map((u) => u.trim()).filter(Boolean);
+    const urls = String(rawUrl).split(/[,;\n\r]+/).map((u) => u.trim()).filter(Boolean);
     if (urls.length === 0) throw new Error('No valid URLs provided.');
 
     const browserType = config?.browserType || 'default';

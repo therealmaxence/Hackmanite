@@ -474,15 +474,15 @@ export default function NodeConfigDrawer({
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
               <label style={fieldLabelStyle}>Web Page / RSS Feed URL(s)</label>
-              <input
-                type="text"
-                placeholder="https://example.com/article1, https://example.com/article2"
+              <textarea
+                placeholder="https://example.com/article1; https://example.com/article2"
                 value={config.url || ''}
                 onChange={(e) => handleConfigChange('url', e.target.value)}
-                style={inputStyle}
+                rows={3}
+                style={{ ...textareaStyle, resize: 'vertical' }}
               />
               <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', marginTop: '0.25rem', lineHeight: 1.4 }}>
-                Supports multiple URLs separated by commas. Fetches raw HTML page text or RSS feed contents directly on the server.
+                Supports multiple URLs separated by commas, semicolons, or newlines. Fetches raw HTML page text or RSS feed contents directly on the server.
               </p>
             </div>
 

@@ -398,6 +398,46 @@ Then rebuild using the steps above. The ZIP filename will automatically reflect 
 
 ---
 
+## Documentation
+
+This project has auto-generated documentation setups for the backend services, frontend components, and database schemas.
+
+### 1. Python API & NLP Backend (`apps/nlp-service`)
+Documentation is powered by **MkDocs** and **mkdocstrings**.
+- **Install dependencies**:
+  ```powershell
+  cd apps/nlp-service
+  pip install -r requirements-dev.txt
+  ```
+- **Run dev server**:
+  ```powershell
+  mkdocs serve
+  ```
+- **Build static site**:
+  ```powershell
+  mkdocs build
+  ```
+  The output will be created in `apps/nlp-service/site/`.
+
+### 2. Next.js Frontend & Core Logic (`apps/web`)
+Documentation is powered by **TypeDoc** (for TypeScript) and **Prisma Docs Generator** (for database schemas).
+- **TypeDoc**:
+  - **Generate**:
+    ```powershell
+    cd apps/web
+    npm run docs:generate
+    ```
+    The HTML documentation will be created in `apps/web/docs/typedoc/`.
+- **Prisma Schema**:
+  - **Generate**:
+    ```powershell
+    cd apps/web
+    npx prisma generate
+    ```
+    The schema documentation site is auto-generated inside `apps/web/docs/prisma/` whenever you run prisma generator commands.
+
+---
+
 ## License
 
 MIT

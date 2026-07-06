@@ -3,6 +3,11 @@ generator client {
   binaryTargets   = ["native", "windows"]
 }
 
+generator docs {
+  provider = "node node_modules/prisma-docs-generator"
+  output   = "../docs/prisma"
+}
+
 datasource db {
   provider = "sqlite"
   url      = env("DATABASE_URL")

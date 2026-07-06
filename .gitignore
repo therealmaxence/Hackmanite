@@ -84,4 +84,8 @@ apps/nlp-service/kuzu_data/
 kuzu_data/
 
 # TypeScript
-*.tsbuildinfo
+*.tsbuildinfo
+
+# Documentation
+apps/nlp-service/site/
+apps/web/docs/

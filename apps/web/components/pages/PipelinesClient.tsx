@@ -95,7 +95,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'source.session', label: 'Active Session Graph', desc: 'Load graph data from a session', inputs: [], outputs: [{ id: 'output', type: 'graph' }], config: { sessionId: '' } },
     { type: 'source.kuzudb.query', label: 'KuzuDB Query', desc: 'Custom Cypher query against KuzuDB', inputs: [], outputs: [{ id: 'output', type: 'tabular' }], config: { query: 'MATCH (a:Entity)-[r:CO_OCCURS]->(b:Entity) RETURN a, r, b LIMIT 50;' } },
     { type: 'source.file.csv', label: 'CSV Ingestor', desc: 'Ingest tabular data from a CSV file', inputs: [], outputs: [{ id: 'output', type: 'tabular' }], config: { filePath: '', delimiter: ',' } },
-    { type: 'source.web.scraper', label: 'Web Scraper', desc: 'Ingest and run NLP extraction on web contents', inputs: [], outputs: [{ id: 'output', type: 'graph' }], config: { url: '' } },
+    { type: 'source.web.scraper', label: 'Web Scraper', desc: 'Ingest and run NLP extraction on web contents', inputs: [], outputs: [{ id: 'output', type: 'graph' }], config: { url: '', browserType: 'default', stealthMode: false, headersJson: '' } },
   ],
   filters: [
     { type: 'filter.entity_category', label: 'Filter Category', desc: 'Filter entities by category', inputs: [{ id: 'input', type: 'graph' }], outputs: [{ id: 'output', type: 'graph' }], config: { categories: ['PERSON', 'ORGANIZATION'] } },

@@ -471,18 +471,60 @@ export default function NodeConfigDrawer({
         )}
 
         {type === 'source.web.scraper' && (
-          <div>
-            <label style={fieldLabelStyle}>Web Page / RSS Feed URL</label>
-            <input
-              type="url"
-              placeholder="https://example.com/feed.xml or https://example.com/article"
-              value={config.url || ''}
-              onChange={(e) => handleConfigChange('url', e.target.value)}
-              style={inputStyle}
-            />
-            <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', marginTop: '0.25rem', lineHeight: 1.4 }}>
-              Fetches raw HTML page text or RSS feed contents directly on the server.
-            </p>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
+            <div>
+              <label style={fieldLabelStyle}>Web Page / RSS Feed URL(s)</label>
+              <input
+                type="text"
+                placeholder="https://example.com/article1, https://example.com/article2"
+                value={config.url || ''}
+                onChange={(e) => handleConfigChange('url', e.target.value)}
+                style={inputStyle}
+              />
+              <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', marginTop: '0.25rem', lineHeight: 1.4 }}>
+                Supports multiple URLs separated by commas. Fetches raw HTML page text or RSS feed contents directly on the server.
+              </p>
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>Browser Simulation</label>
+              <select
+                value={config.browserType || 'default'}
+                onChange={(e) => handleConfigChange('browserType', e.target.value)}
+                style={inputStyle}
+              >
+                <option value="default">Default Fetch (NodeJS)</option>
+                <option value="chrome">Chrome Desktop (Windows)</option>
+                <option value="firefox">Firefox Desktop (Windows)</option>
+                <option value="safari">Safari Desktop (macOS)</option>
+                <option value="chrome_mobile">Chrome Mobile (Android)</option>
+                <option value="safari_iphone">Safari Mobile (iPhone)</option>
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginTop: '0.25rem' }}>
+              <input
+                type="checkbox"
+                id="scraper-stealth"
+                checked={config.stealthMode || false}
+                onChange={(e) => handleConfigChange('stealthMode', e.target.checked)}
+                style={{ accentColor: 'var(--color-primary)', width: 14, height: 14, cursor: 'pointer' }}
+              />
+              <label htmlFor="scraper-stealth" style={{ fontSize: '0.75rem', color: 'var(--color-text)', cursor: 'pointer', userSelect: 'none' }}>
+                Stealth Mode (Go Hidden)
+              </label>
+            </div>
+
+            <div>
+              <label style={fieldLabelStyle}>Custom Headers (JSON)</label>
+              <textarea
+                placeholder='{ "Cookie": "session=...", "Authorization": "Bearer ..." }'
+                value={config.headersJson || ''}
+                onChange={(e) => handleConfigChange('headersJson', e.target.value)}
+                rows={3}
+                style={{ ...textareaStyle, resize: 'vertical', fontSize: '0.75rem' }}
+              />
+            </div>
           </div>
         )}
 

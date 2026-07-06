@@ -91,7 +91,7 @@ export default function Header() {
   return (
     <header className="header-shell" style={{
       height: 64, background: 'var(--color-surface)', borderBottom: 'none', display: 'flex', alignItems: 'center',
-      justifyContent: 'space-between', padding: '0 clamp(0.75rem, 3vw, 1.5rem)', position: 'sticky', top: 0, zIndex: 10,
+      justifyContent: 'space-between', padding: '0 clamp(0.75rem, 3vw, 1.5rem)', position: 'sticky', top: 0, zIndex: 100,
     }}>
       <Link
         href="/" className="header-brand" onMouseEnter={() => setLogoHovered(true)} onMouseLeave={() => setLogoHovered(false)}

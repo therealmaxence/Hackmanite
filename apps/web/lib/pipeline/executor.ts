@@ -85,7 +85,7 @@ function mergePipelineData(outputs: PipelineData[]): PipelineData {
     const uniqueEdges: Record<string, any> = {};
     for (const edge of allEdges) {
       if (!edge || !edge.source || !edge.target) continue;
-      const key = `${edge.source}->${edge.target}`;
+      const key = `${edge.fileId || ''}:${edge.source}->${edge.target}`;
       if (uniqueEdges[key]) {
         if (typeof uniqueEdges[key].weight === 'number' && typeof edge.weight === 'number') uniqueEdges[key].weight = (uniqueEdges[key].weight + edge.weight) / 2;
       } else {

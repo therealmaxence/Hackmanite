@@ -4,6 +4,8 @@ import { requireGraphInput } from '../shared';
 import { prisma } from '@/lib/prisma';
 import { SESSION_TTL_MS } from '@/lib/api/upload';
 import { clearSessionGraphCache } from '@/lib/redis';
+import { recomputeSessionTfidf } from '@/lib/api/tfidf';
+import { uuid5 } from '@/lib/uuid5';
 
 function collectFileMetadata(input: any) {
   const metadata = new Map<string, { fileName?: string; mimeType?: string }>();
@@ -15,6 +17,18 @@ function collectFileMetadata(input: any) {
   for (const node of input.nodes || []) for (const occ of node.occurrences || []) add(occ.fileId, occ.fileName, occ.mimeType);
   for (const edge of input.edges || []) add(edge.fileId, edge.fileName, edge.mimeType);
   return metadata;
+}
+
+function jsonString(value: any, fallback: any) {
+  if (typeof value === 'string') {
+    try {
+      JSON.parse(value);
+      return value;
+    } catch {
+      return JSON.stringify(fallback);
+    }
+  }
+  return JSON.stringify(value ?? fallback);
 }
 
 async function ensureSessionFiles(input: any, fileIds: string[], sessionId: string | undefined, context: any) {
@@ -50,6 +64,105 @@ async function ensureSessionFiles(input: any, fileIds: string[], sessionId: stri
     }
   }
   if (created > 0) await context.log(`Registered ${created} pipeline file reference${created === 1 ? '' : 's'} for graph-page visibility.`);
+}
+
+async function persistGraphToPrisma(input: any, fallbackFileId: string, sessionId: string | undefined, context: any) {
+  if (!sessionId) return;
+
+  let occurrenceCount = 0;
+  let neighborhoodCount = 0;
+  const entityIdByNodeId = new Map<string, string>();
+
+  await prisma.$transaction(async (tx) => {
+    for (const node of input.nodes || []) {
+      const canonical = String(node.canonical || node.label || node.displayName || '').slice(0, 500);
+      const type = String(node.type || '').slice(0, 100);
+      if (!canonical || !type) continue;
+
+      const entity = await tx.entity.upsert({
+        where: { canonical_type: { canonical, type } },
+        create: {
+          id: node.id || uuid5(`${type}:${canonical}`),
+          canonical,
+          displayName: String(node.label || node.displayName || canonical).slice(0, 500),
+          type,
+          metadata: jsonString(node.metadata, {}),
+        },
+        update: {},
+      });
+      if (node.id) entityIdByNodeId.set(node.id, entity.id);
+
+      for (const occ of node.occurrences || []) {
+        const fileId = occ.fileId || fallbackFileId;
+        await tx.occurrence.upsert({
+          where: { fileId_entityId: { fileId, entityId: entity.id } },
+          create: {
+            entityId: entity.id,
+            fileId,
+            count: Math.max(1, Number(occ.count) || 1),
+            excerpts: jsonString(occ.excerpts, []),
+            tfidf: Number(occ.tfidf) || 0,
+          },
+          update: {
+            count: Math.max(1, Number(occ.count) || 1),
+            excerpts: jsonString(occ.excerpts, []),
+            tfidf: Number(occ.tfidf) || 0,
+          },
+        });
+        occurrenceCount += 1;
+      }
+    }
+
+    const neighborhoods = new Map<string, any>();
+    for (const edge of input.edges || []) {
+      const sourceEntityId = entityIdByNodeId.get(edge.source);
+      const targetEntityId = entityIdByNodeId.get(edge.target);
+      if (!sourceEntityId || !targetEntityId || sourceEntityId === targetEntityId) continue;
+
+      const isSwapped = sourceEntityId > targetEntityId;
+      const [sourceId, targetId] = isSwapped ? [targetEntityId, sourceEntityId] : [sourceEntityId, targetEntityId];
+      const sourceOffset = Number(edge.sourceOffset ?? edge.source_offset) || 0;
+      const targetOffset = Number(edge.targetOffset ?? edge.target_offset) || 0;
+      const fileId = edge.fileId || fallbackFileId;
+      const candidate = {
+        fileId,
+        sourceEntityId: sourceId,
+        targetEntityId: targetId,
+        weight: Number(edge.weight) || 1,
+        distance: Math.max(1, Number(edge.distance) || 1),
+        snippet: String(edge.snippet || ''),
+        sourceOffset: isSwapped ? targetOffset : sourceOffset,
+        targetOffset: isSwapped ? sourceOffset : targetOffset,
+      };
+      const key = `${fileId}:${sourceId}:${targetId}`;
+      if (!neighborhoods.has(key) || candidate.weight > neighborhoods.get(key).weight) neighborhoods.set(key, candidate);
+    }
+
+    for (const neighborhood of neighborhoods.values()) {
+      await tx.entityNeighborhood.upsert({
+        where: {
+          fileId_sourceEntityId_targetEntityId: {
+            fileId: neighborhood.fileId,
+            sourceEntityId: neighborhood.sourceEntityId,
+            targetEntityId: neighborhood.targetEntityId,
+          },
+        },
+        create: neighborhood,
+        update: {
+          weight: neighborhood.weight,
+          distance: neighborhood.distance,
+          snippet: neighborhood.snippet,
+          sourceOffset: neighborhood.sourceOffset,
+          targetOffset: neighborhood.targetOffset,
+        },
+      });
+      neighborhoodCount += 1;
+    }
+  }, { maxWait: 30000, timeout: 60000 });
+
+  await recomputeSessionTfidf(sessionId);
+  await clearSessionGraphCache(sessionId);
+  await context.log(`Stored ${occurrenceCount} occurrence snippet set${occurrenceCount === 1 ? '' : 's'} and ${neighborhoodCount} co-occurrence snippet${neighborhoodCount === 1 ? '' : 's'} for the graph page.`);
 }
 
 export const kuzuDbWriteHandler: NodeHandler = {
@@ -102,7 +215,7 @@ export const kuzuDbWriteHandler: NodeHandler = {
 
     if (!res.ok) throw new Error(`KuzuDB Write failed: status ${res.status} | ${await res.text()}`);
     const result = await res.json();
-    if (context.sessionId) await clearSessionGraphCache(context.sessionId);
+    await persistGraphToPrisma(input, fallbackFileId, context.sessionId, context);
     await context.log(`KuzuDB Write Success: committed ${result.nodes_imported} nodes and ${result.edges_imported} edges.`);
     return input;
   },

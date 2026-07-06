@@ -45,7 +45,7 @@ function mergeNodesAndEdges(allNodes: any[], allEdges: any[]) {
 
   const uniqueEdges: Record<string, any> = {};
   for (const edge of allEdges) {
-    const key = `${edge.source}->${edge.target}`;
+    const key = `${edge.fileId || ''}:${edge.source}->${edge.target}`;
     if (uniqueEdges[key]) uniqueEdges[key].weight = (uniqueEdges[key].weight + edge.weight) / 2;
     else uniqueEdges[key] = { ...edge };
   }

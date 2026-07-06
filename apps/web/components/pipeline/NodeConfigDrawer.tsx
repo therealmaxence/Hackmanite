@@ -1059,16 +1059,15 @@ export default function NodeConfigDrawer({
         {isVisualizeNode ? (
           <div style={{ padding: '1rem', background: 'rgba(124, 58, 237, 0.08)', border: '1px solid var(--color-primary)', borderRadius: 'var(--radius)', display: 'flex', flexDirection: 'column', gap: '0.75rem', marginBottom: '0.75rem' }}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <span style={{ display: 'inline-block', width: 8, height: 8, borderRadius: '50%', background: '#7c3aed', boxShadow: '0 0 8px #7c3aed' }} />
               <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'var(--color-text)' }}>
                 {testData ? 'Visualization Ready' : 'Prepare Visualization'}
               </span>
             </div>
-            <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', margin: 0, lineHeight: 1.4 }}>
-              {testData
-                ? 'The visualization output is ready to be inspected in full-screen.'
-                : 'Run a quick dry-run test to process and visualize the data stream up to this node.'}
-            </p>
+            {testData && (
+              <p style={{ fontSize: '0.6875rem', color: 'var(--color-text-dim)', margin: 0, lineHeight: 1.4 }}>
+                The visualization output is ready to be inspected in full-screen.
+              </p>
+            )}
             <Button
               variant="primary"
               fullWidth

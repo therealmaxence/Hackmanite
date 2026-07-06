@@ -547,6 +547,9 @@ export default function PipelinesClient() {
                 </button>
               ))}
               <div style={{ width: 1, height: 14, background: 'var(--color-surface-raised)', margin: '0 0.25rem' }} />
+              {runStatus && (
+                <span style={{ marginRight: '0.25rem', padding: '0.25rem 0.5rem', borderRadius: 'var(--radius-sm)', fontSize: '0.6875rem', fontWeight: 700, background: runStatus === 'RUNNING' ? 'rgba(124,58,237,0.15)' : runStatus === 'COMPLETED' ? 'rgba(52,211,153,0.15)' : 'rgba(225,29,72,0.15)', color: runStatus === 'RUNNING' ? 'var(--color-primary-hover)' : runStatus === 'COMPLETED' ? '#34d399' : 'var(--color-error)' }}>{runStatus}</span>
+              )}
               {selectedPipelineId && <Button variant="secondary" size="xs" onClick={deletePipeline} style={{ ...BUTTON_XS_STYLE, borderColor: 'var(--color-error)', color: 'var(--color-error)' }}>{t('pipeline.delete')}</Button>}
               <Button variant="secondary" size="xs" onClick={savePipeline} style={BUTTON_XS_STYLE}>{t('pipeline.save')}</Button>
               <Button variant="primary" size="xs" onClick={runPipeline} style={BUTTON_XS_STYLE}>{t('pipeline.run')}</Button>

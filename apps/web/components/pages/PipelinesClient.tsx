@@ -344,10 +344,18 @@ export default function PipelinesClient() {
     if (pipelines.length > 0 && pipelineName === 'New Pipeline') setPipelineName(`New Pipeline ${pipelines.length + 1}`);
   }, [pipelines]);
 
+  const handleNodeSelect = useCallback((id: string | null) => {
+    setSelectedNodeId(id);
+    if (id) {
+      setIsRightCollapsed(false);
+    }
+  }, []);
+
   const addNodeToCanvas = useCallback((item: any) => {
     const id = `${item.type}_${Date.now()}`;
     setNodes((prev) => [...prev, { id, type: item.type, label: item.label, desc: item.desc, inputs: item.inputs, outputs: item.outputs, state: 'idle', disabled: false, config: { ...item.config } }]);
     setSelectedNodeId(id);
+    setIsRightCollapsed(false);
   }, []);
 
   const deleteNodeById = useCallback((nodeId: string) => {
@@ -564,7 +572,7 @@ export default function PipelinesClient() {
                 nodes={nodes}
                 edges={edges}
                 selectedNodeId={selectedNodeId}
-                onNodeSelect={setSelectedNodeId}
+                onNodeSelect={handleNodeSelect}
                 onConnect={handleConnect}
                 onNodeDelete={deleteNodeById}
                 onEdgeDelete={deleteEdgeById}

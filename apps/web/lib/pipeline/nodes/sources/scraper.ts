@@ -47,7 +47,7 @@ export const webScraperHandler: NodeHandler = {
 
     if (!text) throw new Error('Scraped document contains no readable text.');
 
-    const tempPath = join(tmpdir(), `scrape_${Date.now()}.txt`);
+    const tempPath = join(process.env.UPLOAD_DIR || tmpdir(), `scrape_${Date.now()}.txt`);
     await writeFile(tempPath, text, 'utf8');
 
     const fileId = `scrape-${Date.now()}`;

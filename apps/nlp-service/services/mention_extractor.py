@@ -59,11 +59,10 @@ def _extract_mentions(text: str) -> list[dict]:
     except Exception as ex:
         logger.warning("langdetect_failed", error=str(ex))
 
-    for etype, pattern in ENTITY_REGEX_PATTERNS:
-        for m in pattern.finditer(text):
-            add(m.group(1) if m.lastindex else m.group(0), etype, m.start(), m.end())
-
     if not spacy_ran:
+        for etype, pattern in ENTITY_REGEX_PATTERNS:
+            for m in pattern.finditer(text):
+                add(m.group(1) if m.lastindex else m.group(0), etype, m.start(), m.end())
         for val in _extract_persons(text):
             add(val["text"], EntityType.PERSON, int(val["start"]), int(val["end"]))
 

@@ -129,7 +129,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Outputs, Downloads, and Graph Commit',
-            content: 'Output nodes can export JSON, GraphML, Obsidian vaults, HTML dashboards, and Markdown AI reports. JSON, GraphML, Obsidian, and AI Report outputs are downloadable from the run logs. Commit to KuzuDB requires explicit confirmation and makes the pipeline result visible on the main Graph page, including occurrence excerpts and co-occurrence snippets.',
+            content: 'Output nodes can export JSON, CSV, GraphML, Obsidian vaults, HTML dashboards, and Markdown AI reports. JSON, CSV, GraphML, Obsidian, and AI Report outputs are downloadable from the run logs. Commit to KuzuDB requires explicit confirmation and makes the pipeline result visible on the main Graph page, including occurrence excerpts and co-occurrence snippets.',
           },
           {
             title: 'Running a Pipeline',
@@ -278,7 +278,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Sorties, téléchargements et écriture graphe',
-            content: 'Les nœuds de sortie peuvent exporter en JSON, GraphML, coffre Obsidian, tableau de bord HTML et rapport IA Markdown. Les sorties JSON, GraphML, Obsidian et Rapport IA sont téléchargeables depuis les logs d’exécution. Écrire KuzuDB exige une confirmation explicite et rend le résultat visible sur la page Graphe, avec les extraits d’occurrences et les snippets de cooccurrence.',
+            content: 'Les nœuds de sortie peuvent exporter en JSON, CSV, GraphML, coffre Obsidian, tableau de bord HTML et rapport IA Markdown. Les sorties JSON, CSV, GraphML, Obsidian et Rapport IA sont téléchargeables depuis les logs d’exécution. Écrire KuzuDB exige une confirmation explicite et rend le résultat visible sur la page Graphe, avec les extraits d’occurrences et les snippets de cooccurrence.',
           },
           {
             title: 'Exécuter un pipeline',

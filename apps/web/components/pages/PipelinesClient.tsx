@@ -127,6 +127,7 @@ const NODE_TYPES_PALETTE: Record<CategoryKey, any[]> = {
     { type: 'output.ai_report', label: 'AI Report', desc: 'Generate markdown analytical report', inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'ai-report.md', exportLocation: 'downloads', exportFolder: 'uploads/exports', focusType: 'general', language: 'en', apiProvider: 'mistral', apiEndpoint: 'https://api.mistral.ai/v1', apiKey: '', model: 'mistral-large-latest', topEntitiesLimit: 30, topTfidfLimit: 30, bridgesLimit: 10, weakSignalsLimit: 10, includeBridgeSignals: true, includeNicheSignals: true, includeEmergingSignals: true, customInstructions: '' } },
     { type: 'output.graphml', label: 'GraphML Export', desc: 'Export dataset to GraphML format', inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.graphml', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.json', label: 'JSON Export', desc: 'Export datasets to JSON format', inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'export.json', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
+    { type: 'output.csv', label: 'CSV Export', desc: 'Export tabular or graph data to CSV format', inputs: [{ id: 'input', type: 'tabular' }], outputs: [], config: { fileName: 'export.csv', exportLocation: 'downloads', exportFolder: 'uploads/exports' } },
     { type: 'output.kuzudb_write', label: 'Commit to KuzuDB', desc: 'Write changes back to graph database', inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { confirmCommit: false } },
     { type: 'output.html_dashboard', label: 'HTML Dashboard', desc: 'Generate standalone HTML dashboard', inputs: [{ id: 'input', type: 'graph' }], outputs: [], config: { fileName: 'dashboard.html', exportLocation: 'custom', exportFolder: 'uploads/exports' } },
   ],
@@ -138,7 +139,7 @@ const fetcher = (url: string) => fetch(url).then((res) => {
 });
 
 function extractExportDownloads(logs: string[]): PipelineDownload[] {
-  const pattern = /Successfully wrote (JSON output|GraphML output|Obsidian vault|AI report) to: (.+)$/;
+  const pattern = /Successfully wrote (JSON output|CSV output|GraphML output|Obsidian vault|AI report) to: (.+)$/;
   return logs.flatMap((log) => {
     const match = log.match(pattern);
     if (!match?.[2]) return [];

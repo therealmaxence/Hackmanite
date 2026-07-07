@@ -1,4 +1,5 @@
 import { jsonOutputHandler } from './json';
+import { csvOutputHandler } from './csv';
 import { graphmlOutputHandler } from './graphml';
 import { obsidianVaultOutputHandler } from './obsidian_vault';
 import { aiReportOutputHandler } from './ai_report';
@@ -7,6 +8,7 @@ import { htmlDashboardHandler } from './dashboard';
 
 export const handlers = [
   jsonOutputHandler,
+  csvOutputHandler,
   graphmlOutputHandler,
   obsidianVaultOutputHandler,
   aiReportOutputHandler,

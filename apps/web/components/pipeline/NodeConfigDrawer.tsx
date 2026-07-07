@@ -897,7 +897,7 @@ export default function NodeConfigDrawer({
           </div>
         )}
 
-        {(type === 'output.json' || type === 'output.graphml' || type === 'output.obsidian_vault' || type === 'output.ai_report' || type === 'output.html_dashboard') && (
+        {(type === 'output.json' || type === 'output.csv' || type === 'output.graphml' || type === 'output.obsidian_vault' || type === 'output.ai_report' || type === 'output.html_dashboard') && (
           <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
             <div>
               <label style={fieldLabelStyle}>Export Target Destination</label>
@@ -1038,7 +1038,7 @@ export default function NodeConfigDrawer({
           </>
         )}
 
-        {(type === 'output.json' || type === 'output.graphml' || type === 'output.ai_report' || type === 'output.html_dashboard') && (
+        {(type === 'output.json' || type === 'output.csv' || type === 'output.graphml' || type === 'output.ai_report' || type === 'output.html_dashboard') && (
           <div>
             <label style={fieldLabelStyle}>Export File Name</label>
             <input type="text" value={config.fileName || ''} onChange={(e) => handleConfigChange('fileName', e.target.value)} style={inputStyle} />
@@ -1085,6 +1085,7 @@ export default function NodeConfigDrawer({
           'output.obsidian_vault',
           'output.ai_report',
           'output.json',
+          'output.csv',
           'output.graphml',
           'output.kuzudb_write',
           'output.html_dashboard',

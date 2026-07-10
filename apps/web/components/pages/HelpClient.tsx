@@ -45,8 +45,8 @@ const HELP_TRANSLATIONS = {
             content: 'Build repeatable analysis workflows from the Custom Analysis menu. Pipelines can load documents, scrape web pages, reuse the active session graph, filter entities, run weak-signal transforms, call an LLM annotation prompt, preview intermediate results, and export or commit the final graph.',
           },
           {
-            title: 'Session Export (JSON & Obsidian)',
-            content: 'Save your progress or share analysis by exporting sessions in two formats:\n\n- **JSON Snapshot**: A complete, self-contained database backup of all entities, files, and co-occurrences that can be re-imported into any instance of Hackmanite.\n- **Obsidian Vault (ZIP)**: Generates a ZIP archive containing a structured local knowledge base of Markdown files. Every entity and document gets its own page, fully interconnected via wiki-links (`[[Entities/Name]]`), complete with metadata, text snippets, and email headers (only compatible with Obsidian).',
+            title: 'Session Export and Graph Import',
+            content: 'Save, exchange, or restore graph data from the Graph page:\n\n- **JSON Snapshot**: A complete Hackmanite session backup with entities, files, occurrences, and co-occurrences. Re-import it when you need the richest session restore.\n- **GraphML**: Export or import an interoperable graph file for tools that support GraphML. Imported GraphML creates a graph session with synthetic file occurrences when the source file has no Hackmanite-specific metadata.\n- **Obsidian Vault (ZIP)**: Generates a Markdown knowledge base where every entity and document gets its own linked page.',
           },
         ]
       },
@@ -121,7 +121,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Document Sources and Extraction',
-            content: 'Document and email source nodes can use uploaded session files, including multiple files in the same document source. They run through the same Python/spaCy extraction backend as the regular upload page, but they do not write entities to the main graph unless you explicitly add and confirm a Commit to KuzuDB output node.',
+            content: 'Document and email source nodes can use uploaded session files, including multiple files in the same document source. GraphML source nodes load an existing graph directly from a GraphML file. Document/email sources run through the same Python/spaCy extraction backend as the regular upload page, but they do not write entities to the main graph unless you explicitly add and confirm a Commit to KuzuDB output node.',
           },
           {
             title: 'Filters and AI Transforms',
@@ -194,8 +194,8 @@ const HELP_TRANSLATIONS = {
             content: 'Créez des workflows d’analyse réutilisables depuis le menu Analyse personnalisée. Les pipelines peuvent charger des documents, scraper des pages web, réutiliser le graphe de session actif, filtrer les entités, exécuter des transformations de signaux faibles, appeler un prompt d’annotation LLM, prévisualiser les résultats intermédiaires et exporter ou écrire le graphe final.',
           },
           {
-            title: 'Export de Session (JSON & Obsidian)',
-            content: 'Sauvegardez votre travail ou partagez vos analyses en exportant vos sessions sous deux formats :\n\n- **JSON** : Une sauvegarde complète contenant toutes les entités, relations et fichiers, prête à être réimportée sur n\'importe quelle instance d\'Hackmanite.\n- **Coffre Obsidian (ZIP)** : Génère une archive ZIP contenant une base de connaissances locale au format Markdown. Chaque entité et document possède sa propre page interconnectée via des liens internes wiki (`[[Entities/Name]]`), complétée par des métadonnées, des extraits de texte et des en-têtes d\'e-mails (compatible uniquement avec Obsidian).',
+            title: 'Export de session et import de graphe',
+            content: 'Sauvegardez, échangez ou restaurez des données de graphe depuis la page Graphe :\n\n- **JSON** : Une sauvegarde complète Hackmanite avec entités, fichiers, occurrences et cooccurrences. Réimportez-la pour restaurer une session avec le maximum de détails.\n- **GraphML** : Exportez ou importez un fichier de graphe interopérable avec les outils compatibles GraphML. Un import GraphML crée une session avec des occurrences synthétiques si le fichier ne contient pas de métadonnées Hackmanite.\n- **Coffre Obsidian (ZIP)** : Génère une base de connaissances Markdown où chaque entité et document possède sa propre page liée.',
           },
         ]
       },
@@ -270,7 +270,7 @@ const HELP_TRANSLATIONS = {
           },
           {
             title: 'Sources documentaires et extraction',
-            content: 'Les nœuds source Document et E-mail peuvent utiliser les fichiers téléversés dans la session, y compris plusieurs fichiers dans une même source document. Ils passent par le même backend Python/spaCy que la page d’import classique, mais n’écrivent pas les entités dans le graphe principal sauf si vous ajoutez et confirmez explicitement un nœud de sortie Écrire KuzuDB.',
+            content: 'Les nœuds source Document et E-mail peuvent utiliser les fichiers téléversés dans la session, y compris plusieurs fichiers dans une même source document. Les sources GraphML chargent directement un graphe existant depuis un fichier GraphML. Les sources Document/E-mail passent par le même backend Python/spaCy que la page d’import classique, mais n’écrivent pas les entités dans le graphe principal sauf si vous ajoutez et confirmez explicitement un nœud de sortie Écrire KuzuDB.',
           },
           {
             title: 'Filtres et transformations IA',

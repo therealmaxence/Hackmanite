@@ -11,8 +11,9 @@ export const MAX_SIZE = Number(process.env.MAX_FILE_SIZE_MB || 500) * 1024 * 102
 export const SESSION_TTL_MS = 24 * 60 * 60 * 1000;
 
 export const ALLOWED_MIMES = new Set([
-  'text/plain', 'text/markdown', 'text/csv', 'text/html',
+  'text/plain', 'text/markdown', 'text/csv', 'text/html', 'text/xml',
   'application/pdf', 'application/json',
+  'application/xml', 'application/graphml+xml',
   'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
   'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
   'application/vnd.openxmlformats-officedocument.presentationml.presentation',
@@ -25,7 +26,7 @@ export const ALLOWED_MIMES = new Set([
 const EXT_MIME_MAP: Record<string, string> = {
   '.py': 'text/x-python', '.js': 'text/javascript', '.jsx': 'text/javascript',
   '.ts': 'text/javascript', '.tsx': 'text/javascript', '.sh': 'text/x-sh',
-  '.csv': 'text/csv', '.json': 'application/json', '.md': 'text/markdown',
+  '.csv': 'text/csv', '.graphml': 'application/graphml+xml', '.xml': 'application/xml', '.json': 'application/json', '.md': 'text/markdown',
   '.txt': 'text/plain', '.eml': 'message/rfc822', '.pst': 'application/vnd.ms-outlook',
 };
 

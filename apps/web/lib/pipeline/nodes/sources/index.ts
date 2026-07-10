@@ -4,6 +4,7 @@ import { sessionSourceHandler } from './session';
 import { documentSourceHandler } from './file.document';
 import { emailSourceHandler } from './file.email';
 import { csvSourceHandler } from './csv';
+import { graphmlSourceHandler } from './graphml';
 import { webScraperHandler } from './scraper';
 
 export const handlers = [
@@ -13,5 +14,6 @@ export const handlers = [
   documentSourceHandler,
   emailSourceHandler,
   csvSourceHandler,
+  graphmlSourceHandler,
   webScraperHandler,
 ];

@@ -163,6 +163,7 @@ interface FileSourceFieldsProps {
   handleConfigChange: (key: string, val: any) => void;
   isUploading: boolean;
   onUpload: (e: React.ChangeEvent<HTMLInputElement>) => void;
+  showWindowSize?: boolean;
 }
 
 function FileSourceFields({
@@ -177,6 +178,7 @@ function FileSourceFields({
   handleConfigChange,
   isUploading,
   onUpload,
+  showWindowSize = true,
 }: FileSourceFieldsProps) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
@@ -186,16 +188,17 @@ function FileSourceFields({
           <p style={dimTextStyle}>Loading files...</p>
         ) : (
           <select
-            value={config.filePath || ''}
+            value={Array.isArray(config.fileIds) && config.fileIds[0] ? config.fileIds[0] : ''}
             onChange={(e) => {
-              handleConfigChange('fileIds', []);
-              handleConfigChange('filePath', e.target.value);
+              const file = files.find((candidate) => candidate.fileId === e.target.value);
+              handleConfigChange('fileIds', file ? [file.fileId] : []);
+              handleConfigChange('filePath', file?.originalName || '');
             }}
             style={inputStyle}
           >
             <option value="">{emptyOption}</option>
             {files.map((file) => (
-              <option key={file.fileId} value={file.originalName}>
+              <option key={file.fileId} value={file.fileId}>
                 {file.originalName}{file.mimeType ? ` (${file.mimeType.split('/').pop()})` : ''}
               </option>
             ))}
@@ -227,17 +230,19 @@ function FileSourceFields({
         />
       </div>
 
-      <div>
-        <label style={fieldLabelStyle}>Extraction Window Size</label>
-        <input
-          type="number"
-          min={1}
-          max={10000}
-          value={config.windowSize ?? 400}
-          onChange={(e) => handleConfigChange('windowSize', Math.max(1, parseInt(e.target.value, 10) || 1))}
-          style={inputStyle}
-        />
-      </div>
+      {showWindowSize && (
+        <div>
+          <label style={fieldLabelStyle}>Extraction Window Size</label>
+          <input
+            type="number"
+            min={1}
+            max={10000}
+            value={config.windowSize ?? 400}
+            onChange={(e) => handleConfigChange('windowSize', Math.max(1, parseInt(e.target.value, 10) || 1))}
+            style={inputStyle}
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -380,6 +385,9 @@ export default function NodeConfigDrawer({
   const emailFiles = sessionFiles.filter(
     (f) => f.originalName.endsWith('.eml') || f.originalName.endsWith('.pst') || f.mimeType.includes('email') || f.mimeType.includes('outlook')
   );
+  const graphmlFiles = sessionFiles.filter(
+    (f) => /\.(graphml|xml)$/i.test(f.originalName) || f.mimeType.includes('graphml') || f.mimeType.includes('xml')
+  );
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
@@ -468,6 +476,23 @@ export default function NodeConfigDrawer({
               />
             </div>
           </div>
+        )}
+
+        {type === 'source.file.graphml' && (
+          <FileSourceFields
+            selectLabel="Select GraphML File"
+            emptyOption="-- Choose uploaded GraphML --"
+            uploadLabel="Or Upload New GraphML File"
+            inputId="drawer-graphml-upload"
+            accept=".graphml,.xml"
+            files={graphmlFiles}
+            loadingFiles={loadingFiles}
+            config={config}
+            handleConfigChange={handleConfigChange}
+            isUploading={isUploading}
+            onUpload={handleUpload}
+            showWindowSize={false}
+          />
         )}
 
         {type === 'source.web.scraper' && (
@@ -1067,6 +1092,7 @@ export default function NodeConfigDrawer({
           'source.file.email',
           'source.session',
           'source.file.csv',
+          'source.file.graphml',
           'source.web.scraper',
           'filter.entity_category',
           'filter.top_n_nodes',

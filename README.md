@@ -203,11 +203,11 @@ The **Pipelines** page lets you build reusable graph-processing workflows from v
 
 | Category | Available nodes |
 |---|---|
-| Sources | SQLite Query, KuzuDB Query, Document File, Email File, Active Session Graph |
-| Filters | Entity Category, Top N Nodes, Min TF-IDF, Min Occurrences, Min Connections, Edge Weight, Weak Signal, Denylist |
-| Transforms | Rare Bridges, Niche Topics, Spiking Signals, LLM Annotate, Community Detection, Centrality Score |
-| Visualizers | Graph Preview, Table Preview |
-| Outputs | JSON Export, GraphML Export, Obsidian Export, AI Report, Commit to KuzuDB |
+| Sources | SQLite Query, KuzuDB Query, Document File, Email File, CSV File, GraphML File, Web Scraper, Active Session Graph |
+| Filters | Entity Category, Top N Nodes, Min TF-IDF, Min Occurrences, Min Connections, Edge Weight, Weak Signal, Allow/Deny List, Date Range |
+| Transforms | Rare Bridges, Niche Topics, Spiking Signals, LLM Annotate, Community Detection, Centrality Score, Entity Resolution |
+| Visualizers | Graph Preview, Table Preview, Timeline Preview |
+| Outputs | JSON Export, CSV Export, GraphML Export, Obsidian Export, AI Report, HTML Dashboard, Commit to KuzuDB |
 
 ### Pipeline highlights
 

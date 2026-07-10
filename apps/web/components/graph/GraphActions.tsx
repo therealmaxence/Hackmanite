@@ -10,6 +10,7 @@ import HiddenNodesModal from '@/components/graph/HiddenNodesModal';
 import { useSWRConfig } from 'swr';
 import { useTranslation } from '@/lib/i18n';
 import { useGraphStore } from '@/store/graphStore';
+import { ALL_ENTITY_TYPES } from '@/lib/stats-utils';
 
 interface Props {
   sessionId: string | null;
@@ -43,6 +44,7 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
   const [importError, setImportError] = useState<string | null>(null);
   const { mutate } = useSWRConfig();
   const activeView = useGraphStore((s) => s.activeView);
+  const setFilter = useGraphStore((s) => s.setFilter);
 
   const openImportPicker = (type: ImportType) => {
     setImportError(null);
@@ -81,6 +83,14 @@ export default function GraphActions({ sessionId, onResetFilters, onResetGraph, 
         throw new Error((err as { error?: string }).error || t(type === 'json' ? 'graph.controls.err_import_failed' : 'graph.controls.err_import_graphml_failed'));
       }
       const data = await res.json();
+      if (type === 'graphml') {
+        setFilter('minConnections', 0);
+        setFilter('minOccurrences', 1);
+        setFilter('minTfidf', 0);
+        setFilter('minEdgeWeight', 0);
+        setFilter('crossDocumentOnly', false);
+        setFilter('entityTypes', ALL_ENTITY_TYPES);
+      }
       onImportSuccess(data.sessionId ?? null, data.files ?? []);
     } catch (err: unknown) {
       console.error('Import failed', err);

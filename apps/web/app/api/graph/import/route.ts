@@ -23,7 +23,15 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'No GraphML nodes found.', code: ErrorCodes.VALIDATION_ERROR }, { status: 400 });
     }
 
-    const result = await replaceSessionWithGraph({ sessionId: sessionId || undefined, ...graph, windowSize: 400 });
+    const result = await replaceSessionWithGraph({
+      sessionId: sessionId || undefined,
+      ...graph,
+      windowSize: 400,
+      minConnections: 0,
+      minOccurrences: 1,
+      minEdgeWeight: 0,
+      minTfidf: 0,
+    });
     return NextResponse.json({ ...result, nodesImported: graph.nodes.length, edgesImported: graph.edges.length });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Unknown error';

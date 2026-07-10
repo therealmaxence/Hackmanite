@@ -19,6 +19,7 @@ export interface ImportInput {
   minConnections?: number;
   minOccurrences?: number;
   minEdgeWeight?: number;
+  minTfidf?: number;
   emails?: any[];
 }
 
@@ -76,19 +77,19 @@ function isValidEntity(text: string, type: string): boolean {
 }
 
 function extractEntities(nodes: any[]) {
-  const entities = new Map<string, { oldId: string; canonical: string; displayName: string; type: string; metadata: any }>();
+  const entities = new Map<string, { oldIds: string[]; canonical: string; displayName: string; type: string; metadata: any }>();
   for (const node of nodes) {
     if (node.canonical && node.type && isValidEntity(node.canonical, node.type)) {
       const key = `${node.canonical}:${node.type}`;
-      if (!entities.has(key)) {
-        entities.set(key, {
-          oldId: node.id,
-          canonical: node.canonical,
-          displayName: node.label || node.canonical,
-          type: node.type,
-          metadata: node.metadata || null,
-        });
-      }
+      const existing = entities.get(key);
+      if (existing) existing.oldIds.push(node.id);
+      else entities.set(key, {
+        oldIds: [node.id],
+        canonical: node.canonical,
+        displayName: node.label || node.canonical,
+        type: node.type,
+        metadata: node.metadata || null,
+      });
     }
   }
   return entities;
@@ -101,6 +102,7 @@ async function createOrUpdateSession(tx: any, sessionId: string | undefined, bod
     minConnections: typeof body.minConnections === 'number' ? body.minConnections : undefined,
     minOccurrences: typeof body.minOccurrences === 'number' ? body.minOccurrences : undefined,
     minEdgeWeight: typeof body.minEdgeWeight === 'number' ? body.minEdgeWeight : undefined,
+    minTfidf: typeof body.minTfidf === 'number' ? body.minTfidf : undefined,
   };
 
   if (sessionId && await tx.session.findUnique({ where: { id: sessionId } })) {
@@ -146,10 +148,10 @@ async function insertEntities(tx: any, entitiesMap: Map<string, any>, entityIdMa
   for (const [key, ent] of entitiesMap.entries()) {
     const existingId = existingMap.get(key);
     if (existingId) {
-      entityIdMap.set(ent.oldId, existingId);
+      ent.oldIds.forEach((oldId: string) => entityIdMap.set(oldId, existingId));
     } else {
       const newId = randomUUID();
-      entityIdMap.set(ent.oldId, newId);
+      ent.oldIds.forEach((oldId: string) => entityIdMap.set(oldId, newId));
       toCreate.push({
         id: newId,
         canonical: ent.canonical,

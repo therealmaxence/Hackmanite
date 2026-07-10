@@ -8,19 +8,28 @@ Hackmanite (EntityGraph Explorer) is designed to run locally on your system, pro
 
 ## Running the Application
 
-Depending on how you received Hackmanite, you can launch it in one of three ways:
+Depending on how you received Hackmanite, you can launch it in one of the following ways:
 
-1. **Portable ZIP (Recommended for Users)**:
-   * Use **7-Zip** to extract the `Hackmanite-1.0.0-win.zip` package (Windows' built-in extractor can silently corrupt files in large ZIP archives).
-   * Double-click **`Hackmanite.exe`** in the extracted directory. All required services (FastAPI NLP service, Next.js web server, and SQLite database) will boot automatically.
-2. **Docker Mode (Development)**:
-   * With Docker Desktop running, execute the following command at the repository root:
-     ```powershell
-     docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
-     ```
-   * Open your browser and navigate to `http://localhost:3000`.
-3. **Local Dev Environment**:
-   * Refer to the root `README.md` for steps on booting the Next.js frontend, FastAPI NLP service, and Electron shell manually.
+### 1. Portable ZIP (Recommended for Users)
+* Use **7-Zip** to extract the `Hackmanite-1.0.0-win.zip` package (Windows' built-in extractor can silently corrupt files in large ZIP archives).
+* Double-click **`Hackmanite.exe`** in the extracted directory. All required services (FastAPI NLP service, Next.js web server, and SQLite database) will boot automatically.
+
+### 2. Docker Mode (Development)
+* With Docker Desktop running, execute the following command at the repository root:
+  ```powershell
+  docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+  ```
+* Open your browser and navigate to `http://localhost:3000`.
+
+### 3. Launching from the GitHub Repository
+If you cloned the source code from GitHub:
+* Running the app in local development mode (booting Next.js, the FastAPI service, and the Electron wrapper manually) requires installing Node.js and Python dependencies.
+* **Please refer to the main repository [README.md](../README.md) for the complete first-time installation and dev-run instructions.**
+
+### 4. Compiling and Building the Desktop App
+If you wish to compile the application binaries yourself or build a new portable ZIP:
+* You will need to compile the Next.js frontend, package the Python NLP service with PyInstaller, and bundle everything with electron-builder.
+* **Please refer to the main repository [README.md](../README.md) under the "Building the Portable ZIP" or "Building for Linux/Ubuntu" sections for the exact step-by-step build instructions.**
 
 ---
 

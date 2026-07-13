@@ -4,40 +4,34 @@ This page documents the distributed execution engine for Hackmanite ETL pipeline
 
 ---
 
-## 🏛️ Architecture Overview
+## Architecture Overview
 
 The distributed pipeline model decouples the Next.js web application from the execution engine, replacing the in-memory or BullMQ/Redis worker queues with a centralized coordinator and a pool of horizontally scalable worker pods.
 
-```
-       [ Next.js API / UI ]
-                │
-                ▼ (Publish kickoff)
-         [ Kafka Topic: pipeline-start ]
-                │
-                ▼ (Consume)
-      [ Pipeline Coordinator ]
-                │
-         ┌──────┴──────┬──────────────┐
-         ▼             ▼              ▼ (Publish job)
-   [ pipeline-nlp ] [ pipeline-transforms ] [ pipeline-exports ]
-         │             │              │
-         ▼             ▼              ▼ (Consume & execute)
-   [ nlp-workers ] [ transform-workers ] [ export-workers ]
-         │             │              │
-         └─────────────┼──────────────┘
-                       ▼ (Publish logs & completion)
-         [ Kafka Topic: pipeline-status ]
-                       │
-                       ▼ (Consume & write to DB)
-             [ Pipeline Coordinator ]
-                       │
-                       ▼ (Writes state/logs)
-                  [ Database ]
+```mermaid
+graph TD
+    UI[Next.js API / UI] -->|Publish kickoff| StartTopic(Kafka: pipeline-start)
+    StartTopic -->|Consume kickoff| Coordinator[Pipeline Coordinator]
+    
+    Coordinator -->|Publish job| NLPJob(Kafka: pipeline-nlp)
+    Coordinator -->|Publish job| TransJob(Kafka: pipeline-transforms)
+    Coordinator -->|Publish job| ExportJob(Kafka: pipeline-exports)
+    
+    NLPJob -->|Consume| NLPWorker[NLP Workers]
+    TransJob -->|Consume| TransWorker[Transform/Filter Workers]
+    ExportJob -->|Consume| ExportWorker[Export Workers]
+    
+    NLPWorker -->|Publish logs & status| StatusTopic(Kafka: pipeline-status)
+    TransWorker -->|Publish logs & status| StatusTopic
+    ExportWorker -->|Publish logs & status| StatusTopic
+    
+    StatusTopic -->|Consume| Coordinator
+    Coordinator -->|Write logs & state| DB[(Database)]
 ```
 
 ---
 
-## 📦 Key Concepts
+## Key Concepts
 
 ### 1. Centralized Orchestration
 * **Pipeline Coordinator**: Runs as a lightweight service. It parses the pipeline JSON definition, performs a topological sort, and maps execution states. It publishes node jobs when parent dependencies are satisfied, and consumes execution progress events.
@@ -61,7 +55,7 @@ Workers run in isolated consumer groups. By using **KEDA (Kubernetes Event-drive
 
 ---
 
-## ⚙️ Configuration (Environment Variables)
+## Configuration (Environment Variables)
 
 To activate and run the distributed Kafka pipeline, configure the following variables in your `.env` file:
 

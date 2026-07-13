@@ -19,7 +19,7 @@ export interface NodeHandler {
   run(inputs: Record<string, PipelineData>, config: any, context: ExecutionContext): Promise<PipelineData | void>;
 }
 
-const NODE_HANDLERS: Record<string, NodeHandler> = {};
+export const NODE_HANDLERS: Record<string, NodeHandler> = {};
 export function registerNodeHandler(handler: NodeHandler) { NODE_HANDLERS[handler.type] = handler; }
 registerAllNodes();
 
@@ -39,7 +39,7 @@ export function topologicalSort(nodes: any[], edges: any[]): string[] {
   return order;
 }
 
-function resolveSessionId(nodes: any[]): string | undefined {
+export function resolveSessionId(nodes: any[]): string | undefined {
   const sessionNode = nodes.find((n: any) => (n.data?.type || n.type) === 'source.session');
   return sessionNode?.data?.config?.sessionId || sessionNode?.config?.sessionId;
 }
@@ -56,7 +56,7 @@ function findUpstreamOutputs(nodeId: string, input: any, nodeById: Map<string, a
   });
 }
 
-function mergePipelineData(outputs: PipelineData[]): PipelineData {
+export function mergePipelineData(outputs: PipelineData[]): PipelineData {
   if (outputs.length === 0) throw new Error('Cannot merge empty outputs list');
   if (outputs.length === 1) return outputs[0];
 

@@ -1,0 +1,90 @@
+# Distributed Kafka Pipeline Architecture
+
+This page documents the distributed execution engine for Hackmanite ETL pipelines, designed for high-scale environments using Apache Kafka, Kubernetes, and S3-compatible object storage.
+
+---
+
+## 🏛️ Architecture Overview
+
+The distributed pipeline model decouples the Next.js web application from the execution engine, replacing the in-memory or BullMQ/Redis worker queues with a centralized coordinator and a pool of horizontally scalable worker pods.
+
+```
+       [ Next.js API / UI ]
+                │
+                ▼ (Publish kickoff)
+         [ Kafka Topic: pipeline-start ]
+                │
+                ▼ (Consume)
+      [ Pipeline Coordinator ]
+                │
+         ┌──────┴──────┬──────────────┐
+         ▼             ▼              ▼ (Publish job)
+   [ pipeline-nlp ] [ pipeline-transforms ] [ pipeline-exports ]
+         │             │              │
+         ▼             ▼              ▼ (Consume & execute)
+   [ nlp-workers ] [ transform-workers ] [ export-workers ]
+         │             │              │
+         └─────────────┼──────────────┘
+                       ▼ (Publish logs & completion)
+         [ Kafka Topic: pipeline-status ]
+                       │
+                       ▼ (Consume & write to DB)
+             [ Pipeline Coordinator ]
+                       │
+                       ▼ (Writes state/logs)
+                  [ Database ]
+```
+
+---
+
+## 📦 Key Concepts
+
+### 1. Centralized Orchestration
+* **Pipeline Coordinator**: Runs as a lightweight service. It parses the pipeline JSON definition, performs a topological sort, and maps execution states. It publishes node jobs when parent dependencies are satisfied, and consumes execution progress events.
+* **Database Updates**: The coordinator consolidates worker logs and node states (`idle`, `running`, `success`, `error`) back to the main relational database, ensuring that Next.js UI polling routes `/api/pipelines/runs/[id]` display real-time statuses without changes.
+
+### 2. Claim Check Pattern (Object Storage)
+Because graph and tabular datasets can be very large, passing raw data over Kafka is inefficient. 
+* **Mechanism**: Intermediate outputs are stored in **MinIO** or **AWS S3** (using a shared path/PVC mount in development).
+* **Kafka Message**: Contains only metadata references (e.g. S3 URI, run ID, and node ID).
+* **Execution**: Worker pods download inputs, execute their logic, upload results, and output a new file URI reference to Kafka.
+
+### 3. Kafka Topics Layout
+* `pipeline-start`: Kicksoff runs.
+* `pipeline-status`: Workers publish log messages and state completions.
+* `pipeline-nlp`: Task jobs for ingestion, doc/email parsing, and web scraping.
+* `pipeline-transforms`: Task jobs for filters, entity resolution, and LLM annotations.
+* `pipeline-exports`: Task jobs for GraphML, CSV, JSON, and Obsidian vault packaging.
+
+### 4. Kubernetes Scaling (KEDA)
+Workers run in isolated consumer groups. By using **KEDA (Kubernetes Event-driven Autoscaling)**, you can scale worker deployment pods based on topic lag. For example, if there is a massive backlog in `pipeline-nlp`, KEDA automatically scales up the NLP extraction pods and drops them back to zero once finished.
+
+---
+
+## ⚙️ Configuration (Environment Variables)
+
+To activate and run the distributed Kafka pipeline, configure the following variables in your `.env` file:
+
+```env
+# Kafka Configuration (Setting this activates Kafka instead of BullMQ)
+KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+KAFKA_CLIENT_ID="hackmanite-pipeline"
+
+# Payload Cache (Shared directory mounted to K8s pods, or local dev cache)
+SHARED_CACHE_DIR="./uploads/pipeline-cache"
+```
+
+### Running the Coordinator/Worker Processes
+
+You can execute the daemon script in different roles using `npx tsx`:
+
+```bash
+# 1. Run the Pipeline Coordinator
+$env:KAFKA_WORKER_ROLE="coordinator"
+npx tsx scripts/kafka-daemon.ts
+
+# 2. Run the Worker
+$env:KAFKA_WORKER_ROLE="worker"
+$env:KAFKA_WORKER_TOPICS="pipeline-transforms,pipeline-nlp,pipeline-exports"
+npx tsx scripts/kafka-daemon.ts
+```

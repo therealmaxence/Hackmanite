@@ -180,6 +180,31 @@ Services started: `web` (Next.js, port 3000), `nlp` (FastAPI, port 8000), `redis
 
 Everything (Python runtime, spaCy models, Next.js server) is bundled inside the ZIP. No Python, Node.js, or Docker required.
 
+### Option D — Distributed Kafka mode
+
+To execute visual pipelines via a distributed Kafka setup (using the Claim Check pattern and shared storage):
+
+1. Add the Kafka bootstrap configurations to your `.env` file:
+   ```env
+   KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
+   SHARED_CACHE_DIR="./uploads/pipeline-cache"
+   ```
+2. Run the Pipeline Coordinator daemon in a terminal:
+   ```powershell
+   $env:KAFKA_WORKER_ROLE="coordinator"
+   cd apps/web
+   npx tsx scripts/kafka-daemon.ts
+   ```
+3. Run the Worker daemon in a separate terminal:
+   ```powershell
+   $env:KAFKA_WORKER_ROLE="worker"
+   $env:KAFKA_WORKER_TOPICS="pipeline-transforms,pipeline-nlp,pipeline-exports"
+   cd apps/web
+   npx tsx scripts/kafka-daemon.ts
+   ```
+
+For detailed architectural layout, see [Distributed Kafka Pipeline Wiki](wiki/9_Distributed_Kafka_Pipeline.md).
+
 ---
 
 ## Exporting to Obsidian

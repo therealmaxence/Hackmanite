@@ -26,6 +26,8 @@ Explore specific modules and features of the application:
    * Building reusable graph data workflows: node editor palette, canvas actions, custom configuration, and execution logs.
 8. **[AI Intelligence Reports](8_AI_Intelligence_Reports.md)**
    * Generating structured briefings, setting up AI models (Mistral Cloud vs. Ollama), selecting context, and exporting options.
+9. **[Distributed Kafka Pipeline](9_Distributed_Kafka_Pipeline.md)**
+   * Scaling execution using Kafka event streams, coordinator/worker patterns, and Kubernetes deployment.
 
 ---
 

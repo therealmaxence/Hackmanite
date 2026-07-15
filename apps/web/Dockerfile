@@ -21,6 +21,8 @@ COPY --from=build /app/prisma ./prisma
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/lib ./lib
 COPY --from=build /app/types ./types
+COPY --from=build /app/tsconfig.json ./
+COPY --from=build /app/next-env.d.ts ./
 RUN mkdir -p uploads logs
 
 FROM node:20-alpine AS runner

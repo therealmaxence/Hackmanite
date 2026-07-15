@@ -159,12 +159,18 @@ cd apps/desktop
 npm start
 ```
 
-### Option B — Development mode (Docker)
+### Option B — Development mode (Docker · BullMQ)
 
-Requires Docker Desktop. Uses the root `.env` for secrets and hot-reloads source changes:
+Requires Docker Desktop. Uses the root `.env` for secrets and hot-reloads source changes.
+Pipeline jobs are queued via **BullMQ + Redis** (default mode).
 
 ```powershell
 # From the repository root
+
+# Production
+docker compose -f docker-compose.yml up --build
+
+# Development (hot-reload)
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
@@ -180,28 +186,35 @@ Services started: `web` (Next.js, port 3000), `nlp` (FastAPI, port 8000), `redis
 
 Everything (Python runtime, spaCy models, Next.js server) is bundled inside the ZIP. No Python, Node.js, or Docker required.
 
-### Option D — Distributed Kafka mode
+### Option D — Distributed Kafka mode (Docker)
 
-To execute visual pipelines via a distributed Kafka setup (using the Claim Check pattern and shared storage):
+Runs the full stack with pipeline execution distributed over **Apache Kafka**.
+The Kafka broker, Pipeline Coordinator, and Pipeline Worker are all started automatically as Docker services.
+No manual daemon terminals required.
 
-1. Add the Kafka bootstrap configurations to your `.env` file:
-   ```env
-   KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
-   SHARED_CACHE_DIR="./uploads/pipeline-cache"
-   ```
-2. Run the Pipeline Coordinator daemon in a terminal:
-   ```powershell
-   $env:KAFKA_WORKER_ROLE="coordinator"
-   cd apps/web
-   npx tsx scripts/kafka-daemon.ts
-   ```
-3. Run the Worker daemon in a separate terminal:
-   ```powershell
-   $env:KAFKA_WORKER_ROLE="worker"
-   $env:KAFKA_WORKER_TOPICS="pipeline-transforms,pipeline-nlp,pipeline-exports"
-   cd apps/web
-   npx tsx scripts/kafka-daemon.ts
-   ```
+```powershell
+# From the repository root
+
+# Production
+docker compose -f docker-compose.yml -f docker-compose.kafka.yml up --build
+
+# Development (hot-reload on web + nlp)
+docker compose -f docker-compose.yml -f docker-compose.kafka.yml -f docker-compose.dev.yml up --build
+```
+
+Services started:
+
+| Service | Port | Description |
+|---|---|---|
+| `web` | 3000 | Next.js frontend |
+| `nlp` | 8000 | FastAPI NLP backend |
+| `redis` | 6379 | Redis (session/cache) |
+| `redis-insight` | 5540 | Redis UI |
+| `kafka` | 9092 | Kafka broker (KRaft mode) |
+| `coordinator` | — | Pipeline Coordinator daemon |
+| `worker` | — | Pipeline Worker daemon |
+
+The `web` service automatically dispatches pipeline runs to Kafka when `KAFKA_BOOTSTRAP_SERVERS` is set (injected by the override). The coordinator and worker share the same upload volume for the Claim Check payload cache.
 
 For detailed architectural layout, see [Distributed Kafka Pipeline Wiki](wiki/9_Distributed_Kafka_Pipeline.md).
 

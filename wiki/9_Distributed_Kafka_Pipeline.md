@@ -68,17 +68,32 @@ KAFKA_CLIENT_ID="hackmanite-pipeline"
 SHARED_CACHE_DIR="./uploads/pipeline-cache"
 ```
 
-### Running the Coordinator/Worker Processes
+### Launching the Full Stack
 
-You can execute the daemon script in different roles using `npx tsx`:
+Use the `docker-compose.kafka.yml` override on top of the base `docker-compose.yml`.
+The Kafka broker, Coordinator, and Worker are all started automatically — no manual daemon terminals needed.
 
-```bash
-# 1. Run the Pipeline Coordinator
-$env:KAFKA_WORKER_ROLE="coordinator"
-npx tsx scripts/kafka-daemon.ts
+```powershell
+# From the repository root
 
-# 2. Run the Worker
-$env:KAFKA_WORKER_ROLE="worker"
-$env:KAFKA_WORKER_TOPICS="pipeline-transforms,pipeline-nlp,pipeline-exports"
-npx tsx scripts/kafka-daemon.ts
+# Production
+docker compose -f docker-compose.yml -f docker-compose.kafka.yml up --build
+
+# Development (hot-reload on web + nlp)
+docker compose -f docker-compose.yml -f docker-compose.kafka.yml -f docker-compose.dev.yml up --build
 ```
+
+> **Running daemons manually (native dev only)**
+> If you want to run the daemons outside Docker (e.g. alongside `npm run dev`):
+> ```powershell
+> # Coordinator
+> $env:KAFKA_WORKER_ROLE="coordinator"
+> cd apps/web
+> npx tsx scripts/kafka-daemon.ts
+>
+> # Worker (separate terminal)
+> $env:KAFKA_WORKER_ROLE="worker"
+> $env:KAFKA_WORKER_TOPICS="pipeline-transforms,pipeline-nlp,pipeline-exports"
+> cd apps/web
+> npx tsx scripts/kafka-daemon.ts
+> ```

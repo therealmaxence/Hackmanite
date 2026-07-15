@@ -1,0 +1,93 @@
+#   docker compose -f docker-compose.yml -f docker-compose.kafka.yml up --build
+
+services:
+  web:
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      KAFKA_CLIENT_ID: "hackmanite-pipeline"
+      SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
+    depends_on:
+      kafka:
+        condition: service_healthy
+
+  kafka:
+    image: apache/kafka:latest
+    container_name: kafka
+    hostname: kafka
+    ports:
+      - "9092:9092"
+    environment:
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: "broker,controller"
+      KAFKA_CONTROLLER_QUORUM_VOTERS: "1@kafka:9093"
+      KAFKA_CONTROLLER_LISTENER_NAMES: "CONTROLLER"
+      KAFKA_LISTENERS: "PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093"
+      KAFKA_ADVERTISED_LISTENERS: "PLAINTEXT://kafka:9092"
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: "CONTROLLER:PLAINTEXT,PLAINTEXT:PLAINTEXT"
+      CLUSTER_ID: "MkU3OEVBNTcwNTJENDM2Qk"
+      KAFKA_LOG_DIRS: "/tmp/kraft-combined-logs"
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+    networks:
+      - app-network
+    healthcheck:
+      test: ["CMD-SHELL", "kafka-topics.sh --bootstrap-server localhost:9092 --list || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 30s
+    restart: unless-stopped
+
+  coordinator:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: daemon
+    environment:
+      DATABASE_URL: "file:/app/data/dev.db?connection_limit=10&socket_timeout=900"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      KAFKA_CLIENT_ID: "hackmanite-pipeline"
+      KAFKA_WORKER_ROLE: "coordinator"
+      SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
+      NODE_ENV: production
+      LOG_LEVEL: info
+    command: ["npx", "tsx", "scripts/kafka-daemon.ts"]
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/db:/app/data
+    depends_on:
+      kafka:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  worker:
+    build:
+      context: ./apps/web
+      dockerfile: Dockerfile
+      target: daemon
+    environment:
+      DATABASE_URL: "file:/app/data/dev.db?connection_limit=10&socket_timeout=900"
+      NLP_SERVICE_URL: "http://nlp:8000"
+      KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+      KAFKA_CLIENT_ID: "hackmanite-pipeline"
+      KAFKA_WORKER_ROLE: "worker"
+      KAFKA_WORKER_TOPICS: "pipeline-transforms,pipeline-nlp,pipeline-exports"
+      SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
+      NODE_ENV: production
+      LOG_LEVEL: info
+    command: ["npx", "tsx", "scripts/kafka-daemon.ts"]
+    volumes:
+      - ./data/uploads:/app/uploads
+      - ./data/db:/app/data
+    depends_on:
+      kafka:
+        condition: service_healthy
+      web:
+        condition: service_started
+    networks:
+      - app-network
+    restart: unless-stopped

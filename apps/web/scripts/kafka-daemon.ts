@@ -1,3 +1,4 @@
+import './load-env';
 import { prisma } from '../lib/prisma';
 import { publishMessage, createKafkaConsumer } from '../lib/pipeline/kafkaClient';
 import { savePayload, loadPayload, getPayloadUri } from '../lib/pipeline/objectStore';

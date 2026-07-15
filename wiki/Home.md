@@ -28,6 +28,8 @@ Explore specific modules and features of the application:
    * Generating structured briefings, setting up AI models (Mistral Cloud vs. Ollama), selecting context, and exporting options.
 9. **[Distributed Kafka Pipeline](9_Distributed_Kafka_Pipeline.md)**
    * Scaling execution using Kafka event streams, coordinator/worker patterns, and Kubernetes deployment.
+10. **[Developer Documentation](10_Developer_Documentation.md)**
+   * Generating API reference docs for the NLP backend (MkDocs), TypeScript libraries (TypeDoc), and database schema (Prisma Docs Generator).
 
 ---
 

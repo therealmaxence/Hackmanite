@@ -6,13 +6,14 @@ This page documents the distributed execution engine for Hackmanite ETL pipeline
 
 ## Architecture Overview
 
-The distributed pipeline model decouples the Next.js web application from the execution engine, replacing the in-memory or BullMQ/Redis worker queues with a centralized coordinator and a pool of horizontally scalable worker pods.
+The distributed pipeline model decouples the Next.js web application from the execution engine, replacing the local in-memory worker queues with a centralized coordinator and a pool of horizontally scalable worker pods.
 
 ```mermaid
 graph TD
     UI[Next.js API / UI] -->|Publish kickoff| StartTopic(Kafka: pipeline-start)
-    StartTopic -->|Consume kickoff| Coordinator[Pipeline Coordinator]
+    UI -->|Publish upload job| IngestionTopic(Kafka: document-extraction)
     
+    StartTopic -->|Consume kickoff| Coordinator[Pipeline Coordinator]
     Coordinator -->|Publish job| NLPJob(Kafka: pipeline-nlp)
     Coordinator -->|Publish job| TransJob(Kafka: pipeline-transforms)
     Coordinator -->|Publish job| ExportJob(Kafka: pipeline-exports)
@@ -20,13 +21,15 @@ graph TD
     NLPJob -->|Consume| NLPWorker[NLP Workers]
     TransJob -->|Consume| TransWorker[Transform/Filter Workers]
     ExportJob -->|Consume| ExportWorker[Export Workers]
+    IngestionTopic -->|Consume| IngestionWorker[Ingestion Workers]
     
     NLPWorker -->|Publish logs & status| StatusTopic(Kafka: pipeline-status)
     TransWorker -->|Publish logs & status| StatusTopic
     ExportWorker -->|Publish logs & status| StatusTopic
     
+    IngestionWorker -->|Update file state| DB[(Database)]
     StatusTopic -->|Consume| Coordinator
-    Coordinator -->|Write logs & state| DB[(Database)]
+    Coordinator -->|Write logs & state| DB
 ```
 
 ---
@@ -49,9 +52,13 @@ Because graph and tabular datasets can be very large, passing raw data over Kafk
 * `pipeline-nlp`: Task jobs for ingestion, doc/email parsing, and web scraping.
 * `pipeline-transforms`: Task jobs for filters, entity resolution, and LLM annotations.
 * `pipeline-exports`: Task jobs for GraphML, CSV, JSON, and Obsidian vault packaging.
+* `document-extraction`: Task jobs for document file uploads (parsing, OCR, spaCy NLP extraction).
 
 ### 4. Kubernetes Scaling (KEDA)
-Workers run in isolated consumer groups. By using **KEDA (Kubernetes Event-driven Autoscaling)**, you can scale worker deployment pods based on topic lag. For example, if there is a massive backlog in `pipeline-nlp`, KEDA automatically scales up the NLP extraction pods and drops them back to zero once finished.
+Workers run in isolated consumer groups. By using **KEDA (Kubernetes Event-driven Autoscaling)**, you can scale worker deployment pods based on topic lag. For example, if there is a massive backlog in `pipeline-nlp` or `document-extraction`, KEDA automatically scales up the corresponding worker pods and drops them back to zero once finished.
+
+### 5. Unified Ingestion Queue
+By routing both document uploads and pipeline runs to Kafka, BullMQ and Redis queues have been completely retired. If Kafka is not active, the system safely falls back to a clean local in-memory processing queue.
 
 ---
 

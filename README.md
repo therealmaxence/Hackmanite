@@ -53,10 +53,9 @@ EntityGraph/
 ├── data/                         # Persistent app data and uploads (Docker volume mounts)
 │   ├── uploads/                  # Uploaded documents
 │   └── db/                       # SQLite database (production / Docker)
-├── infra/                        # Infrastructure configuration
-│   └── redis/                    # Redis server config
-├── docker-compose.yml            # Production Docker Compose (web, nlp, redis, redis-insight)
+├── docker-compose.yml            # Production Docker Compose (web, nlp)
 ├── docker-compose.dev.yml        # Development overrides (hot-reload, volume mounts)
+├── docker-compose.kafka.yml      # Distributed extension (adds Kafka broker & daemons)
 ├── .env.example                  # Environment variable template
 └── README.md
 ```
@@ -115,8 +114,6 @@ NEXT_PUBLIC_APP_URL="http://localhost:3000"
 Optional variables (see `.env.example` for the full list):
 
 ```env
-REDIS_URL=redis://redis:6379          # only needed when running via Docker
-BULL_EXTRACTION_CONCURRENCY=10        # BullMQ worker concurrency
 KUZU_BUFFER_POOL_SIZE=                # leave empty for auto-scaling
 LOG_LEVEL=info
 ```
@@ -159,10 +156,10 @@ cd apps/desktop
 npm start
 ```
 
-### Option B — Development mode (Docker · BullMQ)
+### Option B — Development mode (Docker)
 
 Requires Docker Desktop. Uses the root `.env` for secrets and hot-reloads source changes.
-Pipeline jobs are queued via **BullMQ + Redis** (default mode).
+Pipeline runs and document upload extractions are executed inside a local in-memory fallback queue (default mode).
 
 ```powershell
 # From the repository root
@@ -174,7 +171,7 @@ docker compose -f docker-compose.yml up --build
 docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 ```
 
-Services started: `web` (Next.js, port 3000), `nlp` (FastAPI, port 8000), `redis` (port 6379), `redis-insight` (port 5540).
+Services started: `web` (Next.js, port 3000), `nlp` (FastAPI, port 8000).
 
 ### Option C — Portable ZIP (no installation needed)
 
@@ -188,7 +185,7 @@ Everything (Python runtime, spaCy models, Next.js server) is bundled inside the 
 
 ### Option D — Distributed Kafka mode (Docker)
 
-Runs the full stack with pipeline execution distributed over **Apache Kafka**.
+Runs the full stack with background task processing (pipeline runs and document upload extractions) distributed over **Apache Kafka**.
 The Kafka broker, Pipeline Coordinator, and Pipeline Worker are all started automatically as Docker services.
 No manual daemon terminals required.
 
@@ -208,13 +205,12 @@ Services started:
 |---|---|---|
 | `web` | 3000 | Next.js frontend |
 | `nlp` | 8000 | FastAPI NLP backend |
-| `redis` | 6379 | Redis (session/cache) |
-| `redis-insight` | 5540 | Redis UI |
+| `redis` | 6379 | Redis (session cache & cancellation state) |
 | `kafka` | 9092 | Kafka broker (KRaft mode) |
 | `coordinator` | — | Pipeline Coordinator daemon |
 | `worker` | — | Pipeline Worker daemon |
 
-The `web` service automatically dispatches pipeline runs to Kafka when `KAFKA_BOOTSTRAP_SERVERS` is set (injected by the override). The coordinator and worker share the same upload volume for the Claim Check payload cache.
+The `web` service automatically dispatches pipeline runs and document upload extraction tasks to Kafka when `KAFKA_BOOTSTRAP_SERVERS` is set. The coordinator and worker share the same upload volume for database access and Claim Check payload caching.
 
 For detailed architectural layout, see [Distributed Kafka Pipeline Wiki](wiki/9_Distributed_Kafka_Pipeline.md).
 
@@ -386,7 +382,7 @@ chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
 | Relational database | SQLite via [Prisma](https://www.prisma.io/) — sessions, files, emails |
 | Graph database | [KuzuDB](https://kuzudb.com/) (embedded) — entities, co-occurrences |
 | NLP backend | [FastAPI](https://fastapi.tiangolo.com/) + [spaCy](https://spacy.io/) 3.7 |
-| Job Queue | [BullMQ](https://bullmq.io/) (Redis backend with in-memory fallback) |
+| Job Queue | Local in-memory queue (default) or [Apache Kafka](https://kafka.apache.org/) (distributed mode) |
 | OCR | [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) via `pytesseract` |
 | Packaging | [electron-builder](https://www.electron.build/) + [PyInstaller](https://pyinstaller.org/) |
 

@@ -4,10 +4,11 @@ import { publishMessage, createKafkaConsumer, getKafka } from '../lib/pipeline/k
 import { savePayload, loadPayload, getPayloadUri } from '../lib/pipeline/objectStore';
 import { NODE_HANDLERS, topologicalSort, mergePipelineData, resolveSessionId, PipelineData, ExecutionContext } from '../lib/pipeline/executor';
 import { logger } from '../lib/logger';
+import { executeExtraction } from '../lib/queue/executor';
 
 const role = process.env.KAFKA_WORKER_ROLE || 'worker';
 const consumerGroupId = process.env.KAFKA_CONSUMER_GROUP_ID || `hackmanite-group-${role}`;
-const jobTopicsEnv = process.env.KAFKA_WORKER_TOPICS || 'pipeline-transforms,pipeline-nlp,pipeline-exports';
+const jobTopicsEnv = process.env.KAFKA_WORKER_TOPICS || 'pipeline-transforms,pipeline-nlp,pipeline-exports,document-extraction';
 const jobTopics = jobTopicsEnv.split(',').map((t) => t.trim());
 
 // Helper to determine the target job topic for a node
@@ -61,7 +62,7 @@ async function ensureTopicsExist(topics: string[]) {
 async function runCoordinator() {
   logger.info('Starting Kafka Pipeline Coordinator...');
 
-  await ensureTopicsExist(['pipeline-start', 'pipeline-status', 'pipeline-nlp', 'pipeline-transforms', 'pipeline-exports']);
+  await ensureTopicsExist(['pipeline-start', 'pipeline-status', 'pipeline-nlp', 'pipeline-transforms', 'pipeline-exports', 'document-extraction']);
 
   const startConsumer = createKafkaConsumer(`${consumerGroupId}-start`);
   const statusConsumer = createKafkaConsumer(`${consumerGroupId}-status`);
@@ -313,6 +314,18 @@ async function runWorker() {
     eachMessage: async ({ topic, message }) => {
       if (!message.value) return;
       
+      if (topic === 'document-extraction') {
+        const payload = JSON.parse(message.value.toString());
+        logger.info(`Worker picked up document extraction task for file: ${payload.fileId}`);
+        const controller = new AbortController();
+        try {
+          await executeExtraction(`kafka-${payload.fileId}`, payload, controller);
+        } catch (err: any) {
+          logger.error(`Document extraction failed inside worker for file ${payload.fileId}: ${err.message}`);
+        }
+        return;
+      }
+
       const payload = JSON.parse(message.value.toString());
       const { runId, sessionId, node, inputMappings } = payload;
       const nodeId = node.id;

@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
-import { isRedisAvailable, bullQueue } from '@/lib/queue/bullQueue';
 import { executePipeline } from '@/lib/pipeline/executor';
 import { SESSION_TTL_MS } from '@/lib/api/upload';
 import { publishMessage } from '@/lib/pipeline/kafkaClient';
@@ -54,9 +53,6 @@ export async function POST(
     if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
       await publishMessage('pipeline-start', { pipelineRunId: run.id, sessionId });
       console.log(`[Pipeline] Dispatched run ${run.id} to Kafka.`);
-    } else if (isRedisAvailable && bullQueue) {
-      await bullQueue.add('pipeline', { pipelineRunId: run.id, sessionId });
-      console.log(`[Pipeline] Dispatched run ${run.id} to BullMQ.`);
     } else {
       Promise.resolve().then(async () => {
         try {

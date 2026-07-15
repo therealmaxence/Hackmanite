@@ -2,9 +2,9 @@ import { logger } from "@/lib/logger";
 import { redis, RedisKeys, RedisTTL, clearSessionGraphCache } from "@/lib/redis";
 import { ExtractionJobPayload, FileStatus, JobStatus } from "./types";
 import { memoryQueue } from "./memoryQueue";
-import { isRedisAvailable, bullQueue, activeControllers } from "./bullQueue";
 import { prisma } from "@/lib/prisma";
 import { NLP_URL } from "@/lib/nlp-url";
+import { publishMessage } from "../pipeline/kafkaClient";
 
 export * from "./types";
 
@@ -23,30 +23,48 @@ async function resetFileToPending(fileId: string): Promise<void> {
   }
 }
 
-const useBull = () => isRedisAvailable && bullQueue;
-const mapBullJob = (status: FileStatus) => (j: any) => ({ id: j.id!, data: j.data as ExtractionJobPayload, status, entityCount: 0, error: null });
-
 class UnifiedQueue {
   async add(data: ExtractionJobPayload, options?: { priority?: number }): Promise<{ id: string }> {
-    if (useBull()) {
-      const job = await bullQueue!.add("extract", data, { priority: options?.priority ?? 1 });
-      return { id: job.id! };
+    if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
+      const jobId = `kafka-${data.fileId}`;
+      await publishMessage("document-extraction", data);
+      return { id: jobId };
     }
     return memoryQueue.add(data, options);
   }
 
   async getActive() {
-    if (useBull()) return (await bullQueue!.getJobs(["active"])).map(mapBullJob("PROCESSING"));
+    if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
+      const files = await prisma.file.findMany({ where: { status: "PROCESSING" } });
+      return files.map(f => ({
+        id: `kafka-${f.id}`,
+        data: { fileId: f.id, sessionId: f.sessionId, storagePath: f.storagePath, mimeType: f.mimeType, windowSize: 400 },
+        status: "PROCESSING" as FileStatus,
+        entityCount: 0,
+        error: null
+      }));
+    }
     return memoryQueue.getActive();
   }
 
   async getPending() {
-    if (useBull()) return (await bullQueue!.getJobs(["waiting", "paused", "delayed", "prioritized"])).map(mapBullJob("PENDING"));
+    if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
+      const files = await prisma.file.findMany({ where: { status: "PENDING" } });
+      return files.map(f => ({
+        id: `kafka-${f.id}`,
+        data: { fileId: f.id, sessionId: f.sessionId, storagePath: f.storagePath, mimeType: f.mimeType, windowSize: 400 },
+        status: "PENDING" as FileStatus,
+        entityCount: 0,
+        error: null
+      }));
+    }
     return memoryQueue.getPending();
   }
 
   async processMemoryQueue(): Promise<void> {
-    if (!useBull()) await memoryQueue.processQueue();
+    if (!process.env.KAFKA_BOOTSTRAP_SERVERS) {
+      await memoryQueue.processQueue();
+    }
   }
 }
 
@@ -56,20 +74,11 @@ export async function cancelSessionExtraction(sessionId: string): Promise<string
   await redis.setex(RedisKeys.sessionCancellation(sessionId), RedisTTL.job, "1");
   const cancelledFileIds: string[] = [];
 
-  if (useBull()) {
-    const waiting = await bullQueue!.getJobs(["waiting", "paused", "delayed", "prioritized"]);
-    const active = await bullQueue!.getJobs(["active"]);
-
-    for (const job of waiting.filter((j) => j.data.sessionId === sessionId)) {
-      if (job.id) { await job.remove(); if (job.data.fileId) cancelledFileIds.push(job.data.fileId); }
-    }
-    for (const job of active.filter((j) => j.data.sessionId === sessionId)) {
-      if (job.id) {
-        activeControllers.get(job.id)?.abort();
-        await job.discard();
-        await job.moveToFailed(new Error("Cancelled by user"), "0");
-        if (job.data.fileId) cancelledFileIds.push(job.data.fileId);
-      }
+  if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
+    const pendingFiles = await prisma.file.findMany({ where: { sessionId, status: "PENDING" } });
+    for (const file of pendingFiles) {
+      await prisma.file.update({ where: { id: file.id }, data: { status: "FAILED", errorMessage: "Cancelled by user" } });
+      cancelledFileIds.push(file.id);
     }
   } else {
     const allJobs = [...await memoryQueue.getPending(), ...await memoryQueue.getActive()];
@@ -83,15 +92,16 @@ export async function cancelSessionExtraction(sessionId: string): Promise<string
 }
 
 export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
-  if (useBull()) {
-    const job = await bullQueue!.getJob(jobId);
-    if (!job) return null;
-    const stateMap: Record<string, FileStatus> = { active: "PROCESSING", completed: "DONE", failed: "FAILED" };
+  if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
+    const fileId = jobId.replace(/^kafka-/, "");
+    const file = await prisma.file.findUnique({ where: { id: fileId } });
+    if (!file) return null;
     return {
-      jobId: job.id!, fileId: job.data.fileId,
-      status: stateMap[await job.getState()] ?? "PENDING",
-      entityCount: job.returnvalue?.entityCount ?? 0,
-      error: job.failedReason ?? null,
+      jobId,
+      fileId: file.id,
+      status: file.status as FileStatus,
+      entityCount: 0,
+      error: file.errorMessage
     };
   }
   const job = await memoryQueue.getJob(jobId);

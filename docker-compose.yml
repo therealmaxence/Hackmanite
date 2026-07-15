@@ -7,7 +7,6 @@ services:
       - '3000:3000'
     environment:
       DATABASE_URL: 'file:/app/data/dev.db?connection_limit=10&socket_timeout=900'
-      REDIS_URL: redis://redis:6379
       NLP_SERVICE_URL: http://nlp:8000
       SESSION_SECRET: ${SESSION_SECRET}
       NODE_ENV: production
@@ -15,8 +14,6 @@ services:
       MAX_FILE_SIZE_MB: 500
       NODE_OPTIONS: '--max-old-space-size=4096'
     depends_on:
-      redis:
-        condition: service_healthy
       nlp:
         condition: service_started
     volumes:
@@ -33,7 +30,6 @@ services:
     ports:
       - '8000:8000'
     environment:
-      REDIS_URL: redis://redis:6379
       UPLOAD_DIR: /app/uploads
       KUZU_DB_PATH: /app/kuzu_data/kuzu.db
       KUZU_BUFFER_POOL_SIZE: ${KUZU_BUFFER_POOL_SIZE:-}
@@ -44,41 +40,8 @@ services:
     networks:
       - app-network
     restart: unless-stopped
-    depends_on:
-      redis:
-        condition: service_healthy
-
-  redis:
-    image: redis:7-alpine
-    command: redis-server /usr/local/etc/redis/redis.conf
-    volumes:
-      - redis_data:/data
-      - ./infra/redis/redis.conf:/usr/local/etc/redis/redis.conf:ro
-    ports:
-      - '6379:6379'
-    networks:
-      - app-network
-    healthcheck:
-      test: [ 'CMD', 'redis-cli', 'ping' ]
-      interval: 10s
-      timeout: 3s
-      retries: 3
-    restart: unless-stopped
-
-  redis-insight:
-    image: redis/redisinsight:latest
-    ports:
-      - '5540:5540'
-    depends_on:
-      redis:
-        condition: service_healthy
-    networks:
-      - app-network
-    restart: unless-stopped
 
 volumes:
-  redis_data:
-    driver: local
   kuzu_data:
     driver: local
 

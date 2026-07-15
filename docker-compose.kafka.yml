@@ -51,7 +51,7 @@ services:
       SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
       NODE_ENV: production
       LOG_LEVEL: info
-    command: ["npx", "tsx", "scripts/kafka-daemon.ts"]
+    command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
     volumes:
       - ./data/uploads:/app/uploads
       - ./data/db:/app/data
@@ -79,7 +79,7 @@ services:
       SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
       NODE_ENV: production
       LOG_LEVEL: info
-    command: ["npx", "tsx", "scripts/kafka-daemon.ts"]
+    command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
     volumes:
       - ./data/uploads:/app/uploads
       - ./data/db:/app/data

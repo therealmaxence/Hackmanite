@@ -16,12 +16,15 @@ FROM node:20-alpine AS daemon
 RUN apk add --no-cache openssl
 WORKDIR /app
 COPY --from=build /app/package.json ./
-COPY --from=build /app/node_modules ./node_modules
+COPY --from=build /app/package-lock.json ./
+RUN npm ci
 COPY --from=build /app/prisma ./prisma
+RUN npx prisma generate
 COPY --from=build /app/scripts ./scripts
 COPY --from=build /app/lib ./lib
 COPY --from=build /app/types ./types
 COPY --from=build /app/tsconfig.json ./
+COPY --from=build /app/tsconfig.daemon.json ./
 COPY --from=build /app/next-env.d.ts ./
 RUN mkdir -p uploads logs
 

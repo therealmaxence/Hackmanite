@@ -1,6 +1,6 @@
 import './load-env';
 import { prisma } from '../lib/prisma';
-import { publishMessage, createKafkaConsumer } from '../lib/pipeline/kafkaClient';
+import { publishMessage, createKafkaConsumer, getKafka } from '../lib/pipeline/kafkaClient';
 import { savePayload, loadPayload, getPayloadUri } from '../lib/pipeline/objectStore';
 import { NODE_HANDLERS, topologicalSort, mergePipelineData, resolveSessionId, PipelineData, ExecutionContext } from '../lib/pipeline/executor';
 import { logger } from '../lib/logger';
@@ -34,8 +34,34 @@ function formatDaemonLog(level: 'INFO' | 'ERROR', label: string, message: string
   return `[${new Date().toLocaleTimeString()}][${level}][${label}] ${message}`;
 }
 
+async function ensureTopicsExist(topics: string[]) {
+  const kafka = getKafka();
+  const admin = kafka.admin();
+  try {
+    await admin.connect();
+    const existingTopics = await admin.listTopics();
+    const topicsToCreate = topics.filter((t) => !existingTopics.includes(t));
+    if (topicsToCreate.length > 0) {
+      logger.info('Creating missing Kafka topics...', { topicsToCreate });
+      await admin.createTopics({
+        topics: topicsToCreate.map((t) => ({ topic: t })),
+        waitForLeaders: true,
+      });
+      logger.info('Kafka topics created successfully.');
+    }
+  } catch (err: any) {
+    logger.warn('Failed to check/create Kafka topics', { error: err.message });
+  } finally {
+    try {
+      await admin.disconnect();
+    } catch {}
+  }
+}
+
 async function runCoordinator() {
   logger.info('Starting Kafka Pipeline Coordinator...');
+
+  await ensureTopicsExist(['pipeline-start', 'pipeline-status', 'pipeline-nlp', 'pipeline-transforms', 'pipeline-exports']);
 
   const startConsumer = createKafkaConsumer(`${consumerGroupId}-start`);
   const statusConsumer = createKafkaConsumer(`${consumerGroupId}-status`);
@@ -273,6 +299,8 @@ async function runCoordinator() {
 
 async function runWorker() {
   logger.info(`Starting Kafka Pipeline Worker consuming from: ${jobTopics.join(', ')}`);
+
+  await ensureTopicsExist(jobTopics);
 
   const jobConsumer = createKafkaConsumer(consumerGroupId);
   await jobConsumer.connect();

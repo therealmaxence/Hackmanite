@@ -58,7 +58,7 @@ Because graph and tabular datasets can be very large, passing raw data over Kafk
 Workers run in isolated consumer groups. By using **KEDA (Kubernetes Event-driven Autoscaling)**, you can scale worker deployment pods based on topic lag. For example, if there is a massive backlog in `pipeline-nlp` or `document-extraction`, KEDA automatically scales up the corresponding worker pods and drops them back to zero once finished.
 
 ### 5. Unified Ingestion Queue
-By routing both document uploads and pipeline runs to Kafka, BullMQ and Redis queues have been completely retired. If Kafka is not active, the system safely falls back to a clean local in-memory processing queue.
+Document uploads and pipeline runs are both routed to Kafka. If Kafka is not active, the system falls back to a local SQLite-backed in-memory queue.
 
 ---
 
@@ -67,7 +67,7 @@ By routing both document uploads and pipeline runs to Kafka, BullMQ and Redis qu
 To activate and run the distributed Kafka pipeline, configure the following variables in your `.env` file:
 
 ```env
-# Kafka Configuration (Setting this activates Kafka instead of BullMQ)
+# Kafka Configuration (Setting this activates Kafka instead of the local SQLite queue)
 KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 KAFKA_CLIENT_ID="hackmanite-pipeline"
 

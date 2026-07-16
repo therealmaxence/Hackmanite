@@ -3,7 +3,7 @@ import { NLP_URL } from '@/lib/nlp-url';
 import { requireGraphInput } from '../shared';
 import { prisma } from '@/lib/prisma';
 import { SESSION_TTL_MS } from '@/lib/api/upload';
-import { clearSessionGraphCache } from '@/lib/redis';
+import { clearSessionGraphCache } from '@/lib/cache';
 import { recomputeSessionTfidf } from '@/lib/api/tfidf';
 import { uuid5 } from '@/lib/uuid5';
 

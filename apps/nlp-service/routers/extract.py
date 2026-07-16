@@ -4,6 +4,7 @@ import urllib.request
 import tarfile
 import shutil
 from pathlib import Path
+from enum import Enum
 from fastapi import APIRouter, BackgroundTasks, Body
 from models.schemas import ExtractionRequest, ExtractionResult
 from services.dispatcher import dispatch
@@ -35,6 +36,8 @@ def _run_download(model_name: str) -> None:
 
 
 def _sanitize(val):
+    if isinstance(val, Enum):
+        return val
     if isinstance(val, str):
         try:
             return val.encode("utf-16", "surrogatepass").decode("utf-16", "ignore")

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { redis, RedisKeys, RedisTTL } from '@/lib/redis';
+import { cache, CacheKeys, CacheTTL } from '@/lib/cache';
 import { ENTITY_COLORS } from '@/types/entities';
 import type { EntityType } from '@/types/entities';
 import { ErrorCodes } from '@/types/api';
@@ -35,8 +35,8 @@ export async function GET(req: NextRequest) {
 
   try {
     const typeKey = types || 'all';
-    const cacheKey = `${RedisKeys.sessionGraph(sessionId)}:t=${typeKey}:d=${from || 'any'}:${to || 'any'}:off=${offset}:lim=${limit}`;
-    const cached = await redis.get(cacheKey);
+    const cacheKey = `${CacheKeys.sessionGraph(sessionId)}:t=${typeKey}:d=${from || 'any'}:${to || 'any'}:off=${offset}:lim=${limit}`;
+    const cached = await cache.get(cacheKey);
     if (cached) return NextResponse.json(JSON.parse(cached));
 
     const fileFrom = from ? new Date(from) : null;
@@ -90,7 +90,7 @@ export async function GET(req: NextRequest) {
     }
 
     const response = { nodes, total: Math.max(0, (data.total ?? nodes.length) - hiddenCount), offset, has_more: data.has_more ?? false };
-    await redis.setex(cacheKey, RedisTTL.graph, JSON.stringify(response));
+    await cache.setex(cacheKey, CacheTTL.graph, JSON.stringify(response));
     return NextResponse.json(response);
   } catch (err: unknown) {
     console.error('Graph Nodes API Error:', err);

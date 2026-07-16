@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { clearSessionGraphCache } from '@/lib/redis';
+import { clearSessionGraphCache } from '@/lib/cache';
 import { cancelSessionExtraction } from '@/lib/queue';
 import { NLP_URL } from '@/lib/nlp-url';
 

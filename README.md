@@ -205,7 +205,6 @@ Services started:
 |---|---|---|
 | `web` | 3000 | Next.js frontend |
 | `nlp` | 8000 | FastAPI NLP backend |
-| `redis` | 6379 | Redis (session cache & cancellation state) |
 | `kafka` | 9092 | Kafka broker (KRaft mode) |
 | `coordinator` | — | Pipeline Coordinator daemon |
 | `worker` | — | Pipeline Worker daemon |

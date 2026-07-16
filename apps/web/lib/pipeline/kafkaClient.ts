@@ -18,7 +18,7 @@ export function getKafka(): Kafka {
       },
     };
     kafka = new Kafka(config);
-    logger.info('Kafka client initialized.', { brokers: config.brokers });
+    logger.info('Kafka client initialized', { brokers: config.brokers });
   }
   return kafka;
 }
@@ -28,7 +28,7 @@ export async function getKafkaProducer(): Promise<Producer> {
     const client = getKafka();
     producer = client.producer();
     await producer.connect();
-    logger.info('Kafka producer connected successfully.');
+    logger.info('Kafka producer connected');
   }
   return producer;
 }

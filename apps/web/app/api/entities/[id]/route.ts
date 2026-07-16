@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { clearSessionGraphCache } from '@/lib/redis';
+import { clearSessionGraphCache } from '@/lib/cache';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
 import {

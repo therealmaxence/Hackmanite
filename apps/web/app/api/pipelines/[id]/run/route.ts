@@ -4,6 +4,7 @@ import { ErrorCodes } from '@/types/api';
 import { executePipeline } from '@/lib/pipeline/executor';
 import { SESSION_TTL_MS } from '@/lib/api/upload';
 import { publishMessage } from '@/lib/pipeline/kafkaClient';
+import { logger } from '@/lib/logger';
 
 export const dynamic = 'force-dynamic';
 export const runtime = 'nodejs';
@@ -52,16 +53,16 @@ export async function POST(
 
     if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
       await publishMessage('pipeline-start', { pipelineRunId: run.id, sessionId });
-      console.log(`[Pipeline] Dispatched run ${run.id} to Kafka.`);
+      logger.info('Pipeline run dispatched to Kafka', { runId: run.id });
     } else {
       Promise.resolve().then(async () => {
         try {
           await executePipeline(run.id, sessionId);
-        } catch (err) {
-          console.error(`In-memory execution failed for run ${run.id}:`, err);
+        } catch (err: any) {
+          logger.error('In-memory pipeline execution failed', { runId: run.id, error: err.message });
         }
       });
-      console.log(`[Pipeline] Dispatched run ${run.id} in-memory (async).`);
+      logger.info('Pipeline run dispatched in-memory', { runId: run.id });
     }
 
     return NextResponse.json({ id: run.id, status: run.status, sessionId }, { status: 201 });

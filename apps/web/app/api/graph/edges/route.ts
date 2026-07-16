@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { redis, RedisKeys, RedisTTL } from '@/lib/redis';
+import { cache, CacheKeys, CacheTTL } from '@/lib/cache';
 import { ErrorCodes } from '@/types/api';
 import { NLP_URL } from '@/lib/nlp-url';
 
@@ -34,8 +34,8 @@ async function fetchEdges({
   if (nodeIds) {
     ids = (Array.isArray(nodeIds) ? nodeIds : nodeIds.split(',')).filter(Boolean);
   } else {
-    const cacheKey = `${RedisKeys.sessionGraph(sessionId!)}:edges:d=${from || 'any'}:${to || 'any'}`;
-    const cached = await redis.get(cacheKey);
+    const cacheKey = `${CacheKeys.sessionGraph(sessionId!)}:edges:d=${from || 'any'}:${to || 'any'}`;
+    const cached = await cache.get(cacheKey);
     if (cached) return JSON.parse(cached);
 
     const fileFrom = from ? new Date(from) : null;
@@ -88,8 +88,8 @@ async function fetchEdges({
     }));
 
   if (!nodeIds && sessionId) {
-    const cacheKey = `${RedisKeys.sessionGraph(sessionId)}:edges:d=${from || 'any'}:${to || 'any'}`;
-    await redis.setex(cacheKey, RedisTTL.graph, JSON.stringify({ edges }));
+    const cacheKey = `${CacheKeys.sessionGraph(sessionId)}:edges:d=${from || 'any'}:${to || 'any'}`;
+    await cache.setex(cacheKey, CacheTTL.graph, JSON.stringify({ edges }));
   }
 
   return { edges };

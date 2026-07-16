@@ -1,6 +1,6 @@
 import { logger } from "@/lib/logger";
 import { prisma } from "@/lib/prisma";
-import { redis, RedisKeys, RedisTTL, clearSessionGraphCache } from "@/lib/redis";
+import { cache, CacheKeys, CacheTTL, clearSessionGraphCache } from "@/lib/cache";
 import { resolve } from "path";
 import { uuid5 } from "@/lib/uuid5";
 import { ExtractionJobPayload } from "./types";
@@ -8,7 +8,7 @@ import { recomputeSessionTfidf } from "@/lib/api/tfidf";
 import { NLP_URL } from "@/lib/nlp-url";
 
 const isSessionCancelled = async (sessionId: string) =>
-  (await redis.get(RedisKeys.sessionCancellation(sessionId))) === "1";
+  (await cache.get(CacheKeys.sessionCancellation(sessionId))) === "1";
 
 const sleep = (ms: number) => new Promise((res) => setTimeout(res, ms));
 
@@ -183,7 +183,7 @@ export async function executeExtraction(jobId: string, data: ExtractionJobPayloa
     if (remainingCount === 0) await recomputeSessionTfidf(sessionId);
 
     await clearSessionGraphCache(sessionId);
-    await redis.setex(RedisKeys.sessionFile(sessionId, fileId), RedisTTL.job, JSON.stringify({ status: "DONE", entityCount }));
+    await cache.setex(CacheKeys.sessionFile(sessionId, fileId), CacheTTL.job, JSON.stringify({ status: "DONE", entityCount }));
     logger.info("Extraction complete", { jobId, fileId });
     return { entityCount };
   } catch (err: any) {

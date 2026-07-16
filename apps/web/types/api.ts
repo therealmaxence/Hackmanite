@@ -56,7 +56,6 @@ export interface AdminStatsResponse {
   queueLength: number;
   jobsToday: { processed: number; failed: number };
   entityCountByType: Record<string, number>;
-  redisMemoryMB: number;
   recentErrors: Array<{
     fileId: string;
     fileName: string;

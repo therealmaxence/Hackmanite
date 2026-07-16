@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { mkdir } from 'fs/promises';
 import { resolve } from 'path';
 import { prisma } from '@/lib/prisma';
-import { redis } from '@/lib/redis';
+import { cache } from '@/lib/cache';
 import { logger } from '@/lib/logger';
 import { ErrorCodes } from '@/types/api';
 import {
@@ -43,7 +43,7 @@ export async function POST(req: NextRequest) {
     }
 
     const windowSize = session.windowSize ?? 400;
-    await redis.setex(`session:window_size:${session.id}`, 24 * 60 * 60, String(windowSize));
+    await cache.setex(`session:window_size:${session.id}`, 24 * 60 * 60, String(windowSize));
     await mkdir(resolve(process.cwd(), UPLOAD_DIR), { recursive: true });
 
     const pending: { file: File; mime: string }[] = [];

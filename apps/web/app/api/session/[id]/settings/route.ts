@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { redis, clearSessionGraphCache } from '@/lib/redis';
+import { cache, clearSessionGraphCache } from '@/lib/cache';
 import { ErrorCodes } from '@/types/api';
 
 export const runtime = 'nodejs';
@@ -52,7 +52,7 @@ export async function POST(
     // Clear caches so the new default settings take effect immediately
     await Promise.all([
       clearSessionGraphCache(sessionId),
-      redis.del(`session:window_size:${sessionId}`),
+      cache.del(`session:window_size:${sessionId}`),
     ]);
 
     return NextResponse.json({

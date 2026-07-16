@@ -1,5 +1,6 @@
 import { prisma } from '@/lib/prisma';
 import { registerAllNodes } from './nodes';
+import { logger } from '@/lib/logger';
 
 export interface TabularData { type: 'tabular'; data: any[]; }
 export interface GraphData { type: 'graph'; nodes: any[]; edges: any[]; emails?: any[]; }
@@ -187,7 +188,7 @@ export async function executePipeline(runId: string, activeSessionId?: string): 
     sessionId,
     async log(msg) {
       logsList.push(formatPipelineLog('INFO', msg));
-      console.log(`[PipelineRun ${runId}] ${msg}`);
+      logger.info(`[PipelineRun ${runId}] ${msg}`);
       await prisma.pipelineRun.update({ where: { id: runId }, data: { logs: logsList.join('\n') } });
     },
     async updateNodeState(nodeId, state, error) {
@@ -268,8 +269,8 @@ export async function executePipelineDryRun(pipelineId: string, nodeId: string):
     runId: `dryrun_${Date.now()}`,
     isDryRun: true,
     sessionId,
-    async log(msg) { console.log(`[DryRun ${nodeId}] ${msg}`); },
-    async updateNodeState(nid, state, error) { console.log(`[DryRun NodeState ${nid}] ${state} ${error ? `(${error})` : ''}`); },
+    async log(msg) { logger.debug(`[DryRun ${nodeId}] ${msg}`); },
+    async updateNodeState(nid, state, error) { logger.debug(`[DryRun NodeState ${nid}] ${state}${error ? ` (${error})` : ''}`); },
   };
 
   const intermediateOutputs: Record<string, PipelineData> = {};

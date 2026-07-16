@@ -47,9 +47,9 @@ class PersistentCache {
   async flushdb() { this.store.clear(); this.save(); return "OK"; }
 }
 
-export const redis = new PersistentCache();
+export const cache = new PersistentCache();
 
-export const RedisKeys = {
+export const CacheKeys = {
   sessionMeta: (sid: string) => `session:${sid}:meta`,
   sessionFile: (sid: string, fid: string) => `session:${sid}:file:${fid}`,
   sessionGraph: (sid: string) => `session:${sid}:graph`,
@@ -58,9 +58,9 @@ export const RedisKeys = {
   jobStatus: (jobId: string) => `job:${jobId}:status`,
 } as const;
 
-export const RedisTTL = { session: 86400, graph: 7200, entity: 43200, job: 7200 } as const;
+export const CacheTTL = { session: 86400, graph: 7200, entity: 43200, job: 7200 } as const;
 
 export async function clearSessionGraphCache(sessionId: string): Promise<void> {
-  const keys = await redis.keys(`${RedisKeys.sessionGraph(sessionId)}*`);
-  if (keys.length) await redis.del(...keys);
+  const keys = await cache.keys(`${CacheKeys.sessionGraph(sessionId)}*`);
+  if (keys.length) await cache.del(...keys);
 }

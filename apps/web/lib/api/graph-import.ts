@@ -1,5 +1,5 @@
 import { prisma } from '@/lib/prisma';
-import { clearSessionGraphCache, redis } from '@/lib/redis';
+import { clearSessionGraphCache, cache } from '@/lib/cache';
 import { deleteSession } from '@/lib/delete-session';
 import { ImportInput, importSessionData } from '@/lib/api/session-import';
 
@@ -11,7 +11,7 @@ export async function replaceSessionWithGraph(body: ImportInput) {
   const windowSize = typeof body.windowSize === 'number' ? body.windowSize : 400;
   const { session, filesCreated, occurrencesCreated, emailsRestoredCount } = await importSessionData({ ...body, windowSize });
 
-  await redis.setex(`session:window_size:${session.id}`, 24 * 60 * 60, String(windowSize));
+  await cache.setex(`session:window_size:${session.id}`, 24 * 60 * 60, String(windowSize));
   await clearSessionGraphCache(session.id);
 
   return {

@@ -1,5 +1,5 @@
 import { logger } from "@/lib/logger";
-import { redis, RedisKeys, RedisTTL, clearSessionGraphCache } from "@/lib/redis";
+import { cache, CacheKeys, CacheTTL, clearSessionGraphCache } from "@/lib/cache";
 import { ExtractionJobPayload, FileStatus, JobStatus } from "./types";
 import { memoryQueue } from "./memoryQueue";
 import { prisma } from "@/lib/prisma";
@@ -8,7 +8,6 @@ import { publishMessage } from "../pipeline/kafkaClient";
 
 export * from "./types";
 
-/** Reset a PROCESSING file back to PENDING and clean up its KuzuDB data. */
 async function resetFileToPending(fileId: string): Promise<void> {
   await prisma.$transaction(async (tx) => {
     await tx.occurrence.deleteMany({ where: { fileId } });
@@ -70,26 +69,33 @@ class UnifiedQueue {
 
 export const extractionQueue = new UnifiedQueue();
 
-export async function cancelSessionExtraction(sessionId: string): Promise<string[]> {
-  await redis.setex(RedisKeys.sessionCancellation(sessionId), RedisTTL.job, "1");
-  const cancelledFileIds: string[] = [];
+export async function cancelSessionExtraction(sessionId: string): Promise<number> {
+  await cache.setex(CacheKeys.sessionCancellation(sessionId), CacheTTL.job, "1");
 
   if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
     const pendingFiles = await prisma.file.findMany({ where: { sessionId, status: "PENDING" } });
-    for (const file of pendingFiles) {
-      await prisma.file.update({ where: { id: file.id }, data: { status: "FAILED", errorMessage: "Cancelled by user" } });
-      cancelledFileIds.push(file.id);
-    }
-  } else {
-    const allJobs = [...await memoryQueue.getPending(), ...await memoryQueue.getActive()];
-    for (const job of allJobs.filter((j) => j.data.sessionId === sessionId)) {
-      if (job.data.fileId) cancelledFileIds.push(job.data.fileId);
-      memoryQueue.removeJob(job.id);
-    }
+    await Promise.all(pendingFiles.map((f) =>
+      prisma.file.update({ where: { id: f.id }, data: { status: "FAILED", errorMessage: "Cancelled by user" } })
+    ));
+    return pendingFiles.length;
   }
 
-  return cancelledFileIds;
+  const allJobs = [...await memoryQueue.getPending(), ...await memoryQueue.getActive()];
+  const sessionJobs = allJobs.filter((j) => j.data.sessionId === sessionId);
+  const fileIds = sessionJobs.map((j) => j.data.fileId).filter(Boolean);
+
+  for (const job of sessionJobs) memoryQueue.removeJob(job.id);
+
+  if (fileIds.length > 0) {
+    await prisma.file.updateMany({
+      where: { id: { in: fileIds } },
+      data: { status: "FAILED", errorMessage: "Cancelled by user" },
+    });
+  }
+
+  return fileIds.length;
 }
+
 
 export async function getJobStatus(jobId: string): Promise<JobStatus | null> {
   if (process.env.KAFKA_BOOTSTRAP_SERVERS) {
@@ -113,7 +119,7 @@ export async function retryFile(fileId: string): Promise<void> {
   const file = await prisma.file.findUnique({ where: { id: fileId }, include: { session: true } });
   if (!file) throw new Error(`File not found: ${fileId}`);
 
-  await redis.del(RedisKeys.sessionCancellation(file.sessionId));
+  await cache.del(CacheKeys.sessionCancellation(file.sessionId));
 
   await resetFileToPending(fileId);
 
@@ -127,7 +133,7 @@ export async function retryFile(fileId: string): Promise<void> {
 }
 
 export async function resumeStuckJobs(sessionId: string): Promise<number> {
-  await redis.del(RedisKeys.sessionCancellation(sessionId));
+  await cache.del(CacheKeys.sessionCancellation(sessionId));
 
   const stuckFiles = await prisma.file.findMany({
     where: { sessionId, status: { in: ["PENDING", "PROCESSING"] } },

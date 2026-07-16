@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
-import { redis } from '@/lib/redis';
+import { cache } from '@/lib/cache';
 import { NLP_URL } from '@/lib/nlp-url';
 
 export const dynamic = 'force-dynamic';
@@ -46,7 +46,7 @@ export async function GET() {
 export async function DELETE() {
   try {
     await prisma.session.deleteMany();
-    await redis.flushdb();
+    await cache.flushdb();
     const upstream = await fetch(`${NLP_URL}/graph`, { method: 'DELETE' });
     if (!upstream.ok) throw new Error(`Upstream graph service clear error ${upstream.status}`);
     return NextResponse.json({ success: true });

@@ -1,4 +1,3 @@
-#   docker compose -f docker-compose.yml -f docker-compose.kafka.yml up --build
 
 services:
   web:
@@ -75,7 +74,7 @@ services:
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       KAFKA_CLIENT_ID: "hackmanite-pipeline"
       KAFKA_WORKER_ROLE: "worker"
-      KAFKA_WORKER_TOPICS: "pipeline-transforms,pipeline-nlp,pipeline-exports"
+      KAFKA_WORKER_TOPICS: "pipeline-transforms,pipeline-nlp,pipeline-exports,document-extraction"
       SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
       NODE_ENV: production
       LOG_LEVEL: info

@@ -42,7 +42,6 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    // Try parsing definition to ensure valid JSON
     try {
       JSON.parse(definition);
     } catch {

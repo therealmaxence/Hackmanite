@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { clearSessionGraphCache } from '@/lib/redis';
+import { clearSessionGraphCache } from '@/lib/cache';
 import { ErrorCodes } from '@/types/api';
 import { recomputeSessionTfidf } from '@/lib/api/tfidf';
 import { NLP_URL } from '@/lib/nlp-url';

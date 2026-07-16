@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { ErrorCodes } from '@/types/api';
-import { redis } from '@/lib/redis';
+import { cache } from '@/lib/cache';
 
 export const runtime = 'nodejs';
 
@@ -49,7 +49,7 @@ export async function GET(req: NextRequest) {
           where: { fileId: { in: fileIds } },
           select: { entityId: true, fileId: true, excerpts: true },
         });
-        const windowSizeVal = await redis.get(`session:window_size:${sessionId}`);
+        const windowSizeVal = await cache.get(`session:window_size:${sessionId}`);
         const windowSize = windowSizeVal ? parseInt(windowSizeVal, 10) : 400;
 
         adj = new Map<string, Set<string>>();

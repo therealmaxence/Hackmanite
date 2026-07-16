@@ -11,7 +11,6 @@ const consumerGroupId = process.env.KAFKA_CONSUMER_GROUP_ID || `hackmanite-group
 const jobTopicsEnv = process.env.KAFKA_WORKER_TOPICS || 'pipeline-transforms,pipeline-nlp,pipeline-exports,document-extraction';
 const jobTopics = jobTopicsEnv.split(',').map((t) => t.trim());
 
-// Helper to determine the target job topic for a node
 function getTargetTopicForNode(node: any): string {
   const type = node.data?.type || node.type || '';
   if (type.startsWith('source.file.document') || type.startsWith('source.file.email') || type.startsWith('source.web.scraper')) {
@@ -73,7 +72,6 @@ async function runCoordinator() {
   await startConsumer.subscribe({ topic: 'pipeline-start', fromBeginning: false });
   await statusConsumer.subscribe({ topic: 'pipeline-status', fromBeginning: false });
 
-  // In-memory active runs tracking
   interface RunState {
     pipelineRunId: string;
     sessionId?: string;
@@ -86,7 +84,6 @@ async function runCoordinator() {
 
   const activeRuns = new Map<string, RunState>();
 
-  // Helper to load or reconstruct run state from database (resilience on restart)
   async function getOrCreateRunState(runId: string, passedSessionId?: string): Promise<RunState | null> {
     if (activeRuns.has(runId)) {
       return activeRuns.get(runId)!;
@@ -102,7 +99,7 @@ async function runCoordinator() {
     const nodes = definition.nodes || [];
     const edges = definition.edges || [];
     const dbStates = run.nodeStates ? JSON.parse(run.nodeStates) : {};
-    
+
     const completed = new Set<string>();
     for (const nodeId of Object.keys(dbStates)) {
       if (dbStates[nodeId]?.state === 'success') {
@@ -134,7 +131,6 @@ async function runCoordinator() {
     });
   }
 
-  // Schedule a node for execution by posting a job message to the appropriate topic
   async function scheduleNode(state: RunState, nodeId: string) {
     const node = state.nodes.find((n) => n.id === nodeId);
     if (!node) return;
@@ -143,8 +139,6 @@ async function runCoordinator() {
     state.logs.push(formatDaemonLog('INFO', node.data?.label || nodeId, `Dispatching node to worker...`));
     await updateDatabase(state);
 
-    // Build the input mapping for this node
-    // inputHandleId -> Array of { sourceNodeId, sourceOutputId }
     const inputMappings: Record<string, { sourceNodeId: string; sourceOutputId: string }[]> = {};
     for (const input of node.data?.inputs || []) {
       const mappings: { sourceNodeId: string; sourceOutputId: string }[] = [];
@@ -170,14 +164,13 @@ async function runCoordinator() {
     });
   }
 
-  // Consume from pipeline-start
   startConsumer.run({
     eachMessage: async ({ message }) => {
       if (!message.value) return;
       try {
         const payload = JSON.parse(message.value.toString());
         const { pipelineRunId, sessionId } = payload;
-        
+
         logger.info(`Coordinator received pipeline-start for run: ${pipelineRunId}`);
         const run = await prisma.pipelineRun.findUnique({
           where: { id: pipelineRunId },
@@ -198,14 +191,12 @@ async function runCoordinator() {
           state.nodeStates[node.id] = { state: 'idle' };
         }
 
-        // Validate graph
         try {
           topologicalSort(state.nodes, state.edges);
         } catch (err: any) {
           throw new Error(`Cycle check failed: ${err.message}`);
         }
 
-        // Find root nodes (nodes with no incoming edges)
         const rootNodes = state.nodes.filter(
           (node) => !state.edges.some((edge) => edge.target === node.id)
         );
@@ -216,7 +207,6 @@ async function runCoordinator() {
 
         await updateDatabase(state);
 
-        // Schedule all root nodes
         for (const root of rootNodes) {
           await scheduleNode(state, root.id);
         }
@@ -226,7 +216,6 @@ async function runCoordinator() {
     },
   });
 
-  // Consume status updates from workers
   statusConsumer.run({
     eachMessage: async ({ message }) => {
       if (!message.value) return;
@@ -250,7 +239,6 @@ async function runCoordinator() {
             state.logs.push(formatDaemonLog('INFO', nodeLabel, 'Finished successfully.'));
             await updateDatabase(state);
 
-            // Find downstream children and check if their dependencies are fully satisfied
             const children = state.nodes.filter((n) =>
               state.edges.some((edge) => edge.source === nodeId && edge.target === n.id)
             );
@@ -259,7 +247,6 @@ async function runCoordinator() {
               const childState = state.nodeStates[child.id]?.state;
               if (childState === 'running' || childState === 'success') continue;
 
-              // Check if all parent inputs are successfully completed
               const parentEdges = state.edges.filter((edge) => edge.target === child.id);
               const allParentsDone = parentEdges.every((edge) => state.completedNodes.has(edge.source));
 
@@ -268,7 +255,6 @@ async function runCoordinator() {
               }
             }
 
-            // Check if all nodes are complete
             const allComplete = state.nodes.every((n) => state.completedNodes.has(n.id));
             if (allComplete) {
               await prisma.pipelineRun.update({
@@ -282,7 +268,7 @@ async function runCoordinator() {
           } else if (status === 'failure') {
             state.nodeStates[nodeId] = { state: 'error', error: error || 'Worker error' };
             state.logs.push(formatDaemonLog('ERROR', nodeLabel, `Failed with error: ${error || 'Unknown error'}`));
-            
+
             await prisma.pipelineRun.update({
               where: { id: runId },
               data: { status: 'FAILED', error: error || 'Worker execution failed', completedAt: new Date() },
@@ -313,7 +299,7 @@ async function runWorker() {
   jobConsumer.run({
     eachMessage: async ({ topic, message }) => {
       if (!message.value) return;
-      
+
       if (topic === 'document-extraction') {
         const payload = JSON.parse(message.value.toString());
         logger.info(`Worker picked up document extraction task for file: ${payload.fileId}`);
@@ -345,16 +331,15 @@ async function runWorker() {
             message: msg,
           });
         },
-        async updateNodeState() {}, // Handled by coordinator
+        async updateNodeState() {},
       };
 
       try {
-        // 1. Resolve inputs
         const resolvedInputs: Record<string, PipelineData> = {};
         for (const inputHandleId of Object.keys(inputMappings || {})) {
           const mappings = inputMappings[inputHandleId];
           const parentPayloads: PipelineData[] = [];
-          
+
           for (const mapping of mappings) {
             const uri = getPayloadUri(runId, mapping.sourceNodeId, mapping.sourceOutputId);
             const parentData = await loadPayload(uri);
@@ -368,7 +353,6 @@ async function runWorker() {
           }
         }
 
-        // 2. Check if disabled (bypass)
         if (isNodeDisabled(node)) {
           await context.log('Node is deactivated; bypassing and passing through inputs.');
           const inputsList = Object.values(resolvedInputs);
@@ -387,7 +371,6 @@ async function runWorker() {
           return;
         }
 
-        // 3. Find and run handler
         const handler = NODE_HANDLERS[node.data?.type || node.type];
         if (!handler) {
           throw new Error(`Handler for node type "${node.data?.type || node.type}" is not registered.`);
@@ -395,14 +378,12 @@ async function runWorker() {
 
         const result = await handler.run(resolvedInputs, node.data?.config || {}, context);
 
-        // 4. Save output payload
         if (result) {
           for (const out of outputHandlesFor(node)) {
             await savePayload(runId, nodeId, out.id, result);
           }
         }
 
-        // 5. Publish success
         await publishMessage('pipeline-status', {
           type: 'node_status',
           runId,
@@ -412,7 +393,7 @@ async function runWorker() {
       } catch (err: any) {
         const errorMsg = err.message || String(err);
         logger.error(`Error executing node [${nodeLabel}]`, { error: errorMsg });
-        
+
         await publishMessage('pipeline-status', {
           type: 'node_status',
           runId,
@@ -425,7 +406,6 @@ async function runWorker() {
   });
 }
 
-// Entrypoint routing
 if (role === 'coordinator') {
   runCoordinator().catch((err) => {
     logger.error('Pipeline Coordinator failed catastrophically', { error: err.message });

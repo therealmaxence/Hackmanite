@@ -39,10 +39,10 @@ EntityGraph/
 │   │       ├── session-secret.js # Generates/persists the session secret
 │   │       ├── tray.js           # System-tray icon and context menu
 │   │       └── window-manager.js # BrowserWindow creation and management
-│   ├── web/                      # Next.js frontend (UI, API routes, Prisma/SQLite)
+│   ├── web/                      # Next.js frontend (UI, API routes, Prisma/PostgreSQL)
 │   │   ├── components/pipeline/  # Pipeline canvas and node configuration UI
 │   │   ├── lib/pipeline/         # Pipeline executor, node handlers, exports, weak-signal transforms
-│   │   └── prisma/               # Prisma schema & SQLite dev database (dev.db)
+│   │   └── prisma/               # Prisma schema & database setup
 │   ├── nlp-service/              # FastAPI + spaCy NLP backend
 │   │   ├── main.py               # FastAPI app entry point
 │   │   ├── db/                   # KuzuDB graph database layer (connection, schema, queries)
@@ -50,10 +50,11 @@ EntityGraph/
 │   │   ├── routers/              # API route handlers (extract, graph read/query endpoints)
 │   │   └── services/             # Entity extraction, OCR, file parsing logic & spec
 │   └── tests/                    # Ingestion testing files (.eml samples)
+├── k8s/                          # Kubernetes manifests (deployments, services, KEDA autoscaling)
 ├── data/                         # Persistent app data and uploads (Docker volume mounts)
 │   ├── uploads/                  # Uploaded documents
-│   └── db/                       # SQLite database (production / Docker)
-├── docker-compose.yml            # Production Docker Compose (web, nlp)
+│   └── db/                       # PostgreSQL database volume
+├── docker-compose.yml            # Production Docker Compose (web, nlp, postgres)
 ├── docker-compose.dev.yml        # Development overrides (hot-reload, volume mounts)
 ├── docker-compose.kafka.yml      # Distributed extension (adds Kafka broker & daemons)
 ├── .env.example                  # Environment variable template
@@ -102,7 +103,7 @@ copy .env.example .env   # then edit .env
 Minimum required content for local development (`.env`):
 
 ```env
-DATABASE_URL="file:./apps/web/prisma/dev.db?connection_limit=1&socket_timeout=900"
+DATABASE_URL="postgresql://postgres:postgres@localhost:5432/hackmanite?schema=public&connection_limit=10"
 SESSION_SECRET="generate_32_char_random_string_here"
 NLP_SERVICE_URL="http://127.0.0.1:8000"
 MAX_FILE_SIZE_MB=100
@@ -212,6 +213,26 @@ Services started:
 The `web` service automatically dispatches pipeline runs and document upload extraction tasks to Kafka when `KAFKA_BOOTSTRAP_SERVERS` is set. The coordinator and worker share the same upload volume for database access and Claim Check payload caching.
 
 For detailed architectural layout, see [Distributed Kafka Pipeline Wiki](wiki/9_Distributed_Kafka_Pipeline.md).
+
+### Option E — Kubernetes Local Deployment (Minikube / KEDA)
+
+Runs the entire system orchestrated inside local Kubernetes namespace `hackmanite` using images built directly in your local Docker context. Includes worker autoscaling via KEDA based on ingestion queue lag.
+
+Deploy with the following steps:
+1. Enable minikube ingress: `minikube addons enable ingress`
+2. Point your shell to minikube docker daemon: `eval $(minikube docker-env)`
+3. Build the container images:
+   ```bash
+   docker build -t hackmanite-web:latest ./apps/web
+   docker build -t hackmanite-daemon:latest --target daemon ./apps/web
+   docker build -t hackmanite-nlp:latest ./apps/nlp-service
+   ```
+4. Create local host directories for persistent volumes:
+   ```bash
+   minikube ssh "sudo mkdir -p /var/lib/hackmanite/uploads /var/lib/hackmanite/postgres && sudo chmod -R 777 /var/lib/hackmanite"
+   ```
+5. Apply manifests: `kubectl apply -f k8s/`
+6. Access local cluster at `http://hackmanite.local` after adding the minikube IP to your hosts file.
 
 ---
 
@@ -378,7 +399,7 @@ chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
 | Frontend | [Next.js](https://nextjs.org/) 14 (React, TypeScript) |
 | Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
 | Graph visualization | [Cytoscape.js](https://js.cytoscape.org/) (progressive batched loading) |
-| Relational database | SQLite via [Prisma](https://www.prisma.io/) — sessions, files, emails |
+| Relational database | PostgreSQL (Docker/K8s mode) or SQLite (Desktop standalone mode) via [Prisma](https://www.prisma.io/) — sessions, files, emails |
 | Graph database | [KuzuDB](https://kuzudb.com/) (embedded) — entities, co-occurrences |
 | NLP backend | [FastAPI](https://fastapi.tiangolo.com/) + [spaCy](https://spacy.io/) 3.7 |
 | Job Queue | Local in-memory queue (default) or [Apache Kafka](https://kafka.apache.org/) (distributed mode) |

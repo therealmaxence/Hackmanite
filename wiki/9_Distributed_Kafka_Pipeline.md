@@ -58,7 +58,7 @@ Because graph and tabular datasets can be very large, passing raw data over Kafk
 Workers run in isolated consumer groups. By using **KEDA (Kubernetes Event-driven Autoscaling)**, you can scale worker deployment pods based on topic lag. For example, if there is a massive backlog in `pipeline-nlp` or `document-extraction`, KEDA automatically scales up the corresponding worker pods and drops them back to zero once finished.
 
 ### 5. Unified Ingestion Queue
-Document uploads and pipeline runs are both routed to Kafka. If Kafka is not active, the system falls back to a local SQLite-backed in-memory queue.
+Document uploads and pipeline runs are both routed to Kafka. If Kafka is not active, the system falls back to a local database-backed in-memory queue.
 
 ---
 
@@ -67,7 +67,7 @@ Document uploads and pipeline runs are both routed to Kafka. If Kafka is not act
 To activate and run the distributed Kafka pipeline, configure the following variables in your `.env` file:
 
 ```env
-# Kafka Configuration (Setting this activates Kafka instead of the local SQLite queue)
+# Kafka Configuration (Setting this activates Kafka instead of the local queue)
 KAFKA_BOOTSTRAP_SERVERS="localhost:9092"
 KAFKA_CLIENT_ID="hackmanite-pipeline"
 
@@ -89,6 +89,37 @@ docker compose -f docker-compose.yml -f docker-compose.kafka.yml up --build
 # Development (hot-reload on web + nlp)
 docker compose -f docker-compose.yml -f docker-compose.kafka.yml -f docker-compose.dev.yml up --build
 ```
+
+### Launching on Kubernetes (Minikube / Local K8s)
+
+Kubernetes manifests are located in the `k8s/` folder. They deploy the Next.js frontend, spaCy NLP backend, KRaft Kafka broker, PostgreSQL database, coordinator daemon, and worker daemon with KEDA-based autoscaling.
+
+Deploying to local Minikube:
+1. Start Minikube with Ingress and point your shell to its Docker daemon:
+   ```bash
+   minikube start --driver=docker
+   minikube addons enable ingress
+   eval $(minikube docker-env)
+   ```
+2. Build the images:
+   ```bash
+   docker build -t hackmanite-web:latest ./apps/web
+   docker build -t hackmanite-daemon:latest --target daemon ./apps/web
+   docker build -t hackmanite-nlp:latest ./apps/nlp-service
+   ```
+3. Prepare the local hostPath directories:
+   ```bash
+   minikube ssh "sudo mkdir -p /var/lib/hackmanite/uploads /var/lib/hackmanite/postgres && sudo chmod -R 777 /var/lib/hackmanite"
+   ```
+4. Deploy the manifests:
+   ```bash
+   kubectl apply -f k8s/
+   ```
+5. Configure KEDA to scale workers from `1` up to `10` instances automatically based on the `document-extraction` Kafka topic lag threshold (5 messages per pod). Pod scaling can be watched using:
+   ```bash
+   kubectl -n hackmanite get scaledobject
+   kubectl -n hackmanite get pods -l app=worker -w
+   ```
 
 > **Running daemons manually (native dev only)**
 > If you want to run the daemons outside Docker (e.g. alongside `npm run dev`):

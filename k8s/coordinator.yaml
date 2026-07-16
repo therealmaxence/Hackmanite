@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: coordinator
+  namespace: hackmanite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: coordinator
+  template:
+    metadata:
+      labels:
+        app: coordinator
+    spec:
+      containers:
+        - name: coordinator
+          image: hackmanite-daemon:latest
+          imagePullPolicy: IfNotPresent
+          command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
+          env:
+            - name: KAFKA_WORKER_ROLE
+              value: "coordinator"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hackmanite-secret
+                  key: DATABASE_URL
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hackmanite-secret
+                  key: SESSION_SECRET
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: KAFKA_CLIENT_ID
+            - name: SHARED_CACHE_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: SHARED_CACHE_DIR
+            - name: UPLOAD_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: UPLOAD_DIR
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: NODE_ENV
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: hackmanite-uploads-pvc

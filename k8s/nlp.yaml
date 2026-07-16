@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlp
+  namespace: hackmanite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nlp
+  template:
+    metadata:
+      labels:
+        app: nlp
+    spec:
+      containers:
+        - name: nlp
+          image: hackmanite-nlp:latest
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: UPLOAD_DIR
+              value: "/app/uploads"
+            - name: KUZU_DB_PATH
+              value: "/app/kuzu_data/kuzu.db"
+            - name: LOG_LEVEL
+              value: "info"
+          ports:
+            - containerPort: 8000
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /app/uploads
+              readOnly: true
+            - name: kuzu-storage
+              mountPath: /app/kuzu_data
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: hackmanite-uploads-pvc
+        - name: kuzu-storage
+          emptyDir: {}
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: nlp
+  namespace: hackmanite
+spec:
+  ports:
+    - port: 8000
+  selector:
+    app: nlp

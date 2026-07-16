@@ -1,0 +1,94 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: worker
+  namespace: hackmanite
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: worker
+  template:
+    metadata:
+      labels:
+        app: worker
+    spec:
+      containers:
+        - name: worker
+          image: hackmanite-daemon:latest
+          imagePullPolicy: IfNotPresent
+          command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
+          env:
+            - name: KAFKA_WORKER_ROLE
+              value: "worker"
+            - name: KAFKA_WORKER_TOPICS
+              value: "pipeline-transforms,pipeline-nlp,pipeline-exports,document-extraction"
+            - name: DATABASE_URL
+              valueFrom:
+                secretKeyRef:
+                  name: hackmanite-secret
+                  key: DATABASE_URL
+            - name: SESSION_SECRET
+              valueFrom:
+                secretKeyRef:
+                  name: hackmanite-secret
+                  key: SESSION_SECRET
+            - name: NLP_SERVICE_URL
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: NLP_SERVICE_URL
+            - name: KAFKA_BOOTSTRAP_SERVERS
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: KAFKA_BOOTSTRAP_SERVERS
+            - name: KAFKA_CLIENT_ID
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: KAFKA_CLIENT_ID
+            - name: SHARED_CACHE_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: SHARED_CACHE_DIR
+            - name: UPLOAD_DIR
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: UPLOAD_DIR
+            - name: NODE_ENV
+              valueFrom:
+                configMapKeyRef:
+                  name: hackmanite-config
+                  key: NODE_ENV
+          volumeMounts:
+            - name: uploads-storage
+              mountPath: /app/uploads
+      volumes:
+        - name: uploads-storage
+          persistentVolumeClaim:
+            claimName: hackmanite-uploads-pvc
+---
+apiVersion: keda.sh/v1alpha1
+kind: ScaledObject
+metadata:
+  name: worker-scaler
+  namespace: hackmanite
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: worker
+  minReplicaCount: 1
+  maxReplicaCount: 10
+  cooldownPeriod: 300
+  pollingInterval: 30
+  triggers:
+    - type: kafka
+      metadata:
+        bootstrapServersFromEnv: KAFKA_BOOTSTRAP_SERVERS
+        topic: document-extraction
+        consumerGroup: hackmanite-group-worker
+        lagThreshold: "5"

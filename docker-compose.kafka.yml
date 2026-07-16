@@ -43,7 +43,7 @@ services:
       dockerfile: Dockerfile
       target: daemon
     environment:
-      DATABASE_URL: "file:/app/data/dev.db?connection_limit=10&socket_timeout=900"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hackmanite?schema=public&connection_limit=10"
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       KAFKA_CLIENT_ID: "hackmanite-pipeline"
       KAFKA_WORKER_ROLE: "coordinator"
@@ -53,7 +53,6 @@ services:
     command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
     volumes:
       - ./data/uploads:/app/uploads
-      - ./data/db:/app/data
     depends_on:
       kafka:
         condition: service_healthy
@@ -69,7 +68,7 @@ services:
       dockerfile: Dockerfile
       target: daemon
     environment:
-      DATABASE_URL: "file:/app/data/dev.db?connection_limit=10&socket_timeout=900"
+      DATABASE_URL: "postgresql://postgres:postgres@postgres:5432/hackmanite?schema=public&connection_limit=10"
       NLP_SERVICE_URL: "http://nlp:8000"
       KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
       KAFKA_CLIENT_ID: "hackmanite-pipeline"
@@ -81,7 +80,6 @@ services:
     command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
     volumes:
       - ./data/uploads:/app/uploads
-      - ./data/db:/app/data
     depends_on:
       kafka:
         condition: service_healthy

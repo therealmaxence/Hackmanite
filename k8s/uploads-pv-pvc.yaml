@@ -1,0 +1,27 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: hackmanite-uploads-pv
+  namespace: hackmanite
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteMany
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /var/lib/hackmanite/uploads
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: hackmanite-uploads-pvc
+  namespace: hackmanite
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 20Gi
+  volumeName: hackmanite-uploads-pv
+  storageClassName: ""

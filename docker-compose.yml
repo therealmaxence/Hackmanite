@@ -6,7 +6,7 @@ services:
     ports:
       - '3000:3000'
     environment:
-      DATABASE_URL: 'file:/app/data/dev.db?connection_limit=10&socket_timeout=900'
+      DATABASE_URL: 'postgresql://postgres:postgres@postgres:5432/hackmanite?schema=public&connection_limit=10'
       NLP_SERVICE_URL: http://nlp:8000
       SESSION_SECRET: ${SESSION_SECRET}
       NODE_ENV: production
@@ -16,9 +16,10 @@ services:
     depends_on:
       nlp:
         condition: service_started
+      postgres:
+        condition: service_started
     volumes:
       - ./data/uploads:/app/uploads
-      - ./data/db:/app/data
     networks:
       - app-network
     restart: unless-stopped
@@ -41,8 +42,25 @@ services:
       - app-network
     restart: unless-stopped
 
+  postgres:
+    image: postgres:16-alpine
+    container_name: postgres
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: hackmanite
+    ports:
+      - '5432:5432'
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
 volumes:
   kuzu_data:
+    driver: local
+  postgres_data:
     driver: local
 
 networks:

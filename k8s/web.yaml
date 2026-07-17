@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: web
-          image: hackmanite-web:latest
-          imagePullPolicy: IfNotPresent
+          image: 172.29.32.1:5001/hackmanite-web:latest
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
           env:

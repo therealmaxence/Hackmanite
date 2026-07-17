@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: coordinator
-          image: hackmanite-daemon:latest
-          imagePullPolicy: IfNotPresent
+          image: 172.29.32.1:5001/hackmanite-daemon:latest
+          imagePullPolicy: Always
           command: ["node_modules/.bin/tsx", "--tsconfig", "tsconfig.daemon.json", "scripts/kafka-daemon.ts"]
           env:
             - name: KAFKA_WORKER_ROLE

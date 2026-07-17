@@ -214,25 +214,11 @@ The `web` service automatically dispatches pipeline runs and document upload ext
 
 For detailed architectural layout, see [Distributed Kafka Pipeline Wiki](wiki/9_Distributed_Kafka_Pipeline.md).
 
-### Option E — Kubernetes Local Deployment (Minikube / KEDA)
+### Option E — Kubernetes Local Deployment (Minikube / Docker Desktop / KEDA)
 
-Runs the entire system orchestrated inside local Kubernetes namespace `hackmanite` using images built directly in your local Docker context. Includes worker autoscaling via KEDA based on ingestion queue lag.
+Runs the entire distributed system orchestrated inside local Kubernetes namespace `hackmanite` using images built locally and served via a registry, including worker autoscaling via KEDA based on ingestion queue lag.
 
-Deploy with the following steps:
-1. Enable minikube ingress: `minikube addons enable ingress`
-2. Point your shell to minikube docker daemon: `eval $(minikube docker-env)`
-3. Build the container images:
-   ```bash
-   docker build -t hackmanite-web:latest ./apps/web
-   docker build -t hackmanite-daemon:latest --target daemon ./apps/web
-   docker build -t hackmanite-nlp:latest ./apps/nlp-service
-   ```
-4. Create local host directories for persistent volumes:
-   ```bash
-   minikube ssh "sudo mkdir -p /var/lib/hackmanite/uploads /var/lib/hackmanite/postgres && sudo chmod -R 777 /var/lib/hackmanite"
-   ```
-5. Apply manifests: `kubectl apply -f k8s/`
-6. Access local cluster at `http://hackmanite.local` after adding the minikube IP to your hosts file.
+For detailed setup guides, troubleshooting steps, and configurations for both Minikube and Docker Desktop Kubernetes clusters, refer to the [Distributed Kafka Pipeline Wiki](wiki/9_Distributed_Kafka_Pipeline.md).
 
 ---
 

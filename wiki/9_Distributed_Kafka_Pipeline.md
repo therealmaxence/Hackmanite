@@ -121,6 +121,133 @@ Deploying to local Minikube:
    kubectl -n hackmanite get pods -l app=worker -w
    ```
 
+---
+
+### Launching on Kubernetes (Docker Desktop)
+
+Docker Desktop ships its own built-in Kubernetes cluster running inside WSL2. Unlike Minikube, it does not share the host Docker image cache with its containerd runtime, so images must be served through a local registry.
+
+#### Prerequisites
+
+- Docker Desktop with Kubernetes enabled (Settings → Kubernetes → Enable Kubernetes)
+- `kubectl` connected to the `docker-desktop` context:
+  ```powershell
+  kubectl config use-context docker-desktop
+  ```
+
+#### Step 1 — Install KEDA
+
+KEDA is not bundled with Docker Desktop. Install it manually:
+
+```powershell
+kubectl apply -f https://github.com/kedacore/keda/releases/download/v2.14.0/keda-2.14.0.yaml
+kubectl rollout status deployment/keda-operator -n keda --timeout=120s
+```
+
+#### Step 2 — Configure insecure registry and containerd bypass
+
+The local registry runs on HTTP. Docker and containerd must be configured to allow it and bypass the default mirror proxy.
+
+1. Find your WSL2 gateway IP by running this in PowerShell:
+   ```powershell
+   $GatewayIP = (wsl -d docker-desktop -e sh -c "ip route | grep default").Split(' ')[2].Trim()
+   Write-Output "Your WSL2 Gateway IP is: $GatewayIP"
+   ```
+2. Open Docker Desktop -> Settings -> Docker Engine, and add the gateway IP to the insecure registries config:
+   ```json
+   {
+     "insecure-registries": ["<YOUR_GATEWAY_IP>:5001"]
+   }
+   ```
+   *(Replace `<YOUR_GATEWAY_IP>` with the IP printed in step 1, e.g. `172.29.32.1`).*
+3. Click Apply & restart.
+4. Run the following block in PowerShell to configure containerd to bypass the default mirror proxy for your registry:
+   ```powershell
+   $PID = (wsl -d docker-desktop -e sh -c "pgrep -o -f '/usr/local/bin/containerd'").Trim()
+   wsl -d docker-desktop -e sh -c "mkdir -p /proc/$PID/root/etc/containerd/certs.d/$GatewayIP:5001"
+   @"
+   server = "http://$GatewayIP:5001"
+
+   [host."http://$GatewayIP:5001"]
+   capabilities = ["pull", "resolve"]
+   "@ | wsl -d docker-desktop -e sh -c "cat > /proc/$PID/root/etc/containerd/certs.d/$GatewayIP:5001/hosts.toml"
+   ```
+
+#### Step 3 — Start the local registry container
+
+```powershell
+docker run -d -p 0.0.0.0:5001:5000 --restart=always --name registry registry:2
+```
+
+#### Step 4 — Build the project images
+
+```powershell
+docker build -t hackmanite-web:latest -f apps/web/Dockerfile .
+docker build -t hackmanite-daemon:latest -f apps/web/Dockerfile --target daemon .
+docker build -t hackmanite-nlp:latest ./apps/nlp-service
+```
+
+#### Step 5 — Tag and push images to the local registry
+
+Run the following commands in PowerShell to tag, push, and update your Kubernetes manifests with your dynamic gateway IP:
+
+```powershell
+# Tag images
+docker tag hackmanite-web:latest    $GatewayIP:5001/hackmanite-web:latest
+docker tag hackmanite-daemon:latest $GatewayIP:5001/hackmanite-daemon:latest
+docker tag hackmanite-nlp:latest    $GatewayIP:5001/hackmanite-nlp:latest
+
+# Push images
+docker push $GatewayIP:5001/hackmanite-web:latest
+docker push $GatewayIP:5001/hackmanite-daemon:latest
+docker push $GatewayIP:5001/hackmanite-nlp:latest
+
+# Update manifests IP references dynamically
+Get-ChildItem k8s/*.yaml | ForEach-Object {
+    (Get-Content $_.FullName) -replace '172.29.32.1:5001', "$GatewayIP:5001" | Set-Content $_.FullName
+}
+```
+
+The NLP image is approximately 4 GB. The first push will take several minutes. Subsequent pushes reuse cached layers.
+
+#### Step 6 — Deploy the manifests
+
+```powershell
+kubectl apply -f k8s/
+kubectl get pods -n hackmanite -w
+```
+
+Postgres and Kafka start first. The web, coordinator, and worker pods become ready once their images are pulled from the registry.
+
+
+#### Step 7 — Access the application
+
+```powershell
+kubectl port-forward -n hackmanite svc/web 3000:3000
+```
+
+The application is then available at http://localhost:3000.
+
+#### Rebuilding after code changes
+
+```powershell
+docker build -t hackmanite-web:latest -f apps/web/Dockerfile .
+docker tag hackmanite-web:latest 172.29.32.1:5001/hackmanite-web:latest
+docker push 172.29.32.1:5001/hackmanite-web:latest
+kubectl rollout restart deployment/web -n hackmanite
+```
+
+#### Troubleshooting
+
+| Symptom | Cause | Fix |
+|---|---|---|
+| `ImagePullBackOff` | Registry unreachable from the node | Confirm `172.29.32.1` is the WSL2 gateway (see Step 2) |
+| `500 Internal Server Error` from `registry-mirror` | Docker Desktop mirror intercepting `localhost:5001` | Use `172.29.32.1:5001` in image references, not `localhost:5001` |
+| `http: server gave HTTP response to HTTPS client` | Registry not whitelisted as insecure | Add `172.29.32.1:5001` to `insecure-registries` in Docker Engine settings and restart |
+| `no matches for kind "ScaledObject"` | KEDA CRDs not installed | Run Step 1 before applying manifests |
+
+---
+
 > **Running daemons manually (native dev only)**
 > If you want to run the daemons outside Docker (e.g. alongside `npm run dev`):
 > ```powershell

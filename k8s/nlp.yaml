@@ -15,8 +15,8 @@ spec:
     spec:
       containers:
         - name: nlp
-          image: hackmanite-nlp:latest
-          imagePullPolicy: IfNotPresent
+          image: 172.29.32.1:5001/hackmanite-nlp:latest
+          imagePullPolicy: Always
           env:
             - name: UPLOAD_DIR
               value: "/app/uploads"

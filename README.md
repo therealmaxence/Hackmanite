@@ -4,6 +4,26 @@
 
 Hackmanite is a desktop application for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions.
 
+*This project was made in collaboration with [GEODE](https://geode.science/).*
+
+---
+
+## Table of Contents
+- [Features](#features)
+- [Project Structure](#project-structure)
+- [First-Time Setup (Development)](#first-time-setup-development)
+- [Running the App](#running-the-app)
+- [Exporting to Obsidian](#exporting-to-obsidian)
+- [Pipeline Builder](#pipeline-builder)
+- [Weak Signals Discovery](#weak-signals-discovery)
+- [AI Intelligence Report (LLM Integration)](#ai-intelligence-report-llm-integration)
+- [Building the Portable ZIP](#building-the-portable-zip)
+- [Tech Stack](#tech-stack)
+- [System Requirements](#system-requirements)
+- [Versioning](#versioning)
+- [Documentation](#documentation)
+- [License](#license)
+
 ---
 
 ## Features

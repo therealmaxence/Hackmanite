@@ -84,4 +84,9 @@ apps/nlp-service/kuzu_data/
 kuzu_data/
 
 # TypeScript
-*.tsbuildinfo
+*.tsbuildinfo
+
+# Auto-generated documentation
+apps/web/docs/typedoc/
+apps/web/docs/prisma/
+apps/nlp-service/site/

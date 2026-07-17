@@ -10,7 +10,9 @@ Hackmanite is a desktop application for extracting, exploring, and visualizing *
 
 ## Table of Contents
 - [Features](#features)
+- [Tech Stack](#tech-stack)
 - [Project Structure](#project-structure)
+- [System Requirements](#system-requirements)
 - [First-Time Setup (Development)](#first-time-setup-development)
 - [Running the App](#running-the-app)
 - [Exporting to Obsidian](#exporting-to-obsidian)
@@ -18,10 +20,8 @@ Hackmanite is a desktop application for extracting, exploring, and visualizing *
 - [Weak Signals Discovery](#weak-signals-discovery)
 - [AI Intelligence Report (LLM Integration)](#ai-intelligence-report-llm-integration)
 - [Building the Portable ZIP](#building-the-portable-zip)
-- [Tech Stack](#tech-stack)
-- [System Requirements](#system-requirements)
-- [Versioning](#versioning)
 - [Documentation](#documentation)
+- [Versioning](#versioning)
 - [License](#license)
 
 ---
@@ -39,6 +39,31 @@ Hackmanite is a desktop application for extracting, exploring, and visualizing *
 - **LLM graph transforms** — annotate graph entities with custom AI prompts inside a pipeline
 - **Multi-format graph exports** — export filtered graph data as JSON, GraphML, Obsidian vaults, or AI-generated Markdown reports
 - **Standalone desktop app** — no Docker, no Python, no Node.js required on end-user machines
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Desktop shell | [Electron](https://www.electronjs.org/) v30 |
+| Frontend | [Next.js](https://nextjs.org/) 14 (React, TypeScript) |
+| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
+| Graph visualization | [Cytoscape.js](https://js.cytoscape.org/) (progressive batched loading) |
+| Relational database | SQLite via [Prisma](https://www.prisma.io/) — sessions, files, emails |
+| Graph database | [KuzuDB](https://kuzudb.com/) (embedded) — entities, co-occurrences |
+| NLP backend | [FastAPI](https://fastapi.tiangolo.com/) + [spaCy](https://spacy.io/) 3.7 |
+| Job Queue | [BullMQ](https://bullmq.io/) (Redis backend with in-memory fallback) |
+| OCR | [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) via `pytesseract` |
+| Packaging | [electron-builder](https://www.electron.build/) + [PyInstaller](https://pyinstaller.org/) |
+
+### Bundled spaCy models
+
+| Language | Model |
+|---|---|
+| English | `en_core_web_lg` |
+| French | `fr_core_news_lg` |
+| Russian | `ru_core_news_lg` |
 
 ---
 
@@ -80,6 +105,28 @@ EntityGraph/
 ├── .env.example                  # Environment variable template
 └── README.md
 ```
+
+---
+
+## System Requirements
+
+### For development
+
+| Tool | Version |
+|---|---|
+| Node.js | ≥ 18 |
+| Python | ≥ 3.10 |
+| Docker Desktop | Any *(optional — Docker mode only)* |
+| Tesseract OCR | Any *(optional — OCR only)* |
+
+- Tesseract download: https://github.com/UB-Mannheim/tesseract/wiki
+- The app auto-detects Tesseract at its default installation path
+
+### For end users (portable ZIP)
+
+- **Windows 10/11** (64-bit)
+- **7-Zip** for extraction
+- **Tesseract OCR** *(optional)* — only needed for OCR features
 
 ---
 
@@ -357,67 +404,6 @@ chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
 
 ---
 
-## Tech Stack
-
-| Layer | Technology |
-|---|---|
-| Desktop shell | [Electron](https://www.electronjs.org/) v30 |
-| Frontend | [Next.js](https://nextjs.org/) 14 (React, TypeScript) |
-| Styling | [Tailwind CSS v4](https://tailwindcss.com/) |
-| Graph visualization | [Cytoscape.js](https://js.cytoscape.org/) (progressive batched loading) |
-| Relational database | SQLite via [Prisma](https://www.prisma.io/) — sessions, files, emails |
-| Graph database | [KuzuDB](https://kuzudb.com/) (embedded) — entities, co-occurrences |
-| NLP backend | [FastAPI](https://fastapi.tiangolo.com/) + [spaCy](https://spacy.io/) 3.7 |
-| Job Queue | [BullMQ](https://bullmq.io/) (Redis backend with in-memory fallback) |
-| OCR | [Tesseract](https://github.com/UB-Mannheim/tesseract/wiki) via `pytesseract` |
-| Packaging | [electron-builder](https://www.electron.build/) + [PyInstaller](https://pyinstaller.org/) |
-
-### Bundled spaCy models
-
-| Language | Model |
-|---|---|
-| English | `en_core_web_lg` |
-| French | `fr_core_news_lg` |
-| Russian | `ru_core_news_lg` |
-
----
-
-## System Requirements
-
-### For development
-
-| Tool | Version |
-|---|---|
-| Node.js | ≥ 18 |
-| Python | ≥ 3.10 |
-| Docker Desktop | Any *(optional — Docker mode only)* |
-| Tesseract OCR | Any *(optional — OCR only)* |
-
-- Tesseract download: https://github.com/UB-Mannheim/tesseract/wiki
-- The app auto-detects Tesseract at its default installation path
-
-### For end users (portable ZIP)
-
-- **Windows 10/11** (64-bit)
-- **7-Zip** for extraction
-- **Tesseract OCR** *(optional)* — only needed for OCR features
-
----
-
-## Versioning
-
-To release a new version, update the version field in [`apps/desktop/package.json`](apps/desktop/package.json):
-
-```json
-{
-  "version": "1.0.0"
-}
-```
-
-Then rebuild using the steps above. The ZIP filename will automatically reflect the new version.
-
----
-
 ## Documentation
 
 This project has auto-generated documentation setups for the backend services, frontend components, and database schemas.
@@ -455,6 +441,20 @@ Documentation is powered by **TypeDoc** (for TypeScript) and **Prisma Docs Gener
     npx prisma generate
     ```
     The schema documentation site is auto-generated inside `apps/web/docs/prisma/` whenever you run prisma generator commands.
+
+---
+
+## Versioning
+
+To release a new version, update the version field in [`apps/desktop/package.json`](apps/desktop/package.json):
+
+```json
+{
+  "version": "1.0.0"
+}
+```
+
+Then rebuild using the steps above. The ZIP filename will automatically reflect the new version.
 
 ---
 

@@ -1,0 +1,14 @@
+# Docker ignore file
+node_modules
+**/node_modules
+.next
+**/.next
+data
+**/data
+kuzu_data
+**/kuzu_data
+apps/nlp-service/venv
+.git
+.gemini
+.agents
+wiki

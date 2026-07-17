@@ -5,7 +5,7 @@ metadata:
   namespace: hackmanite
 data:
   NLP_SERVICE_URL: "http://nlp:8000"
-  KAFKA_BOOTSTRAP_SERVERS: "kafka:9092"
+  KAFKA_BOOTSTRAP_SERVERS: "kafka.hackmanite.svc.cluster.local:9092"
   KAFKA_CLIENT_ID: "hackmanite-pipeline"
   SHARED_CACHE_DIR: "/app/uploads/pipeline-cache"
   UPLOAD_DIR: "/app/uploads"

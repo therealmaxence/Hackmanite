@@ -141,10 +141,14 @@ export async function resumeStuckJobs(sessionId: string): Promise<number> {
   });
   if (stuckFiles.length === 0) return 0;
 
-  const queuedFileIds = new Set([
-    ...(await extractionQueue.getActive()).map((j) => j.data.fileId),
-    ...(await extractionQueue.getPending()).map((j) => j.data.fileId),
-  ]);
+  const queuedFileIds = new Set(
+    process.env.KAFKA_BOOTSTRAP_SERVERS
+      ? []
+      : [
+          ...(await extractionQueue.getActive()).map((j) => j.data.fileId),
+          ...(await extractionQueue.getPending()).map((j) => j.data.fileId),
+        ]
+  );
 
   let resumedCount = 0;
   for (const file of stuckFiles) {

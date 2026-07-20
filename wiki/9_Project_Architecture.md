@@ -343,7 +343,7 @@ graph TD
 
     spaCy_NER -->|Extracted entities| CoOccur
     CoOccur -->|"Cypher transactions (db/writers.py)"| Kuzu_Write
-    CoOccur -->|Update File status to PROCESSED| SQLite_Write
+    CoOccur -->|Update File status to DONE| SQLite_Write
     
     SQLite_Write -.->|Job completes / dev.db updated| Status
 
@@ -383,5 +383,5 @@ graph TD
 
 ### 4.3 Database Synchronization & Rendering
 1. **Graph DB Insertion**: Nodes representing `Entity` and `FileRef` and edges representing `OCCURS_IN` and `CO_OCCURS` are added to **KuzuDB** using parameterized Cypher statements.
-2. **Relational Synchronization**: In parallel, occurrence counts and text neighborhoods are saved to SQLite via a callback, and the file status is marked as `PROCESSED`.
+2. **Relational Synchronization**: In parallel, occurrence counts, text neighborhoods, and email metadata are saved to SQLite via Prisma transactions ([executor.ts](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/lib/queue/executor.ts)), and the file status is updated to `DONE`.
 3. **UI Update**: Next.js UI queries the updated graph and renders the interactive network using **Cytoscape.js**.

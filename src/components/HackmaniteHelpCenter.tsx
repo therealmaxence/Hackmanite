@@ -1,8 +1,6 @@
 import React, { useState } from 'react';
-import { BookOpen, Layers, Sparkles, Filter, Workflow, FileText } from 'lucide-react';
 import { DOCS_ITEMS } from '../data/docsContent';
 import { DocsViewer } from './DocsViewer';
-import { TableOfContents } from './TableOfContents';
 
 type TabKey = 'guide' | 'algorithms' | 'filters' | 'weak_signals' | 'pipelines' | 'ai_report' | 'wiki';
 
@@ -147,7 +145,7 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
     },
     wiki: {
       title: 'Full Documentation & Wiki Articles',
-      desc: 'Browse complete Markdown guides and technical specifications.',
+      desc: 'Browse complete Markdown guides, diagrams, and technical specifications.',
       items: [],
     },
   };
@@ -159,11 +157,11 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
     { key: 'weak_signals', label: 'Weak Signals' },
     { key: 'pipelines', label: 'Pipelines' },
     { key: 'ai_report', label: 'LLM Reports' },
-    { key: 'wiki', label: 'Full Wiki Articles' },
+    { key: 'wiki', label: 'Full Wiki Articles & Diagrams' },
   ];
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-slate-100 flex flex-col font-sans">
+    <div className="min-h-screen bg-[#0a090c] text-[#f0f0f4] flex flex-col font-sans">
       <main className="flex-1 overflow-y-auto">
         <div className="w-full mx-auto flex flex-col gap-8 p-6 md:p-12 max-w-7xl">
           
@@ -172,13 +170,13 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
             <h1 className="text-3xl md:text-5xl font-extrabold text-white tracking-tight">
               Help Center & Documentation
             </h1>
-            <p className="text-slate-400 text-sm md:text-base max-w-3xl">
+            <p className="text-[#80808c] text-sm md:text-base max-w-3xl">
               Learn how Hackmanite analyzes documents, manages sessions, computes topological metrics, and runs AI intelligence pipelines.
             </p>
           </header>
 
           {/* Navigation Bar */}
-          <div className="flex border-b border-[#374151] gap-4 overflow-x-auto pb-1">
+          <div className="flex border-b border-[#18171c] gap-4 overflow-x-auto pb-1">
             {tabs.map((tab) => {
               const isActive = activeTab === tab.key;
               return (
@@ -187,8 +185,8 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
                   onClick={() => setActiveTab(tab.key)}
                   className={`pb-3 px-1 text-sm font-medium transition-all whitespace-nowrap border-b-2 ${
                     isActive
-                      ? 'border-indigo-500 text-white font-semibold'
-                      : 'border-transparent text-slate-400 hover:text-slate-200'
+                      ? 'border-[#7c3aed] text-white font-semibold'
+                      : 'border-transparent text-[#80808c] hover:text-[#f0f0f4]'
                   }`}
                 >
                   {tab.label}
@@ -202,24 +200,24 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
             <div className="space-y-6">
               <div>
                 <h2 className="text-xl font-bold text-white">{helpSections[activeTab as TabKey].title}</h2>
-                <p className="text-xs text-slate-400 mt-1 max-w-3xl">{helpSections[activeTab as TabKey].desc}</p>
+                <p className="text-xs text-[#80808c] mt-1 max-w-3xl">{helpSections[activeTab as TabKey].desc}</p>
               </div>
 
               <div className="grid grid-cols-1 gap-4">
                 {helpSections[activeTab as TabKey].items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="p-6 rounded-xl bg-[#111827] border border-[#374151] space-y-3 shadow-md hover:border-indigo-500/50 transition-all"
+                    className="signature-card p-6 rounded-xl bg-[#111014] border border-[#222129] space-y-3 shadow-md hover:border-[#7c3aed]/50 transition-all"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <h3 className="text-base font-bold text-white">{item.title}</h3>
                       {item.formula && (
-                        <span className="font-mono text-[10px] text-indigo-400 bg-indigo-500/10 border border-indigo-500/20 px-2.5 py-1 rounded w-fit">
+                        <span className="font-mono text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 border border-[#7c3aed]/20 px-2.5 py-1 rounded w-fit">
                           {item.formula}
                         </span>
                       )}
                     </div>
-                    <p className="text-xs text-slate-300 leading-relaxed whitespace-pre-line">
+                    <p className="text-xs text-[#d1d5db] leading-relaxed whitespace-pre-line">
                       {item.content}
                     </p>
                   </div>
@@ -227,13 +225,13 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
               </div>
             </div>
           ) : (
-            /* Full Wiki Articles Reader */
+            /* Full Wiki Articles & Diagrams Reader */
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* Article List (4 Cols) */}
-              <div className="lg:col-span-4 p-4 rounded-xl bg-[#111827] border border-[#374151] space-y-2 max-h-[650px] overflow-y-auto">
-                <div className="text-[10px] font-bold uppercase tracking-wider text-slate-400 pb-2 border-b border-[#374151]">
-                  Documentation Articles ({DOCS_ITEMS.length})
+              <div className="lg:col-span-4 p-4 rounded-xl bg-[#111014] border border-[#18171c] space-y-2 max-h-[680px] overflow-y-auto">
+                <div className="text-[10px] font-bold uppercase tracking-wider text-[#80808c] pb-2 border-b border-[#18171c]">
+                  Wiki Articles & Diagrams ({DOCS_ITEMS.length})
                 </div>
 
                 {DOCS_ITEMS.map((docItem) => {
@@ -244,22 +242,22 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
                       onClick={() => setSelectedDocId(docItem.id)}
                       className={`p-3 rounded-lg cursor-pointer border transition-all ${
                         isSelected
-                          ? 'bg-[#1f2937] border-indigo-500 text-indigo-300 font-semibold'
-                          : 'bg-[#0b0f19] border-[#374151] text-slate-300 hover:bg-[#1f2937]/50'
+                          ? 'bg-[#18171c] border-[#7c3aed] text-[#a78bfa] font-semibold'
+                          : 'bg-[#0a090c] border-[#18171c] text-[#d1d5db] hover:bg-[#18171c]/60'
                       }`}
                     >
-                      <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-slate-800 text-indigo-400">
+                      <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#18171c] text-[#a78bfa]">
                         {docItem.category}
                       </span>
                       <h4 className="text-xs font-bold text-white mt-1">{docItem.title}</h4>
-                      <p className="text-[11px] text-slate-400 mt-1 line-clamp-2">{docItem.summary}</p>
+                      <p className="text-[11px] text-[#80808c] mt-1 line-clamp-2">{docItem.summary}</p>
                     </div>
                   );
                 })}
               </div>
 
               {/* Markdown Viewer (8 Cols) */}
-              <div className="lg:col-span-8 p-6 rounded-xl bg-[#111827] border border-[#374151]">
+              <div className="lg:col-span-8 p-6 rounded-xl bg-[#111014] border border-[#18171c]">
                 <DocsViewer doc={currentDoc} onNavigateDoc={setSelectedDocId} />
               </div>
 

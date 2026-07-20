@@ -1,8 +1,8 @@
 # Hackmanite — DataLake Entity Graph Explorer
 
-> **Version 1.0.0** · Standalone Windows Desktop Application
+> **Version 1.0.0**
 
-Hackmanite is a desktop application for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions.
+Hackmanite can be a desktop or web application built for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions and much more.
 
 *This project was made in collaboration with [GEODE](https://geode.science/).*
 

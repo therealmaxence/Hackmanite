@@ -207,12 +207,12 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
                 {helpSections[activeTab as TabKey].items.map((item, idx) => (
                   <div
                     key={idx}
-                    className="signature-card p-6 rounded-xl bg-[#111014] border border-[#222129] space-y-3 shadow-md hover:border-[#7c3aed]/50 transition-all"
+                    className="signature-card p-6 rounded-xl bg-[#111014] border-none space-y-3 shadow-md transition-all"
                   >
                     <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                       <h3 className="text-base font-bold text-white">{item.title}</h3>
                       {item.formula && (
-                        <span className="font-mono text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 border border-[#7c3aed]/20 px-2.5 py-1 rounded w-fit">
+                        <span className="font-mono text-[10px] text-[#a78bfa] bg-[#7c3aed]/10 px-2.5 py-1 rounded w-fit border-none">
                           {item.formula}
                         </span>
                       )}
@@ -229,7 +229,7 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
               
               {/* Article List (4 Cols) */}
-              <div className="lg:col-span-4 p-4 rounded-xl bg-[#111014] border border-[#18171c] space-y-2 max-h-[680px] overflow-y-auto">
+              <div className="lg:col-span-4 p-4 rounded-xl bg-[#111014] border-none space-y-2 max-h-[680px] overflow-y-auto shadow-md">
                 <div className="text-[10px] font-bold uppercase tracking-wider text-[#80808c] pb-2 border-b border-[#18171c]">
                   Wiki Articles & Diagrams ({DOCS_ITEMS.length})
                 </div>
@@ -240,10 +240,10 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
                     <div
                       key={docItem.id}
                       onClick={() => setSelectedDocId(docItem.id)}
-                      className={`p-3 rounded-lg cursor-pointer border transition-all ${
+                      className={`p-3 rounded-lg cursor-pointer transition-all border-none ${
                         isSelected
-                          ? 'bg-[#18171c] border-[#7c3aed] text-[#a78bfa] font-semibold'
-                          : 'bg-[#0a090c] border-[#18171c] text-[#d1d5db] hover:bg-[#18171c]/60'
+                          ? 'bg-[#18171c] text-[#a78bfa] font-semibold'
+                          : 'bg-[#0a090c] text-[#d1d5db] hover:bg-[#18171c]/60'
                       }`}
                     >
                       <span className="text-[9px] font-mono uppercase px-1.5 py-0.5 rounded bg-[#18171c] text-[#a78bfa]">
@@ -257,7 +257,7 @@ export const HackmaniteHelpCenter: React.FC<HackmaniteHelpCenterProps> = ({
               </div>
 
               {/* Markdown Viewer (8 Cols) */}
-              <div className="lg:col-span-8 p-6 rounded-xl bg-[#111014] border border-[#18171c]">
+              <div className="lg:col-span-8 p-6 rounded-xl bg-[#111014] border-none shadow-md">
                 <DocsViewer doc={currentDoc} onNavigateDoc={setSelectedDocId} />
               </div>
 

@@ -1,5 +1,6 @@
 import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
+import { Maximize2, Minimize2, X } from 'lucide-react';
 
 mermaid.initialize({
   startOnLoad: false,
@@ -13,6 +14,8 @@ mermaid.initialize({
     lineColor: '#a78bfa',
     secondaryColor: '#d946ef',
     tertiaryColor: '#18171c',
+    noteBkgColor: '#18171c',
+    noteTextColor: '#f0f0f4',
   },
   securityLevel: 'loose',
 });
@@ -25,6 +28,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
   const containerRef = useRef<HTMLDivElement>(null);
   const [svgContent, setSvgContent] = useState<string>('');
   const [error, setError] = useState<boolean>(false);
+  const [isFullscreen, setIsFullscreen] = useState<boolean>(false);
 
   useEffect(() => {
     let isMounted = true;
@@ -55,9 +59,20 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     };
   }, [chart]);
 
+  // Handle ESC key for closing fullscreen
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape' && isFullscreen) {
+        setIsFullscreen(false);
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isFullscreen]);
+
   if (error || !svgContent) {
     return (
-      <div className="my-6 p-4 rounded-xl bg-[#111014] border border-[#222129] text-xs font-mono text-[#a78bfa] overflow-x-auto">
+      <div className="my-6 p-4 rounded-xl bg-[#111014] border border-transparent font-mono text-xs text-[#a78bfa] overflow-x-auto">
         <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">Diagram Source</div>
         <pre>{chart}</pre>
       </div>
@@ -65,12 +80,55 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
   }
 
   return (
-    <div className="my-6 p-6 rounded-xl bg-[#111014] border border-[#222129] shadow-2xl overflow-x-auto flex justify-center">
-      <div
-        ref={containerRef}
-        className="w-full flex justify-center text-slate-100 overflow-x-auto"
-        dangerouslySetInnerHTML={{ __html: svgContent }}
-      />
-    </div>
+    <>
+      {/* Standard Inline Diagram View */}
+      <div className="relative my-6 p-6 rounded-xl bg-[#111014] shadow-2xl overflow-x-auto flex flex-col items-center group">
+        
+        {/* Fullscreen Trigger Button */}
+        <button
+          onClick={() => setIsFullscreen(true)}
+          className="absolute top-3 right-3 btn-hackmanite p-2 text-[#80808c] hover:text-white transition-all rounded-md opacity-80 group-hover:opacity-100 flex items-center space-x-1 text-xs"
+          title="Full Screen View"
+        >
+          <Maximize2 className="w-3.5 h-3.5" />
+          <span className="text-[11px] font-medium hidden sm:inline">Fullscreen</span>
+        </button>
+
+        {/* Diagram SVG Container */}
+        <div
+          ref={containerRef}
+          className="w-full flex justify-center text-slate-100 overflow-x-auto pt-2"
+          dangerouslySetInnerHTML={{ __html: svgContent }}
+        />
+      </div>
+
+      {/* Fullscreen Overlay Modal */}
+      {isFullscreen && (
+        <div className="fixed inset-0 z-[999] bg-[#0a090c]/95 backdrop-blur-md p-6 flex flex-col">
+          {/* Top Control Bar */}
+          <div className="flex items-center justify-between pb-4 border-b border-white/10 mb-4">
+            <span className="text-sm font-bold text-[#f0f0f4] flex items-center space-x-2">
+              <span>Diagram Fullscreen View</span>
+            </span>
+
+            <button
+              onClick={() => setIsFullscreen(false)}
+              className="btn-hackmanite p-2 text-slate-300 hover:text-white transition-all rounded-md flex items-center space-x-1 text-xs"
+            >
+              <X className="w-4 h-4" />
+              <span>Close (Esc)</span>
+            </button>
+          </div>
+
+          {/* Fullscreen Scrollable Canvas */}
+          <div className="flex-1 overflow-auto flex items-center justify-center p-4">
+            <div
+              className="w-full max-w-6xl flex justify-center text-slate-100 max-h-full"
+              dangerouslySetInnerHTML={{ __html: svgContent }}
+            />
+          </div>
+        </div>
+      )}
+    </>
   );
 };

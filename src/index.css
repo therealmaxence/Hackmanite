@@ -4,20 +4,20 @@
 @tailwind utilities;
 
 :root {
-  /* Colors — dark stone base matching the logo background */
-  --color-bg:              #0a090c;   /* deepest base */
-  --color-surface:         #111014;   /* main panels */
-  --color-surface-raised:  #18171c;   /* elevated resting panels / cards */
-  --color-surface-overlay: #222129;   /* dropdowns / modals */
-  --color-surface-input:   #0d0c10;   /* input boxes */
-  --color-surface-hover:   #222029;   /* hover backgrounds */
+  /* Colors — dark stone base matching Hackmanite UI v2.2 Borderless Design */
+  --color-bg:              #0a090c;
+  --color-surface:         #111014;
+  --color-surface-raised:  #18171c;
+  --color-surface-overlay: #222129;
+  --color-surface-input:   #0d0c10;
+  --color-surface-hover:   #222029;
   --noise-bg:              url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
-  --color-border:          rgba(255, 255, 255, 0.08);
+  --color-border:          transparent;
 
   /* Typography */
-  --color-text:            #f0f0f4;   /* primary text */
-  --color-text-muted:      #80808c;   /* secondary text */
-  --color-text-dim:        #484852;   /* muted text */
+  --color-text:            #f0f0f4;
+  --color-text-muted:      #80808c;
+  --color-text-dim:        #484852;
 
   /* Primary Violet Accent */
   --color-primary:         #7c3aed;
@@ -70,11 +70,11 @@ body {
   background: rgba(255, 255, 255, 0.24);
 }
 
-/* Hackmanite Signature Card & Buttons */
+/* Hackmanite Signature Card & Borderless Buttons */
 .signature-card {
   background: var(--color-surface-raised);
   border-radius: var(--radius);
-  border: 1px solid var(--color-border);
+  border: none;
   padding: 20px 24px;
   position: relative;
   overflow: hidden;
@@ -84,24 +84,22 @@ body {
 .signature-card:hover {
   background: var(--color-surface-hover);
   background-image: var(--noise-bg);
-  border-color: rgba(167, 139, 250, 0.3);
   box-shadow: var(--glow-trace);
 }
 
-/* Button Component Styles */
+/* Borderless Button Component Styles */
 .btn-hackmanite {
   background-color: var(--color-surface-raised);
-  border: 1px solid var(--color-border);
+  border: none;
   color: var(--color-text);
   border-radius: var(--radius-sm);
   transition: all var(--transition-fast);
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
 }
 
 .btn-hackmanite:hover {
   background-color: var(--color-surface-hover);
   background-image: var(--noise-bg);
-  border-color: var(--color-primary-hover);
   box-shadow: var(--glow-trace);
   color: #ffffff;
   transform: translateY(-1px);
@@ -111,7 +109,7 @@ body {
   background: linear-gradient(135deg, var(--color-primary) 0%, #6d28d9 100%);
   color: #ffffff;
   border-radius: var(--radius-sm);
-  border: 1px solid rgba(255, 255, 255, 0.15);
+  border: none;
   box-shadow: 0 4px 14px rgba(124, 58, 237, 0.35);
   transition: all 180ms cubic-bezier(0.22, 1, 0.36, 1);
 }
@@ -131,7 +129,7 @@ body {
   margin-top: 1.75rem;
   margin-bottom: 1rem;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--color-border);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   letter-spacing: -0.025em;
 }
 
@@ -143,7 +141,7 @@ body {
   margin-top: 1.5rem;
   margin-bottom: 0.75rem;
   padding-bottom: 0.35rem;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
   letter-spacing: -0.015em;
 }
 
@@ -207,12 +205,12 @@ body {
   font-weight: 600;
   text-align: left;
   padding: 0.625rem 0.875rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(255, 255, 255, 0.05);
 }
 
 .markdown-body td {
   padding: 0.625rem 0.875rem;
-  border: 1px solid var(--color-border);
+  border: 1px solid rgba(255, 255, 255, 0.05);
   color: var(--color-text);
 }
 
@@ -222,7 +220,7 @@ body {
 
 .markdown-body hr {
   border: 0;
-  border-top: 1px solid var(--color-border);
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
   margin: 1.75rem 0;
 }
 

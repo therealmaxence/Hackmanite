@@ -48,7 +48,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
   ];
 
   return (
-    <header className="header-shell h-16 bg-[#111014] border-b border-[#18171c] px-6 flex items-center justify-between sticky top-0 z-50 text-[#f0f0f4] font-sans shadow-lg">
+    <header className="header-shell h-16 bg-[#111014] border-none px-6 flex items-center justify-between sticky top-0 z-50 text-[#f0f0f4] font-sans shadow-lg">
       
       {/* Official Hackmanite Brand Logo & Name */}
       <div 
@@ -65,7 +65,6 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
             alt="Hackmanite Logo"
             className="w-10 h-10 object-contain relative z-10"
             onError={(e) => {
-              // fallback if image path relative
               e.currentTarget.src = 'hackmanite_main_nobg.png';
             }}
           />
@@ -74,7 +73,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
           <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-[#f0f0f4] to-[#a78bfa] bg-clip-text text-transparent">
             Hackmanite
           </span>
-          <span className="hidden sm:inline-block text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-[#18171c] text-[#80808c] border border-[#222129]">
+          <span className="hidden sm:inline-block text-[10px] font-mono font-medium px-2.5 py-0.5 rounded bg-[#18171c] text-[#80808c]">
             v1.0.0
           </span>
         </div>
@@ -89,7 +88,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
             setSelectedDocId('readme');
             setActiveTab('guide');
           }}
-          className={`px-3.5 py-2 rounded-md text-xs font-medium transition-colors ${
+          className={`px-3.5 py-2 rounded-md text-xs font-medium transition-colors border-none ${
             selectedDocId === 'readme'
               ? 'text-[#a78bfa] bg-[#18171c]'
               : 'text-[#80808c] hover:text-[#f0f0f4] hover:bg-[#18171c]/60'
@@ -112,7 +111,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
             >
               <button
                 type="button"
-                className={`px-3 py-2 rounded-md text-xs font-medium transition-colors flex items-center space-x-1.5 ${
+                className={`px-3 py-2 rounded-md text-xs font-medium transition-colors border-none flex items-center space-x-1.5 ${
                   hasActiveItem || isExpanded
                     ? 'text-[#a78bfa] bg-[#18171c]'
                     : 'text-[#80808c] hover:text-[#f0f0f4] hover:bg-[#18171c]/60'
@@ -125,7 +124,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
               {/* Menu Popup */}
               {isExpanded && (
                 <div className="absolute top-full left-0 pt-2 w-64 z-50">
-                  <div className="bg-[#111014] border border-[#222129] rounded-xl p-2 shadow-2xl space-y-1">
+                  <div className="bg-[#111014] border-none rounded-xl p-2 shadow-2xl space-y-1">
                     {group.items.map((item) => {
                       const isItemSelected = selectedDocId === item.id;
                       return (
@@ -135,7 +134,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
                             setSelectedDocId(item.id);
                             setOpenDropdown(null);
                           }}
-                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                          className={`w-full text-left px-3 py-2 rounded-lg text-xs font-medium transition-colors border-none ${
                             isItemSelected
                               ? 'bg-[#18171c] text-[#a78bfa] font-semibold'
                               : 'text-[#f0f0f4] hover:bg-[#18171c]/70 hover:text-[#a78bfa]'
@@ -159,7 +158,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
           href="https://github.com/therealmaxence/EntityGraph"
           target="_blank"
           rel="noopener noreferrer"
-          className="btn-hackmanite flex items-center space-x-2 px-3.5 py-2 text-xs font-medium bg-[#18171c] text-[#f0f0f4] hover:border-[#7c3aed] transition-colors rounded-md"
+          className="btn-hackmanite flex items-center space-x-2 px-3.5 py-2 text-xs font-medium bg-[#18171c] text-[#f0f0f4] rounded-md shadow-md border-none"
         >
           <Github className="w-4 h-4 text-[#a78bfa]" />
           <span className="hidden sm:inline">GitHub Repository</span>

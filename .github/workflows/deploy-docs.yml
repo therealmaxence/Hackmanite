@@ -1,0 +1,66 @@
+name: Deploy Hackmanite Documentation & Wiki
+
+on:
+  push:
+    branches:
+      - master
+      - website
+    paths:
+      - 'wiki/**'
+      - 'README.md'
+      - 'src/**'
+      - 'public/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout Website Source Branch
+        uses: actions/checkout@v4
+        with:
+          ref: website
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Fetch and Sync latest README & Wiki files from Master
+        run: |
+          git fetch origin master:master || true
+          mkdir -p src/content/wiki
+          
+          # Extract README.md from master if available
+          git show master:README.md > src/content/README.md 2>/dev/null || true
+
+          # Extract all wiki/*.md files from master if available
+          for file in $(git ls-tree -r --name-only master wiki/ 2>/dev/null); do
+            if [[ "$file" == *.md ]]; then
+              filename=$(basename "$file")
+              git show "master:$file" > "src/content/wiki/$filename" 2>/dev/null || true
+            fi
+          done
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Static Production Bundle
+        run: npm run build
+
+      - name: Deploy Compiled Site to gh-pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: dist
+          branch: gh-pages

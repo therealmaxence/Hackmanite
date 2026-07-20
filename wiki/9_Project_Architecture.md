@@ -99,7 +99,6 @@ graph LR
     Apps --> Web["web/ (Next.js 14 Web App)"]
     Apps --> NLP["nlp-service/ (FastAPI + spaCy NLP)"]
     Apps --> DevData["data/ (Dev SQLite DB)"]
-    Apps --> Tests["tests/ (Test email samples)"]
 
     Desktop --> DMain["main.js & preload.js & splash.html"]
     Desktop --> DLib["lib/ (boot-services, process-manager, window-manager, ipc-handlers, tray)"]

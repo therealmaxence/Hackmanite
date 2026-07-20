@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-[#0b0f19] text-gray-100 font-sans antialiased;
+    color-scheme: dark;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+::-webkit-scrollbar-track {
+  background: #0b0f19;
+}
+::-webkit-scrollbar-thumb {
+  background: #1f2937;
+  border-radius: 4px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: #374151;
+}
+
+/* Glassmorphism Utilities */
+.glass-panel {
+  background: rgba(17, 24, 39, 0.7);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.glass-panel-hover:hover {
+  border-color: rgba(99, 102, 241, 0.4);
+  box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.25);
+  transform: translateY(-2px);
+}
+
+/* Neon Glow Effect */
+.neon-glow {
+  box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
+}
+
+/* Pulse animation for weak signals */
+@keyframes pulse-purple {
+  0%, 100% {
+    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
+  }
+  50% {
+    box-shadow: 0 0 25px rgba(168, 85, 247, 0.8);
+  }
+}
+
+.weak-signal-pulse {
+  animation: pulse-purple 2s infinite ease-in-out;
+}

@@ -3,60 +3,200 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --color-bg: #0b0f19;
+    --color-surface: #111827;
+    --color-surface-raised: #1f2937;
+    --color-border: #374151;
+    --color-text: #f9fafb;
+    --color-text-muted: #9ca3af;
+    --color-primary: #6366f1;
+    --color-primary-hover: #4f46e5;
+    --radius: 0.75rem;
+    --radius-sm: 0.5rem;
+  }
+  
   body {
-    @apply bg-[#0b0f19] text-gray-100 font-sans antialiased;
+    background-color: var(--color-bg);
+    color: var(--color-text);
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
     color-scheme: dark;
   }
 }
 
-/* Custom Scrollbar */
+/* Custom Hackmanite scrollbars */
 ::-webkit-scrollbar {
-  width: 8px;
-  height: 8px;
+  width: 6px;
+  height: 6px;
 }
 ::-webkit-scrollbar-track {
-  background: #0b0f19;
+  background: var(--color-bg);
 }
 ::-webkit-scrollbar-thumb {
-  background: #1f2937;
-  border-radius: 4px;
+  background: var(--color-border);
+  border-radius: 3px;
 }
 ::-webkit-scrollbar-thumb:hover {
-  background: #374151;
+  background: #4b5563;
 }
 
-/* Glassmorphism Utilities */
-.glass-panel {
-  background: rgba(17, 24, 39, 0.7);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+/* Hackmanite Button Utility */
+.btn-hackmanite {
+  background-color: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  border-radius: var(--radius-sm);
+  transition: all 150ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.btn-hackmanite:hover {
+  border-color: var(--color-primary);
+  color: #ffffff;
 }
 
-.glass-panel-hover {
-  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+.btn-primary {
+  background-color: var(--color-primary);
+  color: #ffffff;
+  border-radius: var(--radius-sm);
+  transition: all 150ms ease;
 }
-.glass-panel-hover:hover {
-  border-color: rgba(99, 102, 241, 0.4);
-  box-shadow: 0 10px 30px -10px rgba(99, 102, 241, 0.25);
-  transform: translateY(-2px);
-}
-
-/* Neon Glow Effect */
-.neon-glow {
-  box-shadow: 0 0 20px rgba(168, 85, 247, 0.35);
+.btn-primary:hover {
+  background-color: var(--color-primary-hover);
 }
 
-/* Pulse animation for weak signals */
-@keyframes pulse-purple {
-  0%, 100% {
-    box-shadow: 0 0 15px rgba(168, 85, 247, 0.4);
-  }
-  50% {
-    box-shadow: 0 0 25px rgba(168, 85, 247, 0.8);
-  }
+/* Markdown Rendering Engine Styles */
+.markdown-body h1 {
+  font-size: 1.75rem;
+  font-weight: 800;
+  color: #ffffff;
+  margin-top: 1.75rem;
+  margin-bottom: 1rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--color-border);
+  letter-spacing: -0.025em;
 }
 
-.weak-signal-pulse {
-  animation: pulse-purple 2s infinite ease-in-out;
+.markdown-body h2 {
+  font-size: 1.35rem;
+  font-weight: 700;
+  color: #ffffff;
+  margin-top: 1.5rem;
+  margin-bottom: 0.75rem;
+  padding-bottom: 0.35rem;
+  border-bottom: 1px solid rgba(55, 65, 81, 0.6);
+  letter-spacing: -0.015em;
+}
+
+.markdown-body h3 {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--color-primary);
+  margin-top: 1.25rem;
+  margin-bottom: 0.5rem;
+}
+
+.markdown-body p {
+  color: #d1d5db;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  margin-bottom: 1rem;
+}
+
+.markdown-body ul {
+  list-style-type: disc;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: #d1d5db;
+  font-size: 0.875rem;
+}
+
+.markdown-body ol {
+  list-style-type: decimal;
+  padding-left: 1.5rem;
+  margin-bottom: 1rem;
+  color: #d1d5db;
+  font-size: 0.875rem;
+}
+
+.markdown-body li {
+  margin-bottom: 0.35rem;
+  line-height: 1.6;
+}
+
+.markdown-body blockquote {
+  border-left: 3px solid var(--color-primary);
+  background: rgba(99, 102, 241, 0.1);
+  padding: 0.75rem 1rem;
+  border-radius: 0 0.5rem 0.5rem 0;
+  margin-bottom: 1rem;
+  color: #e0e7ff;
+  font-size: 0.875rem;
+}
+
+.markdown-body code {
+  font-family: 'Fira Code', Consolas, monospace;
+  font-size: 0.8125rem;
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  color: #a5b4fc;
+  padding: 0.15rem 0.4rem;
+  border-radius: 0.25rem;
+}
+
+.markdown-body pre {
+  background-color: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-sm);
+  padding: 1rem;
+  overflow-x: auto;
+  margin-bottom: 1.25rem;
+}
+
+.markdown-body pre code {
+  background-color: transparent;
+  border: none;
+  padding: 0;
+  color: #e0e7ff;
+  font-size: 0.8125rem;
+  line-height: 1.6;
+}
+
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 1.25rem;
+  font-size: 0.8125rem;
+}
+
+.markdown-body th {
+  background-color: var(--color-surface-raised);
+  color: #ffffff;
+  font-weight: 600;
+  text-align: left;
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border);
+}
+
+.markdown-body td {
+  padding: 0.625rem 0.875rem;
+  border: 1px solid var(--color-border);
+  color: #d1d5db;
+}
+
+.markdown-body tr:nth-child(even) {
+  background-color: rgba(31, 41, 55, 0.4);
+}
+
+.markdown-body hr {
+  border: 0;
+  border-top: 1px solid var(--color-border);
+  margin: 1.75rem 0;
+}
+
+.markdown-body a {
+  color: #818cf8;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.markdown-body a:hover {
+  color: #c7d2fe;
 }

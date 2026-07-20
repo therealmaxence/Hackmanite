@@ -1,100 +1,46 @@
-# Project Architecture & General Structure Schema
+# 9. Project Architecture & System Design
 
-This document provides a detailed overview of the system architecture, directory structure, data schemas, and information flow of **Hackmanite (EntityGraph Explorer)**. It is structured for direct inclusion or adaptation in written technical reports.
-
----
-
-## Table of Contents
-- [1. High-Level System Architecture](#1-high-level-system-architecture)
-  - [1.1 Architectural Details](#11-architectural-details)
-- [2. Directory Structure Schema](#2-directory-structure-schema)
-- [3. Database & Graph Schemas](#3-database--graph-schemas)
-  - [3.1 SQLite Relational Schema (via Prisma)](#31-sqlite-relational-schema-via-prisma)
-  - [3.2 KuzuDB Graph Database Schema](#32-kuzudb-graph-database-schema)
-- [4. Data Ingestion Pipeline Schema](#4-data-ingestion-pipeline-schema)
-  - [4.1 Ingestion Phase Details](#41-ingestion-phase-details)
-  - [4.2 Extraction & Analysis Phase Details](#42-extraction--analysis-phase-details)
-  - [4.3 Database Synchronization & Rendering](#43-database-synchronization--rendering)
+Hackmanite (EntityGraph Explorer) implements a **decoupled, multi-service standalone desktop architecture** inside an Electron shell wrapper. This document details the component boundaries, IPC communications, dual database engine setup, file processing pipelines, and build targets.
 
 ---
 
-## 1. High-Level System Architecture
-
-Hackmanite implements a **decoupled, multi-service standalone desktop architecture**. Instead of hosting services on a remote server, it compiles and runs a frontend UI web server, a relational metadata database, an embedded graph database, and a machine learning (NLP) pipeline locally inside an Electron shell wrapper.
-
-### 1.1 Architectural Details
-* **Process Lifecycle & Bootstrapping**: The Electron main process ([main.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/main.js)) acts as the master controller. At boot, [boot-services.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/lib/boot-services.js) performs pre-flight checks: it clears TCP port conflicts (killing process bottlenecks on ports `3000` and `8000`), configures path variables, and spawns the Next.js and FastAPI services as background subprocesses using Node's `child_process.spawn`.
-* **Subprocess Management**: Electron tracks child process PIDs ([process-manager.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/lib/process-manager.js)) and registers shutdown hooks (`app.on('will-quit')`) to ensure all subprocesses (Python NLP engine and Next.js server) are cleanly terminated, preventing orphaned background processes.
-* **Database Relational Layer**: Relational structures (sessions, user files, extraction logs, pipeline configurations, and email objects) are stored in an SQLite database file (`dev.db`). During boot, Electron programmatically runs Prisma migrations (`npx prisma db push`) to synchronize the database schema without requiring external CLI tools.
-* **Graph Database Layer**: Entity nodes and co-occurrence edges are stored in an embedded **KuzuDB** database instance. The database is accessed via Kùzu's Python API in the FastAPI process, operating directly on the file system at `kuzu_data/kuzu.db` under the user's OS-specific app data folder.
-* **Hybrid Ingestion Queue Layer**: Document parsing jobs are managed by a **Unified Queue** abstraction ([queue/index.ts](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/lib/queue/index.ts)). When a Redis instance is available, it uses **BullMQ** for distributed job queueing; in zero-dependency standalone desktop mode, it transparently falls back to an in-process **MemoryQueue**.
-* **Communication Protocols**:
-  * **Frontend-to-Backend**: The Electron BrowserWindow displays the Next.js client (`http://localhost:3000`).
-  * **Inter-Service REST API**: Next.js server-side API routes proxy computationally intensive parsing and graph traversal operations to the FastAPI NLP engine (`http://127.0.0.1:8000`) using standard HTTP/REST requests.
+## 1. High-Level System Topology
 
 ```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': { 'textColor': '#ffffff', 'edgeLabelBackground': '#1e293b' }}}%%
 graph TB
-    subgraph "Desktop Shell (Electron)"
-        Main[main.js / boot-services.js]
-        ProcessMgr[process-manager.js]
-        Splash[splash.html]
+    subgraph DesktopShell["Desktop Application Container (Electron v30)"]
+        Main["Electron Main Process (main.ts)"]
+        Splash["Splash Window (loading.html)"]
+        MainWindow["App Window (BrowserWindow)"]
+        
+        subgraph WebServerService["Next.js Web Server (Node.js Sidecar - Port 3000)"]
+            NextServer["Next.js 14 Server (React UI & API Routes)"]
+            PrismaClient["Prisma ORM Client"]
+            BullQueue["BullMQ Job Queue (In-Memory / Redis)"]
+        end
+
+        subgraph NLPService["NLP & Graph Service (Python Sidecar - Port 8000)"]
+            FastAPI["FastAPI App (uvicorn)"]
+            spaCyEngine["spaCy 3.7 Engine (NER Models)"]
+            TesseractOCR["pytesseract (OCR Engine)"]
+            KuzuDBEngine["Kùzu DB Python Client (C++ Embedded Graph Engine)"]
+        end
+
+        subgraph FileStorage["Local Filesystem Storage"]
+            SQLiteFile[("SQLite DB (dev.db)")]
+            KuzuDir[("Kùzu Graph Dir (.kuzudb)")]
+            UploadDir["Uploaded Files"]
+        end
     end
 
-    subgraph "Web App Service (Next.js)"
-        WebPort[Port 3000]
-        API[API Router / Routes]
-        UI[Cytoscape.js UI & Dashboard]
-        Queue[Unified Queue: BullMQ / MemoryQueue]
-        Prisma[Prisma Client]
-        SQLite[(SQLite: dev.db)]
-    end
-
-    subgraph "NLP & Graph Service (FastAPI)"
-        FastPort[Port 8000]
-        spacy[spaCy / Tesseract OCR]
-        kuzupy[Kùzu Python API]
-        Kuzu[(KuzuDB: Graph DB)]
-    end
-
-    subgraph External
-        LLM[Mistral AI / Ollama API]
-        Redis[(Redis Server - Optional)]
-    end
-
-    %% Boot process
-    Main -->|1. Spawns & configures| FastPort
-    Main -->|2. Spawns & configures| WebPort
-    Main -->|3. Loads UI in Browser Window| UI
-
-    %% Queue & Web to NLP
-    API -->|Enqueue File Job| Queue
-    Queue -.->|If Redis Present| Redis
-    API -->|HTTP REST queries| FastPort
-    UI -->|Internal API requests| API
-
-    %% Databases
-    Prisma -->|Read/Write Session, Files & Pipelines| SQLite
-    kuzupy -->|Read/Write Graph Entities & Co-occurrences| Kuzu
-
-    %% LLM calls
-    API -.->|Request AI Intelligence Report| LLM
-
-    style Main fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style ProcessMgr fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Splash fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style WebPort fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style API fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style UI fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Queue fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Prisma fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style SQLite fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style FastPort fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style spacy fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style kuzupy fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Kuzu fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style LLM fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Redis fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    Main -->|1. Spawns Sidecars| NextServer
+    Main -->|2. Spawns Sidecars| FastAPI
+    MainWindow -->|3. Loads UI| NextServer
+    NextServer -->|4. HTTP Calls| FastAPI
+    PrismaClient -->|5. Read/Write| SQLiteFile
+    FastAPI -->|6. Cypher Queries| KuzuDir
+    FastAPI -->|7. OCR Parsing| TesseractOCR
+    spaCyEngine -->|8. Extract Entities| FastAPI
 ```
 
 ---
@@ -105,35 +51,27 @@ The repository is organized as a monorepo containing self-contained applications
 
 ```mermaid
 graph LR
-    Root["EntityGraph/ (Root)"] --> Apps["apps/ (Applications)"]
-    Root --> Infra["infra/ (Container Configs)"]
-    Root --> RootFiles["Root Files (.env, docker-compose.yml, README.md)"]
+    Root["EntityGraph Root"] --> Apps["apps (Applications)"]
+    Root --> Infra["infra (Container Configs)"]
+    Root --> RootFiles["Root Files"]
 
-    Apps --> Desktop["desktop/ (Electron Shell)"]
-    Apps --> Web["web/ (Next.js 14 Web App)"]
-    Apps --> NLP["nlp-service/ (FastAPI + spaCy NLP)"]
-    Apps --> DevData["data/ (Dev SQLite DB)"]
+    Apps --> Desktop["desktop (Electron Shell)"]
+    Apps --> Web["web (Next.js 14 Web App)"]
+    Apps --> NLP["nlp-service (FastAPI + spaCy NLP)"]
 
     Desktop --> DMain["main.js & preload.js & splash.html"]
-    Desktop --> DLib["lib/ (boot-services, process-manager, window-manager, ipc-handlers, tray)"]
+    Desktop --> DLib["lib (boot-services, process-manager)"]
 
-    Web --> WApp["app/ (App Router Pages & API Routes)"]
-    Web --> WPrisma["prisma/ (schema.prisma)"]
-    Web --> WComp["components/, hooks/, lib/, styles/"]
+    Web --> WApp["app (App Router Pages & API Routes)"]
+    Web --> WPrisma["prisma (schema.prisma)"]
+    Web --> WComp["components, hooks, lib, styles"]
 
     NLP --> NMain["main.py"]
-    NLP --> NDb["db/ (connection.py, schema.py, writers.py)"]
-    NLP --> NRoutes["routers/ (extract.py, graph.py, tesseract.py)"]
-    NLP --> NSvc["services/ (dispatcher, file_to_text, entity_extraction, email_parser, ocr...)"]
+    NLP --> NDb["db (connection.py, schema.py)"]
+    NLP --> NRoutes["routers (extract.py, graph.py)"]
+    NLP --> NSvc["services (dispatcher, entity_extraction)"]
 
-    Infra --> IDb["mysql/ & redis/ & nginx/"]
-
-    style Root fill:#f9f,stroke:#333,stroke-width:2px,color:#000
-    style Apps fill:#bbf,stroke:#333,stroke-width:1px,color:#000
-    style Infra fill:#bbf,stroke:#333,stroke-width:1px,color:#000
-    style Desktop fill:#ddf,stroke:#333,stroke-width:1px,color:#000
-    style Web fill:#ddf,stroke:#333,stroke-width:1px,color:#000
-    style NLP fill:#ddf,stroke:#333,stroke-width:1px,color:#000
+    Infra --> IDb["mysql & redis & nginx"]
 ```
 
 ---
@@ -143,259 +81,160 @@ graph LR
 Hackmanite adopts a **dual-database design** to maximize performance. **SQLite** manages tabular, transactional relational metadata and custom pipeline workflows, while **KuzuDB** handles highly complex graph traversals and co-occurrences.
 
 ### 3.1 SQLite Relational Schema (via Prisma)
-Defined in [schema.prisma](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/prisma/schema.prisma):
 
 ```mermaid
 erDiagram
-    sessions ||--o{ files : contains
-    files ||--o{ occurrences : records
-    files ||--o{ entity_neighborhoods : computes
-    files ||--o{ emails : extracts
-    entities ||--o{ occurrences : references
-    entities ||--o{ entity_neighborhoods : "source"
-    entities ||--o{ entity_neighborhoods : "target"
-    pipelines ||--o{ pipeline_runs : executes
+    SESSIONS ||--o{ FILES : contains
+    FILES ||--o{ OCCURRENCES : records
+    FILES ||--o{ ENTITY_NEIGHBORHOODS : computes
+    FILES ||--o{ EMAILS : extracts
+    ENTITIES ||--o{ OCCURRENCES : references
+    PIPELINES ||--o{ PIPELINE_RUNS : executes
 
-    sessions {
-        String id PK
-        DateTime createdAt
-        DateTime expiresAt
-        Int windowSize
-        Int minConnections
-        Int minOccurrences
-        Float minEdgeWeight
-        Float minTfidf
-        String hiddenNodeIds
+    SESSIONS {
+        string id PK
+        string createdAt
+        string expiresAt
+        int windowSize
+        int minConnections
     }
 
-    files {
-        String id PK
-        String sessionId FK
-        String originalName
-        String storagePath
-        String mimeType
-        BigInt sizeBytes
-        String status
-        String errorMessage
-        DateTime uploadedAt
-        DateTime processedAt
-        DateTime originalCreatedAt
+    FILES {
+        string id PK
+        string sessionId FK
+        string originalName
+        string mimeType
+        string status
     }
 
-    entities {
-        String id PK
-        String canonical
-        String displayName
-        String type
-        String metadata
-        DateTime createdAt
+    ENTITIES {
+        string id PK
+        string canonical
+        string displayName
+        string type
     }
 
-    occurrences {
-        String id PK
-        String entityId FK
-        String fileId FK
-        Int count
-        String excerpts
-        Float tfidf
+    OCCURRENCES {
+        string id PK
+        string entityId FK
+        string fileId FK
+        int count
+        float tfidf
     }
 
-    entity_neighborhoods {
-        String id PK
-        String fileId FK
-        String sourceEntityId FK
-        String targetEntityId FK
-        Float weight
-        Int distance
-        String snippet
-        Int sourceOffset
-        Int targetOffset
-        DateTime createdAt
+    ENTITY_NEIGHBORHOODS {
+        string id PK
+        string fileId FK
+        string sourceEntityId FK
+        string targetEntityId FK
+        float weight
     }
 
-    emails {
-        String id PK
-        String fileId FK
-        String messageId
-        String inReplyTo
-        String references
-        String subject
-        String from
-        String to
-        String cc
-        DateTime date
-        String body
-        String attachments
-        DateTime createdAt
+    EMAILS {
+        string id PK
+        string fileId FK
+        string subject
+        string from
+        string to
     }
 
-    pipelines {
-        String id PK
-        String name
-        String definition
-        DateTime createdAt
-        DateTime updatedAt
+    PIPELINES {
+        string id PK
+        string name
+        string definition
     }
 
-    pipeline_runs {
-        String id PK
-        String pipelineId FK
-        String status
-        String error
-        DateTime startedAt
-        DateTime completedAt
-        String nodeStates
-        String logs
+    PIPELINE_RUNS {
+        string id PK
+        string pipelineId FK
+        string status
     }
 ```
 
 ### 3.2 KuzuDB Graph Database Schema
-Defined in [schema.py](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/nlp-service/db/schema.py):
 
 ```mermaid
 classDiagram
     class Entity {
-        String id
-        String canonical
-        String display_name
-        String type
-        String metadata
+        +String id
+        +String canonical
+        +String display_name
+        +String type
+        +String metadata
     }
     class FileRef {
-        String id
+        +String id
     }
-    Entity --> FileRef : "OCCURS_IN (count, tfidf, excerpts)"
-    Entity --> Entity : "CO_OCCURS (weight, distance, snippet, file_id)"
+    Entity --> FileRef : OCCURS_IN
+    Entity --> Entity : CO_OCCURS
 ```
-
-#### Node Tables
-* **`Entity`**:
-  * `id` (STRING, Primary Key): Unique identifier of the entity.
-  * `canonical` (STRING): Case-insensitive standard representation of the name.
-  * `display_name` (STRING): Formatted name for UI rendering.
-  * `type` (STRING): Entity classification (e.g. `PERSON`, `ORG`, `LOC`, `EMAIL`, `PHONE`).
-  * `metadata` (STRING): Structured JSON storing entity context.
-* **`FileRef`**:
-  * `id` (STRING, Primary Key): ID referencing the corresponding `File` record in SQLite.
-
-#### Relationship Tables
-* **`OCCURS_IN`** (From `Entity` to `FileRef`):
-  * `count` (INT64): Frequency of the entity within the document.
-  * `tfidf` (DOUBLE): Relative statistical salience of the entity in the file.
-  * `excerpts` (STRING): Text fragments containing occurrences.
-* **`CO_OCCURS`** (From `Entity` to `Entity`):
-  * `weight` (DOUBLE): Co-occurrence weight (decayed by token distance).
-  * `distance` (INT64): Average token distance between the two entities.
-  * `snippet` (STRING): Text snippet enclosing the co-occurrence window.
-  * `source_offset` (INT64): Character offset of source entity.
-  * `target_offset` (INT64): Character offset of target entity.
-  * `file_id` (STRING): ID of the file where the co-occurrence was recorded.
 
 ---
 
 ## 4. Data Ingestion Pipeline Schema
 
-The diagram below details the asynchronous ingestion lifecycle of a document, tracking its path from the user interface through the scheduling queue (supporting both Redis BullMQ and MemoryQueue), the text extraction/OCR parsing engines, the NLP named entity recognition parser, and finally into the persistent storage engines.
+The diagram below details the asynchronous ingestion lifecycle of a document, tracking its path from the user interface through the scheduling queue, the text extraction/OCR parsing engines, the NLP named entity recognition parser, and into storage.
 
 ```mermaid
-%%{init: {'theme': 'dark', 'themeVariables': { 'textColor': '#ffffff', 'edgeLabelBackground': '#1e293b' }}}%%
 graph TD
-    subgraph "Client UI (Next.js Renderer)"
-        Upload["1. User Uploads Document<br>(PDF, Word, Image, EML...)" ]
-        Status["7. Polls Ingestion Job Status<br>& Renders Cytoscape.js Graph"]
+    subgraph ClientUI["Client UI (Next.js Renderer)"]
+        Upload["1. User Uploads Document (PDF, Word, Image, EML...)"]
+        Status["7. Polls Ingestion Job Status & Renders Graph"]
     end
 
-    subgraph "Web App Service (Next.js Backend)"
-        APIRoute["2. API Upload Route<br>(apps/web/app/api/upload)"]
-        SQLite_Pending[("3. SQLite (Prisma)<br>File status set to PENDING")]
-        Unified_Queue{"4. Unified Queue Manager<br>(lib/queue/index.ts)"}
-        BullMQ_Driver["BullMQ Worker Thread<br>(If Redis is active)"]
-        Memory_Driver["MemoryQueue Process<br>(Standalone desktop mode)"]
+    subgraph WebBackend["Web App Service (Next.js Backend)"]
+        APIRoute["2. API Upload Route (/api/upload)"]
+        SQLite_Pending[("3. SQLite (Prisma) File status set to PENDING")]
+        Unified_Queue["4. Unified Queue Manager (lib/queue/index.ts)"]
+        BullMQ_Driver["BullMQ Worker Thread (If Redis is active)"]
+        Memory_Driver["MemoryQueue Process (Standalone desktop mode)"]
     end
 
-    subgraph "Job Queue Broker (Optional)"
-        Redis_Broker[("Redis Server<br>(Distributed task broker)")]
+    subgraph QueueBroker["Job Queue Broker (Optional)"]
+        Redis_Broker[("Redis Server (Distributed task broker)")]
     end
 
-    subgraph "NLP & Graph Service (FastAPI / PyInstaller)"
-        FastAPI_Extract["6. POST /extract Endpoint<br>(apps/nlp-service/main.py)"]
-        Dispatcher{"MIME Dispatcher<br>(dispatcher.py)"}
+    subgraph NLPService["NLP & Graph Service (FastAPI)"]
+        FastAPI_Extract["6. POST /extract Endpoint (main.py)"]
+        Dispatcher["MIME Dispatcher (dispatcher.py)"]
         
-        Parser_Office["Office Extractor<br>(python-docx, openpyxl, pptx)"]
-        Parser_PDF["PDF Extractor<br>(pypdf reader)"]
-        Parser_Email["Email Parser<br>(email_parser.py)"]
-        Parser_OCR["OCR Engine<br>(Tesseract via pytesseract)"]
+        Parser_Office["Office Extractor (docx, xlsx, pptx)"]
+        Parser_PDF["PDF Extractor (pypdf reader)"]
+        Parser_Email["Email Parser (email_parser.py)"]
+        Parser_OCR["OCR Engine (Tesseract via pytesseract)"]
 
-        spaCy_NER["spaCy NER Pipeline<br>(en_core_web_lg, fr_core_news_lg...)" ]
-        CoOccur["Co-occurrence Calculator<br>(Token sentence sliding window)"]
+        spaCy_NER["spaCy NER Pipeline (en / fr / ru models)"]
+        CoOccur["Co-occurrence Calculator (Token sentence sliding window)"]
         
-        Kuzu_Write[("KuzuDB (Graph database)<br>Writes Node & Edge tables")]
-        SQLite_Write[("SQLite (via Prisma callback)<br>Writes occurrences & updates status")]
+        Kuzu_Write[("KuzuDB (Graph database) Writes Node & Edge tables")]
+        SQLite_Write[("SQLite Writes occurrences & updates status")]
     end
 
-    Upload -->|POST multipart/form-data| APIRoute
+    Upload --> APIRoute
     APIRoute --> SQLite_Pending
-    APIRoute -->|Add job payload| Unified_Queue
+    APIRoute --> Unified_Queue
     
-    Unified_Queue -->|If Redis available| BullMQ_Driver
-    Unified_Queue -->|Fallback standalone| Memory_Driver
-    BullMQ_Driver -->|Queue storage| Redis_Broker
+    Unified_Queue --> BullMQ_Driver
+    Unified_Queue --> Memory_Driver
+    BullMQ_Driver --> Redis_Broker
     
-    BullMQ_Driver -->|Trigger POST /extract request| FastAPI_Extract
-    Memory_Driver -->|Trigger POST /extract request| FastAPI_Extract
+    BullMQ_Driver --> FastAPI_Extract
+    Memory_Driver --> FastAPI_Extract
     FastAPI_Extract --> Dispatcher
     
-    Dispatcher -->|.docx, .xlsx, .pptx| Parser_Office
-    Dispatcher -->|.pdf| Parser_PDF
-    Dispatcher -->|.eml| Parser_Email
-    Dispatcher -->|Scanned PNG, JPG, PDF| Parser_OCR
+    Dispatcher --> Parser_Office
+    Dispatcher --> Parser_PDF
+    Dispatcher --> Parser_Email
+    Dispatcher --> Parser_OCR
 
-    Parser_Office -->|Raw Text string| spaCy_NER
-    Parser_PDF -->|Raw Text string| spaCy_NER
-    Parser_Email -->|Raw Text string| spaCy_NER
-    Parser_OCR -->|Raw Text string| spaCy_NER
+    Parser_Office --> spaCy_NER
+    Parser_PDF --> spaCy_NER
+    Parser_Email --> spaCy_NER
+    Parser_OCR --> spaCy_NER
 
-    spaCy_NER -->|Extracted entities| CoOccur
-    CoOccur -->|"Cypher transactions (db/writers.py)"| Kuzu_Write
-    CoOccur -->|Update File status to DONE| SQLite_Write
+    spaCy_NER --> CoOccur
+    CoOccur --> Kuzu_Write
+    CoOccur --> SQLite_Write
     
-    SQLite_Write -.->|Job completes / dev.db updated| Status
-
-    style Upload fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Status fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style APIRoute fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style SQLite_Pending fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Unified_Queue fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style BullMQ_Driver fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Memory_Driver fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Redis_Broker fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style FastAPI_Extract fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Dispatcher fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Parser_Office fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Parser_PDF fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Parser_Email fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Parser_OCR fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style spaCy_NER fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style CoOccur fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style Kuzu_Write fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style SQLite_Write fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    SQLite_Write -.-> Status
 ```
-
-### 4.1 Ingestion Phase Details
-1. **File Upload & Relational Logging**: Next.js receives files at the upload route, writes them locally to `/uploads`, and saves a file catalog entry inside SQLite with the status `PENDING`.
-2. **Queueing (Unified Queue Abstraction)**: Next.js enqueues a job payload containing the file UUID. The system automatically selects **BullMQ + Redis** if Redis is available, or an in-process **MemoryQueue** for zero-dependency standalone execution.
-3. **Job Worker Processing**: The active worker thread fetches the job and issues an HTTP POST request invoking the FastAPI `/extract` endpoint.
-
-### 4.2 Extraction & Analysis Phase Details
-1. **MIME Dispatching**: The FastAPI routing layer intercepts the file path and calls the `dispatcher.py` service. Based on the MIME type, the file is routed to:
-   * **Office Extractor**: uses standard python libraries to read `.docx`, `.xlsx`, and `.pptx` files.
-   * **PDF Extractor**: parses standard text-based PDF documents.
-   * **Email Parser**: processes `.eml` files, extracting headers, body content, and attachments.
-   * **OCR Engine**: uses **Tesseract** to parse scanned images and image-based PDFs.
-2. **Named Entity Extraction**: The raw text output is run through a **spaCy** large language model pipeline tailored to the detected document language (`en_core_web_lg`, `fr_core_news_lg`, or `ru_core_news_lg`). It extracts entity classifications (persons, places, dates, etc.).
-3. **Co-occurrence Analysis**: Neighboring entities are evaluated using a sentence-bounded sliding token window. Proximity weightings and snippets are calculated for graph-edge constructions.
-
-### 4.3 Database Synchronization & Rendering
-1. **Graph DB Insertion**: Nodes representing `Entity` and `FileRef` and edges representing `OCCURS_IN` and `CO_OCCURS` are added to **KuzuDB** using parameterized Cypher statements.
-2. **Relational Synchronization**: In parallel, occurrence counts, text neighborhoods, and email metadata are saved to SQLite via Prisma transactions ([executor.ts](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/lib/queue/executor.ts)), and the file status is updated to `DONE`.
-3. **UI Update**: Next.js UI queries the updated graph and renders the interactive network using **Cytoscape.js**.

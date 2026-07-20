@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import mermaid from 'mermaid';
 
 mermaid.initialize({
@@ -13,6 +13,8 @@ mermaid.initialize({
     lineColor: '#a78bfa',
     secondaryColor: '#d946ef',
     tertiaryColor: '#18171c',
+    noteBkgColor: '#18171c',
+    noteTextColor: '#f0f0f4',
   },
   securityLevel: 'loose',
 });
@@ -23,31 +25,61 @@ interface MermaidDiagramProps {
 
 export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
   const containerRef = useRef<HTMLDivElement>(null);
+  const [svgContent, setSvgContent] = useState<string>('');
+  const [error, setError] = useState<boolean>(false);
 
   useEffect(() => {
-    if (!containerRef.current) return;
+    let isMounted = true;
+    const cleanChart = chart.trim();
     const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
-    containerRef.current.innerHTML = '';
 
-    try {
-      mermaid.render(id, chart).then(({ svg }) => {
-        if (containerRef.current) {
-          containerRef.current.innerHTML = svg;
+    mermaid
+      .render(id, cleanChart)
+      .then(({ svg }) => {
+        if (isMounted) {
+          setSvgContent(svg);
+          setError(false);
         }
-      }).catch((err) => {
-        console.error('Mermaid render error:', err);
-        if (containerRef.current) {
-          containerRef.current.innerHTML = `<pre class="text-xs text-rose-400 p-3 bg-[#18171c] rounded">${chart}</pre>`;
-        }
+      })
+      .catch((err) => {
+        console.warn('Mermaid render warning:', err);
+        // Fallback: try stripping init directives if present
+        const strippedChart = cleanChart.replace(/%%\{init:[\s\S]*?\}%%/g, '').trim();
+        mermaid
+          .render(`${id}-retry`, strippedChart)
+          .then(({ svg }) => {
+            if (isMounted) {
+              setSvgContent(svg);
+              setError(false);
+            }
+          })
+          .catch(() => {
+            if (isMounted) {
+              setError(true);
+            }
+          });
       });
-    } catch (e) {
-      console.error(e);
-    }
+
+    return () => {
+      isMounted = false;
+    };
   }, [chart]);
 
+  if (error) {
+    return (
+      <div className="my-4 p-4 rounded-xl bg-[#18171c] border border-[#222129] font-mono text-xs text-[#a78bfa] overflow-x-auto">
+        <pre>{chart}</pre>
+      </div>
+    );
+  }
+
   return (
-    <div className="my-6 p-4 rounded-xl bg-[#111014] border border-[#222129] shadow-lg overflow-x-auto flex justify-center">
-      <div ref={containerRef} className="w-full flex justify-center" />
+    <div className="my-6 p-6 rounded-xl bg-[#111014] border border-[#222129] shadow-2xl overflow-x-auto flex justify-center">
+      <div
+        ref={containerRef}
+        className="w-full flex justify-center text-slate-100"
+        dangerouslySetInnerHTML={{ __html: svgContent }}
+      />
     </div>
   );
 };

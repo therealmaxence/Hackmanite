@@ -1,35 +1,46 @@
 import React, { useState } from 'react';
-import { Navbar } from './components/Navbar';
-import { HomeView } from './components/HomeView';
-import { InteractiveGraphSandbox } from './components/InteractiveGraphSandbox';
-import { EmailView } from './components/EmailView';
-import { WeakSignalsCalculator } from './components/WeakSignalsCalculator';
-import { PipelineVisualizer } from './components/PipelineVisualizer';
-import { AiReportView } from './components/AiReportView';
-import { DatabaseSchemaExplorer } from './components/DatabaseSchemaExplorer';
-import { WikiReader } from './components/WikiReader';
-import { ArchitectureViewer } from './components/ArchitectureViewer';
+import { DocsHeader } from './components/DocsHeader';
+import { DocsSidebar } from './components/DocsSidebar';
+import { DocsViewer } from './components/DocsViewer';
+import { TableOfContents } from './components/TableOfContents';
+import { DOCS_ITEMS } from './data/docsContent';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('home');
+  const [selectedDocId, setSelectedDocId] = useState<string>('readme');
+  const [searchQuery, setSearchQuery] = useState<string>('');
+
+  const currentDoc = DOCS_ITEMS.find((d) => d.id === selectedDocId) || DOCS_ITEMS[0];
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-600 selection:text-white flex flex-col">
-      {/* Hackmanite Official Header Bar */}
-      <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-indigo-600 selection:text-white">
+      {/* Top Docs Header */}
+      <DocsHeader
+        searchQuery={searchQuery}
+        setSearchQuery={setSearchQuery}
+        selectedDocId={selectedDocId}
+        setSelectedDocId={setSelectedDocId}
+      />
 
-      {/* Main Active Application Page View */}
-      <main className="flex-1">
-        {activeTab === 'home' && <HomeView onNavigateToGraph={() => setActiveTab('graph')} />}
-        {activeTab === 'graph' && <InteractiveGraphSandbox />}
-        {activeTab === 'emails' && <EmailView />}
-        {activeTab === 'weak-signals' && <WeakSignalsCalculator />}
-        {activeTab === 'pipelines' && <PipelineVisualizer />}
-        {activeTab === 'ai-report' && <AiReportView />}
-        {activeTab === 'db-schema' && <DatabaseSchemaExplorer />}
-        {activeTab === 'wiki' && <WikiReader />}
-        {activeTab === 'architecture' && <ArchitectureViewer />}
-      </main>
+      {/* Main Interactive Docs Workspace */}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Left Sidebar Tree */}
+        <DocsSidebar
+          selectedDocId={selectedDocId}
+          setSelectedDocId={setSelectedDocId}
+          searchQuery={searchQuery}
+        />
+
+        {/* Center Markdown Reader */}
+        <DocsViewer
+          doc={currentDoc}
+          onNavigateDoc={setSelectedDocId}
+        />
+
+        {/* Right On-Page Table of Contents */}
+        <TableOfContents
+          content={currentDoc.content}
+        />
+      </div>
     </div>
   );
 };

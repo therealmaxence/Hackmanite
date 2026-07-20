@@ -1,57 +1,35 @@
 import React, { useState } from 'react';
 import { Navbar } from './components/Navbar';
-import { Hero } from './components/Hero';
-import { FeatureShowcase } from './components/FeatureShowcase';
+import { HomeView } from './components/HomeView';
 import { InteractiveGraphSandbox } from './components/InteractiveGraphSandbox';
-import { DatabaseSchemaExplorer } from './components/DatabaseSchemaExplorer';
-import { PipelineVisualizer } from './components/PipelineVisualizer';
+import { EmailView } from './components/EmailView';
 import { WeakSignalsCalculator } from './components/WeakSignalsCalculator';
+import { PipelineVisualizer } from './components/PipelineVisualizer';
+import { AiReportView } from './components/AiReportView';
+import { DatabaseSchemaExplorer } from './components/DatabaseSchemaExplorer';
 import { WikiReader } from './components/WikiReader';
 import { ArchitectureViewer } from './components/ArchitectureViewer';
-import { Footer } from './components/Footer';
 
 export const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<string>('overview');
-
-  const scrollToSection = (id: string) => {
-    setActiveTab(id);
-    const element = document.getElementById(id);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-  };
+  const [activeTab, setActiveTab] = useState<string>('home');
 
   return (
-    <div className="min-h-screen bg-[#0b0f19] text-gray-100 font-sans selection:bg-indigo-600 selection:text-white">
-      {/* Navigation Header */}
+    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans selection:bg-indigo-600 selection:text-white flex flex-col">
+      {/* Hackmanite Official Header Bar */}
       <Navbar activeTab={activeTab} setActiveTab={setActiveTab} />
 
-      {/* Hero Section */}
-      <Hero onNavigate={scrollToSection} />
-
-      {/* Feature Showcase Grid */}
-      <FeatureShowcase onSelectFeature={scrollToSection} />
-
-      {/* Interactive Cytoscape Graph Explorer Sandbox */}
-      <InteractiveGraphSandbox />
-
-      {/* Interactive Database Schema Viewer (SQLite + KuzuDB) */}
-      <DatabaseSchemaExplorer />
-
-      {/* Visual Pipeline Builder Canvas */}
-      <PipelineVisualizer />
-
-      {/* Weak Signals Discovery Engine & Calculator */}
-      <WeakSignalsCalculator />
-
-      {/* Searchable Full Wiki & Documentation Reader */}
-      <WikiReader />
-
-      {/* Architecture System Blueprint */}
-      <ArchitectureViewer />
-
-      {/* Footer */}
-      <Footer />
+      {/* Main Active Application Page View */}
+      <main className="flex-1">
+        {activeTab === 'home' && <HomeView onNavigateToGraph={() => setActiveTab('graph')} />}
+        {activeTab === 'graph' && <InteractiveGraphSandbox />}
+        {activeTab === 'emails' && <EmailView />}
+        {activeTab === 'weak-signals' && <WeakSignalsCalculator />}
+        {activeTab === 'pipelines' && <PipelineVisualizer />}
+        {activeTab === 'ai-report' && <AiReportView />}
+        {activeTab === 'db-schema' && <DatabaseSchemaExplorer />}
+        {activeTab === 'wiki' && <WikiReader />}
+        {activeTab === 'architecture' && <ArchitectureViewer />}
+      </main>
     </div>
   );
 };

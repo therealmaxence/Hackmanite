@@ -9,10 +9,11 @@ This document provides a detailed overview of the system architecture, directory
 Hackmanite implements a **decoupled, multi-service standalone desktop architecture**. Instead of hosting services on a remote server, it compiles and runs a frontend UI web server, a relational metadata database, an embedded graph database, and a machine learning (NLP) pipeline locally inside an Electron shell wrapper.
 
 ### 1.1 Architectural Details
-* **Process Lifecycle & Bootstrapping**: The Electron main process ([main.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/main.js)) acts as the master controller. At boot, [boot-services.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/lib/boot-services.js) performs pre-flight checks: it clears TCP port conflicts (killing processes on ports `3000` and `8000`), configures path variables, and spawns the Next.js and FastAPI services as background subprocesses using Node's `child_process.spawn`.
-* **Subprocess Management**: Electron tracks child process PIDs and registers shutdown hooks (`app.on('will-quit')`) to ensure all subprocesses (Python NLP engine and Next.js server) are cleanly terminated, preventing orphaned background processes.
-* **Database Relational Layer**: Relational structures (sessions, user files, extraction logs, and email objects) are stored in an SQLite database file (`dev.db`). During boot, Electron programmatically runs Prisma migrations (`npx prisma db push`) to synchronize the database schema without requiring external CLI tools.
+* **Process Lifecycle & Bootstrapping**: The Electron main process ([main.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/main.js)) acts as the master controller. At boot, [boot-services.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/lib/boot-services.js) performs pre-flight checks: it clears TCP port conflicts (killing process bottlenecks on ports `3000` and `8000`), configures path variables, and spawns the Next.js and FastAPI services as background subprocesses using Node's `child_process.spawn`.
+* **Subprocess Management**: Electron tracks child process PIDs ([process-manager.js](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/desktop/lib/process-manager.js)) and registers shutdown hooks (`app.on('will-quit')`) to ensure all subprocesses (Python NLP engine and Next.js server) are cleanly terminated, preventing orphaned background processes.
+* **Database Relational Layer**: Relational structures (sessions, user files, extraction logs, pipeline configurations, and email objects) are stored in an SQLite database file (`dev.db`). During boot, Electron programmatically runs Prisma migrations (`npx prisma db push`) to synchronize the database schema without requiring external CLI tools.
 * **Graph Database Layer**: Entity nodes and co-occurrence edges are stored in an embedded **KuzuDB** database instance. The database is accessed via Kùzu's Python API in the FastAPI process, operating directly on the file system at `kuzu_data/kuzu.db` under the user's OS-specific app data folder.
+* **Hybrid Ingestion Queue Layer**: Document parsing jobs are managed by a **Unified Queue** abstraction ([queue/index.ts](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/lib/queue/index.ts)). When a Redis instance is available, it uses **BullMQ** for distributed job queueing; in zero-dependency standalone desktop mode, it transparently falls back to an in-process **MemoryQueue**.
 * **Communication Protocols**:
   * **Frontend-to-Backend**: The Electron BrowserWindow displays the Next.js client (`http://localhost:3000`).
   * **Inter-Service REST API**: Next.js server-side API routes proxy computationally intensive parsing and graph traversal operations to the FastAPI NLP engine (`http://127.0.0.1:8000`) using standard HTTP/REST requests.
@@ -22,6 +23,7 @@ Hackmanite implements a **decoupled, multi-service standalone desktop architectu
 graph TB
     subgraph "Desktop Shell (Electron)"
         Main[main.js / boot-services.js]
+        ProcessMgr[process-manager.js]
         Splash[splash.html]
     end
 
@@ -29,6 +31,7 @@ graph TB
         WebPort[Port 3000]
         API[API Router / Routes]
         UI[Cytoscape.js UI & Dashboard]
+        Queue[Unified Queue: BullMQ / MemoryQueue]
         Prisma[Prisma Client]
         SQLite[(SQLite: dev.db)]
     end
@@ -42,6 +45,7 @@ graph TB
 
     subgraph External
         LLM[Mistral AI / Ollama API]
+        Redis[(Redis Server - Optional)]
     end
 
     %% Boot process
@@ -49,22 +53,26 @@ graph TB
     Main -->|2. Spawns & configures| WebPort
     Main -->|3. Loads UI in Browser Window| UI
 
-    %% Web to NLP
+    %% Queue & Web to NLP
+    API -->|Enqueue File Job| Queue
+    Queue -.->|If Redis Present| Redis
     API -->|HTTP REST queries| FastPort
     UI -->|Internal API requests| API
 
     %% Databases
-    Prisma -->|Read/Write Session & File metadata| SQLite
+    Prisma -->|Read/Write Session, Files & Pipelines| SQLite
     kuzupy -->|Read/Write Graph Entities & Co-occurrences| Kuzu
 
     %% LLM calls
     API -.->|Request AI Intelligence Report| LLM
 
     style Main fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style ProcessMgr fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style Splash fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style WebPort fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style API fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style UI fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style Queue fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style Prisma fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style SQLite fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style FastPort fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
@@ -72,6 +80,7 @@ graph TB
     style kuzupy fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style Kuzu fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style LLM fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style Redis fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
 ```
 
 ---
@@ -93,7 +102,7 @@ graph LR
     Apps --> Tests["tests/ (Test email samples)"]
 
     Desktop --> DMain["main.js & preload.js & splash.html"]
-    Desktop --> DLib["lib/ (boot-services.js, process-manager.js, window-manager.js)"]
+    Desktop --> DLib["lib/ (boot-services, process-manager, window-manager, ipc-handlers, tray)"]
 
     Web --> WApp["app/ (App Router Pages & API Routes)"]
     Web --> WPrisma["prisma/ (schema.prisma)"]
@@ -101,8 +110,8 @@ graph LR
 
     NLP --> NMain["main.py"]
     NLP --> NDb["db/ (connection.py, schema.py, writers.py)"]
-    NLP --> NRoutes["routers/ (extract.py, graph.py)"]
-    NLP --> NSvc["services/ (dispatcher.py, file_to_text.py, entity_extraction.py)"]
+    NLP --> NRoutes["routers/ (extract.py, graph.py, tesseract.py)"]
+    NLP --> NSvc["services/ (dispatcher, file_to_text, entity_extraction, email_parser, ocr...)"]
 
     Infra --> IDb["mysql/ & redis/ & nginx/"]
 
@@ -118,7 +127,7 @@ graph LR
 
 ## 3. Database & Graph Schemas
 
-Hackmanite adopts a **dual-database design** to maximize performance. **SQLite** manages tabular, transactional relational metadata, while **KuzuDB** handles highly complex graph traversals and co-occurrences.
+Hackmanite adopts a **dual-database design** to maximize performance. **SQLite** manages tabular, transactional relational metadata and custom pipeline workflows, while **KuzuDB** handles highly complex graph traversals and co-occurrences.
 
 ### 3.1 SQLite Relational Schema (via Prisma)
 Defined in [schema.prisma](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/prisma/schema.prisma):
@@ -132,6 +141,7 @@ erDiagram
     entities ||--o{ occurrences : references
     entities ||--o{ entity_neighborhoods : "source"
     entities ||--o{ entity_neighborhoods : "target"
+    pipelines ||--o{ pipeline_runs : executes
 
     sessions {
         String id PK
@@ -156,6 +166,7 @@ erDiagram
         String errorMessage
         DateTime uploadedAt
         DateTime processedAt
+        DateTime originalCreatedAt
     }
 
     entities {
@@ -164,6 +175,7 @@ erDiagram
         String displayName
         String type
         String metadata
+        DateTime createdAt
     }
 
     occurrences {
@@ -185,6 +197,7 @@ erDiagram
         String snippet
         Int sourceOffset
         Int targetOffset
+        DateTime createdAt
     }
 
     emails {
@@ -199,6 +212,27 @@ erDiagram
         String cc
         DateTime date
         String body
+        String attachments
+        DateTime createdAt
+    }
+
+    pipelines {
+        String id PK
+        String name
+        String definition
+        DateTime createdAt
+        DateTime updatedAt
+    }
+
+    pipeline_runs {
+        String id PK
+        String pipelineId FK
+        String status
+        String error
+        DateTime startedAt
+        DateTime completedAt
+        String nodeStates
+        String logs
     }
 ```
 
@@ -248,25 +282,26 @@ classDiagram
 
 ## 4. Data Ingestion Pipeline Schema
 
-The diagram below details the asynchronous ingestion lifecycle of a document, tracking its path from the user interface through the scheduling queue, the text extraction/OCR parsing engines, the NLP named entity recognition parser, and finally into the persistent storage engines.
+The diagram below details the asynchronous ingestion lifecycle of a document, tracking its path from the user interface through the scheduling queue (supporting both Redis BullMQ and MemoryQueue), the text extraction/OCR parsing engines, the NLP named entity recognition parser, and finally into the persistent storage engines.
 
 ```mermaid
 %%{init: {'theme': 'dark', 'themeVariables': { 'textColor': '#ffffff', 'edgeLabelBackground': '#1e293b' }}}%%
 graph TD
     subgraph "Client UI (Next.js Renderer)"
-        Upload["1. User Uploads Document<br>(PDF, Word, Image, EML...)"]
+        Upload["1. User Uploads Document<br>(PDF, Word, Image, EML...)" ]
         Status["7. Polls Ingestion Job Status<br>& Renders Cytoscape.js Graph"]
     end
 
     subgraph "Web App Service (Next.js Backend)"
         APIRoute["2. API Upload Route<br>(apps/web/app/api/upload)"]
         SQLite_Pending[("3. SQLite (Prisma)<br>File status set to PENDING")]
-        BullMQ_Queue["4. BullMQ Producer<br>(Enqueue file parsing job)"]
-        BullMQ_Worker["5. BullMQ Worker<br>(Background consumer thread)"]
+        Unified_Queue{"4. Unified Queue Manager<br>(lib/queue/index.ts)"}
+        BullMQ_Driver["BullMQ Worker Thread<br>(If Redis is active)"]
+        Memory_Driver["MemoryQueue Process<br>(Standalone desktop mode)"]
     end
 
-    subgraph "Job Queue Broker (Redis)"
-        Redis_Broker[("Redis Server<br>(Task caching/job state)")]
+    subgraph "Job Queue Broker (Optional)"
+        Redis_Broker[("Redis Server<br>(Distributed task broker)")]
     end
 
     subgraph "NLP & Graph Service (FastAPI / PyInstaller)"
@@ -278,7 +313,7 @@ graph TD
         Parser_Email["Email Parser<br>(email_parser.py)"]
         Parser_OCR["OCR Engine<br>(Tesseract via pytesseract)"]
 
-        spaCy_NER["spaCy NER Pipeline<br>(en_core_web_lg, fr_core_news_lg...)"]
+        spaCy_NER["spaCy NER Pipeline<br>(en_core_web_lg, fr_core_news_lg...)" ]
         CoOccur["Co-occurrence Calculator<br>(Token sentence sliding window)"]
         
         Kuzu_Write[("KuzuDB (Graph database)<br>Writes Node & Edge tables")]
@@ -287,11 +322,14 @@ graph TD
 
     Upload -->|POST multipart/form-data| APIRoute
     APIRoute --> SQLite_Pending
-    APIRoute -->|Add job payload| BullMQ_Queue
-    BullMQ_Queue -->|Enqueues task| Redis_Broker
-    Redis_Broker -->|Pushes job to consumer| BullMQ_Worker
+    APIRoute -->|Add job payload| Unified_Queue
     
-    BullMQ_Worker -->|Trigger POST /extract request| FastAPI_Extract
+    Unified_Queue -->|If Redis available| BullMQ_Driver
+    Unified_Queue -->|Fallback standalone| Memory_Driver
+    BullMQ_Driver -->|Queue storage| Redis_Broker
+    
+    BullMQ_Driver -->|Trigger POST /extract request| FastAPI_Extract
+    Memory_Driver -->|Trigger POST /extract request| FastAPI_Extract
     FastAPI_Extract --> Dispatcher
     
     Dispatcher -->|.docx, .xlsx, .pptx| Parser_Office
@@ -314,8 +352,9 @@ graph TD
     style Status fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style APIRoute fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style SQLite_Pending fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style BullMQ_Queue fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
-    style BullMQ_Worker fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style Unified_Queue fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style BullMQ_Driver fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style Memory_Driver fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style Redis_Broker fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style FastAPI_Extract fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
     style Dispatcher fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
@@ -331,8 +370,8 @@ graph TD
 
 ### 4.1 Ingestion Phase Details
 1. **File Upload & Relational Logging**: Next.js receives files at the upload route, writes them locally to `/uploads`, and saves a file catalog entry inside SQLite with the status `PENDING`.
-2. **Queueing (BullMQ & Redis)**: Next.js enqueues a job payload containing the file UUID using **BullMQ**. The job is pushed to the local **Redis** instance acting as a robust queue broker.
-3. **Job Worker Processing**: The BullMQ worker thread fetches the job and issues an HTTP POST request invoking the FastAPI `/extract` endpoint.
+2. **Queueing (Unified Queue Abstraction)**: Next.js enqueues a job payload containing the file UUID. The system automatically selects **BullMQ + Redis** if Redis is available, or an in-process **MemoryQueue** for zero-dependency standalone execution.
+3. **Job Worker Processing**: The active worker thread fetches the job and issues an HTTP POST request invoking the FastAPI `/extract` endpoint.
 
 ### 4.2 Extraction & Analysis Phase Details
 1. **MIME Dispatching**: The FastAPI routing layer intercepts the file path and calls the `dispatcher.py` service. Based on the MIME type, the file is routed to:

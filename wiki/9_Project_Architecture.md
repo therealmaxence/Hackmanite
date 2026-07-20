@@ -4,6 +4,20 @@ This document provides a detailed overview of the system architecture, directory
 
 ---
 
+## Table of Contents
+- [1. High-Level System Architecture](#1-high-level-system-architecture)
+  - [1.1 Architectural Details](#11-architectural-details)
+- [2. Directory Structure Schema](#2-directory-structure-schema)
+- [3. Database & Graph Schemas](#3-database--graph-schemas)
+  - [3.1 SQLite Relational Schema (via Prisma)](#31-sqlite-relational-schema-via-prisma)
+  - [3.2 KuzuDB Graph Database Schema](#32-kuzudb-graph-database-schema)
+- [4. Data Ingestion Pipeline Schema](#4-data-ingestion-pipeline-schema)
+  - [4.1 Ingestion Phase Details](#41-ingestion-phase-details)
+  - [4.2 Extraction & Analysis Phase Details](#42-extraction--analysis-phase-details)
+  - [4.3 Database Synchronization & Rendering](#43-database-synchronization--rendering)
+
+---
+
 ## 1. High-Level System Architecture
 
 Hackmanite implements a **decoupled, multi-service standalone desktop architecture**. Instead of hosting services on a remote server, it compiles and runs a frontend UI web server, a relational metadata database, an embedded graph database, and a machine learning (NLP) pipeline locally inside an Electron shell wrapper.

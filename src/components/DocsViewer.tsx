@@ -69,6 +69,9 @@ export const DocsViewer: React.FC<DocsViewerProps> = ({ doc, onNavigateDoc }) =>
               const id = text.toLowerCase().replace(/[^\w\s-]/g, '').replace(/\s+/g, '-');
               return <h3 id={id} {...props}>{children}</h3>;
             },
+            pre({ children }) {
+              return <>{children}</>;
+            },
             code({ className, children, ...props }) {
               const match = /language-(\w+)/.exec(className || '');
               const isMermaid = match && match[1] === 'mermaid';
@@ -78,8 +81,19 @@ export const DocsViewer: React.FC<DocsViewerProps> = ({ doc, onNavigateDoc }) =>
                 return <MermaidDiagram chart={codeString} />;
               }
 
+              // Standard code block if className exists, or inline code if not
+              if (className) {
+                return (
+                  <pre className="bg-[#111014] border border-[#222129] p-4 rounded-xl overflow-x-auto my-4 text-xs font-mono text-indigo-300">
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  </pre>
+                );
+              }
+
               return (
-                <code className={className} {...props}>
+                <code className="bg-[#18171c] text-[#a78bfa] px-1.5 py-0.5 rounded border border-[#222129] font-mono text-xs" {...props}>
                   {children}
                 </code>
               );
@@ -95,7 +109,7 @@ export const DocsViewer: React.FC<DocsViewerProps> = ({ doc, onNavigateDoc }) =>
         {prevDoc ? (
           <button
             onClick={() => onNavigateDoc(prevDoc.id)}
-            className="p-4 rounded-xl bg-[#111014] border border-[#222129] hover:border-[#7c3aed] text-left transition-all group"
+            className="btn-hackmanite p-4 rounded-xl bg-[#111014] border border-[#222129] text-left transition-all group"
           >
             <div className="text-[10px] text-[#80808c] flex items-center space-x-1">
               <ArrowLeft className="w-3 h-3 group-hover:-translate-x-1 transition-transform" />
@@ -110,7 +124,7 @@ export const DocsViewer: React.FC<DocsViewerProps> = ({ doc, onNavigateDoc }) =>
         {nextDoc ? (
           <button
             onClick={() => onNavigateDoc(nextDoc.id)}
-            className="p-4 rounded-xl bg-[#111014] border border-[#222129] hover:border-[#7c3aed] text-right transition-all group"
+            className="btn-hackmanite p-4 rounded-xl bg-[#111014] border border-[#222129] text-right transition-all group"
           >
             <div className="text-[10px] text-[#80808c] flex items-center justify-end space-x-1">
               <span>Next Article</span>

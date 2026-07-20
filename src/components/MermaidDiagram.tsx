@@ -13,8 +13,6 @@ mermaid.initialize({
     lineColor: '#a78bfa',
     secondaryColor: '#d946ef',
     tertiaryColor: '#18171c',
-    noteBkgColor: '#18171c',
-    noteTextColor: '#f0f0f4',
   },
   securityLevel: 'loose',
 });
@@ -30,8 +28,12 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
 
   useEffect(() => {
     let isMounted = true;
-    const cleanChart = chart.trim();
-    const id = `mermaid-${Math.random().toString(36).substring(2, 9)}`;
+    
+    // Clean init directives and whitespace
+    let cleanChart = chart.trim();
+    cleanChart = cleanChart.replace(/%%\{init:[\s\S]*?\}%%/g, '').trim();
+
+    const id = `mermaid-svg-${Math.random().toString(36).substring(2, 9)}`;
 
     mermaid
       .render(id, cleanChart)
@@ -42,22 +44,10 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
         }
       })
       .catch((err) => {
-        console.warn('Mermaid render warning:', err);
-        // Fallback: try stripping init directives if present
-        const strippedChart = cleanChart.replace(/%%\{init:[\s\S]*?\}%%/g, '').trim();
-        mermaid
-          .render(`${id}-retry`, strippedChart)
-          .then(({ svg }) => {
-            if (isMounted) {
-              setSvgContent(svg);
-              setError(false);
-            }
-          })
-          .catch(() => {
-            if (isMounted) {
-              setError(true);
-            }
-          });
+        console.warn('Mermaid render error:', err);
+        if (isMounted) {
+          setError(true);
+        }
       });
 
     return () => {
@@ -65,9 +55,10 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     };
   }, [chart]);
 
-  if (error) {
+  if (error || !svgContent) {
     return (
-      <div className="my-4 p-4 rounded-xl bg-[#18171c] border border-[#222129] font-mono text-xs text-[#a78bfa] overflow-x-auto">
+      <div className="my-6 p-4 rounded-xl bg-[#111014] border border-[#222129] text-xs font-mono text-[#a78bfa] overflow-x-auto">
+        <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">Diagram Source</div>
         <pre>{chart}</pre>
       </div>
     );
@@ -77,7 +68,7 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     <div className="my-6 p-6 rounded-xl bg-[#111014] border border-[#222129] shadow-2xl overflow-x-auto flex justify-center">
       <div
         ref={containerRef}
-        className="w-full flex justify-center text-slate-100"
+        className="w-full flex justify-center text-slate-100 overflow-x-auto"
         dangerouslySetInnerHTML={{ __html: svgContent }}
       />
     </div>

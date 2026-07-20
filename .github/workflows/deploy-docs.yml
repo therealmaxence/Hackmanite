@@ -4,7 +4,7 @@ on:
   push:
     branches:
       - master
-      - website
+      - gh-pages
     paths:
       - 'wiki/**'
       - 'README.md'
@@ -26,10 +26,10 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout Website Source Branch
+      - name: Checkout gh-pages Source Branch
         uses: actions/checkout@v4
         with:
-          ref: website
+          ref: gh-pages
           fetch-depth: 0
 
       - name: Setup Node.js

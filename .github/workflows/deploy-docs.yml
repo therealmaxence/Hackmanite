@@ -23,7 +23,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build-and-deploy:
+  build:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout Website Source Branch
@@ -45,7 +45,7 @@ jobs:
           # Extract README.md from master if available
           git show master:README.md > src/content/README.md 2>/dev/null || true
 
-          # Extract all wiki/*.md files from master if available
+          # Extract all wiki/*.md files from master
           for file in $(git ls-tree -r --name-only master wiki/ 2>/dev/null); do
             if [[ "$file" == *.md ]]; then
               filename=$(basename "$file")
@@ -59,8 +59,18 @@ jobs:
       - name: Build Static Production Bundle
         run: npm run build
 
-      - name: Deploy Compiled Site to gh-pages Branch
-        uses: JamesIves/github-pages-deploy-action@v4
+      - name: Upload GitHub Pages Artifact
+        uses: actions/upload-pages-artifact@v3
         with:
-          folder: dist
-          branch: gh-pages
+          path: dist
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

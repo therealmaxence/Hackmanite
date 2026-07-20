@@ -1,46 +1,31 @@
 import React, { useState } from 'react';
-import { DocsHeader } from './components/DocsHeader';
-import { DocsSidebar } from './components/DocsSidebar';
-import { DocsViewer } from './components/DocsViewer';
-import { TableOfContents } from './components/TableOfContents';
-import { DOCS_ITEMS } from './data/docsContent';
+import { HackmaniteHeader } from './components/HackmaniteHeader';
+import { HackmaniteHelpCenter } from './components/HackmaniteHelpCenter';
 
 export const App: React.FC = () => {
   const [selectedDocId, setSelectedDocId] = useState<string>('readme');
-  const [searchQuery, setSearchQuery] = useState<string>('');
-
-  const currentDoc = DOCS_ITEMS.find((d) => d.id === selectedDocId) || DOCS_ITEMS[0];
+  const [activeTab, setActiveTab] = useState<string>('guide');
 
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 font-sans flex flex-col selection:bg-indigo-600 selection:text-white">
-      {/* Top Docs Header */}
-      <DocsHeader
-        searchQuery={searchQuery}
-        setSearchQuery={setSearchQuery}
+    <div className="min-h-screen bg-[#0b0f19] text-slate-100 font-sans flex flex-col selection:bg-indigo-600 selection:text-white">
+      {/* Official Hackmanite Header Bar */}
+      <HackmaniteHeader
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
         selectedDocId={selectedDocId}
-        setSelectedDocId={setSelectedDocId}
+        setSelectedDocId={(id) => {
+          setSelectedDocId(id);
+          setActiveTab('wiki');
+        }}
       />
 
-      {/* Main Interactive Docs Workspace */}
-      <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar Tree */}
-        <DocsSidebar
-          selectedDocId={selectedDocId}
-          setSelectedDocId={setSelectedDocId}
-          searchQuery={searchQuery}
-        />
-
-        {/* Center Markdown Reader */}
-        <DocsViewer
-          doc={currentDoc}
-          onNavigateDoc={setSelectedDocId}
-        />
-
-        {/* Right On-Page Table of Contents */}
-        <TableOfContents
-          content={currentDoc.content}
-        />
-      </div>
+      {/* Official Hackmanite Help Center & Wiki Reader */}
+      <HackmaniteHelpCenter
+        selectedDocId={selectedDocId}
+        setSelectedDocId={setSelectedDocId}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+      />
     </div>
   );
 };

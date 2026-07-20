@@ -1,0 +1,554 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
+@import "tailwindcss";
+@source "../app";
+@source "../components";
+
+/* ─── Design Tokens (Hackmanite UI v2.2 - Borderless & Opaque) ── */
+:root {
+  /* Colors — dark stone base matching the logo background */
+  --color-bg:              #0a090c;   /* deepest base (matches logo dark backdrop) */
+  --color-surface:         #111014;   /* main panels (sidebar / editor bg) */
+  --color-surface-raised:  #18171c;   /* elevated resting panels / cards */
+  --color-surface-overlay: #222129;   /* dropdowns / modals / active filter chips */
+  --color-surface-input:   #0d0c10;   /* input boxes */
+  --color-surface-hover:   #222029;   /* hover backgrounds (slightly lightened mauve-tinted charcoal) */
+  --noise-bg:              url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.02'/%3E%3C/svg%3E");
+  --color-border:          transparent; /* borderless */
+
+  /* Typography */
+  --color-text:            #f0f0f4;   /* primary text */
+  --color-text-muted:      #80808c;   /* secondary text */
+  --color-text-dim:        #484852;   /* muted/dimmed text */
+
+  /* UV Interaction Palette (Tenobrescence colors matching logo gradients) */
+  --color-primary:         #7c3aed;   /* violet profond (accent, selection) */
+  --color-primary-hover:   #a78bfa;   /* violet vif (hover, active focus) */
+  --color-on-primary:      #f0f0f4;
+
+  --color-secondary:       #d946ef;   /* magenta (warm active, confirmation) */
+  --color-secondary-hover: #db2777;   /* rose (highlight, tag active) */
+  --color-on-secondary:    #0e0e10;
+
+  /* Status Colors (Désaturé to prevent confusion with UV system) */
+  --color-success:         #d982b5;   /* subtle mauve/pink representing complete states */
+  --color-error:           #e11d48;
+  --color-warning:         #d97706;
+  --color-info:            #80808c;
+
+  /* Entity colors mapped to UV spectrum */
+  --entity-person:         #a78bfa;   /* vibrant lavender */
+  --entity-org:            #00f0ff;   /* neon cyan/teal */
+  --entity-location:       #34d399;   /* mint green */
+  --entity-email:          #ff2a85;   /* neon pink/rose */
+  --entity-phone:          #ff9f1c;   /* amber orange */
+  --entity-ip:             #818cf8;   /* neon indigo */
+  --entity-url:            #d946ef;   /* electric magenta */
+  --entity-date:           #facc15;   /* gold/yellow */
+  --entity-address:        #c084fc;   /* orchid purple */
+  --entity-keyword:        #c084fc;   /* purple */
+  --entity-code:           #e0aaff;   /* pale lavender */
+  --entity-hash:           #f472b6;   /* rose */
+  --entity-other:          #80808c;   /* neutral gray */
+
+  /* Typography */
+  --font-heading:          'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+  --font-body:             'Outfit', 'Inter', system-ui, -apple-system, sans-serif;
+
+  /* Type scale */
+  --fs-xxs: 12px;
+  --fs-xs:  14px;
+  --fs-sm:  16px;
+  --fs-md:  20px;
+  --fs-lg:  24px;
+  --fs-xl:  32px;
+  --fs-xxl: 48px;
+
+  /* Line-heights */
+  --lh-body: 1.7;
+  --lh-heading: 1.15;
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 24px;
+  --space-6: 32px;
+  --space-7: 48px;
+  --space-8: 64px;
+
+  /* Radii (softly rounded layout inspired by Obsidian) */
+  --radius-sm: 4px;
+  --radius:    6px;
+  --radius-lg: 10px;
+
+  /* Timings (Tenebrescence easing curves) */
+  --transition-fast: 80ms ease;
+  --transition: 200ms cubic-bezier(0.22, 1, 0.36, 1);
+  --transition-glow-in: box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1), border-color 200ms ease-out, background-color 80ms ease, color 180ms ease-out;
+  --transition-glow-out: box-shadow 350ms ease-in, border-color 300ms ease-in, background-color 80ms ease, color 300ms ease-in;
+
+  /* Layout */
+  --container-max-width: 1100px;
+
+  /* --- Legacy aliases (backwards compatibility) --- */
+  --bg-base: var(--color-bg);
+  --bg-surface: var(--color-surface);
+  --bg-raised: var(--color-surface-raised);
+  --bg-overlay: var(--color-surface-overlay);
+
+  --border: transparent;
+  --border-strong: transparent;
+
+  --text-primary: var(--color-text);
+  --text-secondary: var(--color-text-muted);
+  --text-muted: var(--color-text-dim);
+
+  --accent: var(--color-primary);
+  --accent-glow: color-mix(in srgb, var(--color-primary) 15%, var(--color-bg));
+
+  --success: var(--color-success);
+  --error: var(--color-error);
+  --warning: var(--color-warning);
+  --info: var(--color-info);
+
+  /* Typography backwards compat */
+  --font-display: var(--font-heading);
+  --font-body: var(--font-body);
+  --font-mono: 'DM Mono', ui-monospace, SFMono-Regular, Menlo, Monaco, 'Roboto Mono', 'Helvetica Neue', monospace;
+
+  /* Glow levels */
+  --glow-trace:            0 0 8px rgba(139, 92, 246, 0.30);
+  --glow-leger:            0 0 14px rgba(139, 92, 246, 0.45);
+  --glow-modere:           0 0 24px rgba(217, 70, 239, 0.40);
+  --glow-fort:             0 0 40px rgba(217, 70, 239, 0.35), 0 0 12px rgba(139, 92, 246, 0.55);
+}
+
+
+/* Breakpoints (mobile-first) */
+@media (min-width: 640px) { /* sm */
+  :root { --bp-sm: 640px; }
+}
+@media (min-width: 1024px) { /* lg */
+  :root { --bp-lg: 1024px; }
+}
+
+/* ─── Base Reset ───────────────────────────────────────────────────────────── */
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+html {
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+body {
+  background-color: var(--bg-base);
+  color: var(--text-primary);
+  font-family: var(--font-body);
+  font-size: 14px;
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* ─── Scrollbar ────────────────────────────────────────────────────────────── */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 99px;
+}
+::-webkit-scrollbar-thumb:hover { background: rgba(255, 255, 255, 0.24); }
+
+/* ─── Typography Utilities ─────────────────────────────────────────────────── */
+.font-display { font-family: var(--font-display); }
+.font-mono    { font-family: var(--font-mono); }
+
+h1, h2, h3 { font-family: var(--font-display); letter-spacing: -0.02em; }
+h1 { font-size: 1.75rem; font-weight: 500; }
+h2 { font-size: 1.25rem; font-weight: 500; }
+h3 { font-size: 1rem;    font-weight: 500; }
+
+/* ─── Surface Classes ──────────────────────────────────────────────────────── */
+.surface        { background: var(--bg-surface); border: none; }
+.surface-raised { background: var(--bg-raised);  border: none; }
+.surface-overlay{ background: var(--bg-overlay); border: none; }
+
+/* ─── Surface Class ───────────────────────────────────────────────────────── */
+.glass {
+  background: var(--bg-surface);
+  border: none;
+}
+
+/* ─── Strict Design System Additions ─────────────────────────────────────── */
+.signature-card {
+  background: var(--color-surface-raised);
+  border-radius: var(--radius);
+  border: 1px solid rgba(255, 255, 255, 0.04);
+  padding: 20px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: all var(--transition-fast);
+}
+
+.signature-card:hover {
+  background: var(--color-surface-hover);
+  background-image: var(--noise-bg);
+  border-color: rgba(255, 255, 255, 0.08);
+  box-shadow: var(--glow-trace);
+}
+
+.signature-panel {
+  background: var(--color-surface);
+  border: none;
+  border-radius: var(--radius);
+  position: relative;
+}
+
+.signature-input {
+  background: var(--color-surface-input);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  border-radius: var(--radius-sm);
+  color: var(--color-text);
+  padding: 9px 14px;
+  font-size: 14px;
+  transition: all var(--transition-fast);
+  outline: none;
+}
+
+.signature-input:focus {
+  background: var(--color-surface-hover);
+  border-color: var(--color-primary);
+  box-shadow: var(--glow-trace);
+  outline: none;
+}
+
+.signature-divider {
+  border: none;
+  border-top: 0.5px solid var(--color-border);
+}
+
+/* ─── Entity Badge Colors ──────────────────────────────────────────────────── */
+.badge-PERSON        { background: var(--bg-raised); color: var(--entity-person);   border-color: var(--entity-person); }
+.badge-ORGANIZATION  { background: var(--bg-raised); color: var(--entity-org);      border-color: var(--entity-org); }
+.badge-LOCATION      { background: var(--bg-raised); color: var(--entity-location); border-color: var(--entity-location); }
+.badge-EMAIL         { background: var(--bg-raised); color: var(--entity-email);    border-color: var(--entity-email); }
+.badge-PHONE         { background: var(--bg-raised); color: var(--entity-phone);    border-color: var(--entity-phone); }
+.badge-IP_ADDRESS    { background: var(--bg-raised); color: var(--entity-ip);       border-color: var(--entity-ip); }
+.badge-URL           { background: var(--bg-raised); color: var(--entity-url);      border-color: var(--entity-url); }
+.badge-DATE          { background: var(--bg-raised); color: var(--entity-date);     border-color: var(--entity-date); }
+.badge-ADDRESS       { background: var(--bg-raised); color: var(--entity-address);  border-color: var(--entity-address); }
+.badge-KEYWORD       { background: var(--bg-raised); color: var(--entity-keyword);  border-color: var(--entity-keyword); }
+.badge-CODE_IDENTIFIER { background: var(--bg-raised); color: var(--entity-code);   border-color: var(--entity-code); }
+.badge-HASH          { background: var(--bg-raised); color: var(--entity-hash);     border-color: var(--entity-hash); }
+.badge-OTHER         { background: var(--bg-raised); color: var(--entity-other);    border-color: var(--entity-other); }
+
+/* ─── Animations ───────────────────────────────────────────────────────────── */
+@keyframes pulse-ring {
+  0%   { transform: scale(1);   opacity: 0.6; }
+  50%  { transform: scale(1.05); opacity: 0.3; }
+  100% { transform: scale(1);   opacity: 0.6; }
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes slideInRight {
+  from { opacity: 0; transform: translateX(20px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+
+@keyframes shimmer {
+  0%   { background-position: -200% 0; }
+  100% { background-position:  200% 0; }
+}
+
+.animate-fade-in   { animation: fadeIn 300ms ease forwards; }
+.animate-slide-in  { animation: slideInRight 280ms ease forwards; }
+
+/* ─── Skeleton Loader ──────────────────────────────────────────────────────── */
+.skeleton {
+  background: linear-gradient(
+    90deg,
+    var(--bg-raised) 25%,
+    var(--bg-overlay) 50%,
+    var(--bg-raised) 75%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.6s infinite;
+  border-radius: var(--radius-sm);
+}
+
+/* ─── Focus Ring ───────────────────────────────────────────────────────────── */
+:focus-visible {
+  outline: 2px solid var(--color-primary-hover);
+  outline-offset: 2px;
+  box-shadow: var(--glow-leger);
+}
+
+/* ─── Selection ────────────────────────────────────────────────────────────── */
+::selection {
+  background: rgba(124, 58, 237, 0.25);
+  color: var(--text-primary);
+}
+
+/* ─── Cytoscape Canvas Override ────────────────────────────────────────────── */
+#cy {
+  width: 100%;
+  height: 100%;
+  background-color: var(--bg-base) !important;
+}
+
+/* ─── Phone Layout Helpers ────────────────────────────────────────────────── */
+@media (max-width: 639px) {
+  .home-layout,
+  .graph-layout {
+    display: flex !important;
+    flex-direction: column !important;
+  }
+
+  .home-left,
+  .home-right,
+  .graph-main {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .home-left,
+  .graph-controls,
+  .status-bar,
+  .legend-bar {
+    padding-left: var(--space-4) !important;
+    padding-right: var(--space-4) !important;
+  }
+
+  .home-left {
+    padding-top: var(--space-5) !important;
+    padding-bottom: var(--space-5) !important;
+  }
+
+  .home-hero {
+    max-width: none !important;
+  }
+
+  .home-title {
+    font-size: var(--fs-lg) !important;
+    line-height: var(--lh-heading) !important;
+  }
+
+  .home-copy,
+  .home-queue-label,
+  .home-queue-count,
+  .status-bar,
+  .legend-bar {
+    font-size: var(--fs-xs) !important;
+  }
+
+  .home-queue-head {
+    padding: var(--space-4) !important;
+  }
+
+  .dropzone {
+    padding: var(--space-5) var(--space-4) !important;
+  }
+
+  .graph-controls {
+    height: auto !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-3) !important;
+  }
+
+  .graph-search {
+    max-width: none !important;
+    width: 100% !important;
+  }
+
+  .graph-actions {
+    display: flex;
+    gap: var(--space-2);
+    width: 100%;
+  }
+
+  .graph-actions > * {
+    flex: 1 1 0;
+  }
+
+  .graph-search input {
+    height: 44px !important;
+  }
+
+  .status-bar,
+  .legend-bar {
+    height: auto !important;
+    padding-top: var(--space-3) !important;
+    padding-bottom: var(--space-3) !important;
+    flex-wrap: wrap;
+    gap: var(--space-2) !important;
+  }
+
+  .status-bar > span:last-child {
+    margin-left: 0 !important;
+    width: 100%;
+  }
+
+  .legend-bar .entity-filter-shell {
+    width: 100%;
+  }
+
+  .node-panel {
+    position: fixed !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: 56px !important;
+    bottom: 0 !important;
+    width: auto !important;
+    max-height: calc(100vh - 56px) !important;
+    border-left: none !important;
+    border-top: 1px solid var(--border) !important;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .file-row {
+    padding: var(--space-4) !important;
+  }
+
+  .file-row-top {
+    flex-wrap: wrap;
+  }
+
+  /* Status bar layout: distribute stat items evenly on wide screens */
+  .status-bar > span {
+    flex: 1 1 0;
+    text-align: center;
+    font-size: 0.75rem;
+    font-family: var(--font-mono);
+    color: var(--text-muted);
+  }
+
+  .status-bar > span:first-child {
+    text-align: left;
+  }
+
+  .status-bar > span:last-child {
+    text-align: right;
+    flex: 0 0 auto;
+  }
+
+  .file-row-delete {
+    margin-left: auto;
+  }
+}
+
+/* ─── Global Hover Visual Enhancements ────────────────────────────────────── */
+button:not(:disabled):hover, 
+[role="button"]:hover, 
+.signature-card:hover, 
+.file-row:hover,
+.dropzone:not(:disabled):hover {
+  background-image: var(--noise-bg);
+  filter: brightness(1.07);
+  transition: filter 80ms ease, background-color 80ms ease, box-shadow 240ms ease;
+}
+
+/* ─── Electron Window Layout & Scroll Fixes ─────────────────────────────────── */
+body.is-electron {
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+body.is-electron .page-container {
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+}
+
+body.is-electron .page-container > div {
+  height: 100% !important;
+  min-height: 100% !important;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* ─── Electron Home Panel Scroll Fix ─────────────────────────────────────── */
+/* home-left uses justify-content:center which clips bottom content in the
+   fixed-height Electron window. Switch to top-aligned + scrollable instead. */
+body.is-electron .home-left {
+  justify-content: flex-start !important;
+  overflow-y: auto !important;
+  padding-top: clamp(2rem, 5vh, 5rem) !important;
+}
+
+.collapsible-sidebar {
+  transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.sidebar-toggle-btn {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 100;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-surface-raised);
+  border: 1px solid var(--color-border);
+  color: var(--color-text);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+  transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1), background 0.15s, color 0.15s, border-color 0.15s;
+}
+
+.sidebar-toggle-btn:hover {
+  color: var(--color-primary);
+  border-color: var(--color-primary);
+}
+
+/* React Flow custom edge animations */
+.react-flow__edge.animated path {
+  stroke-dasharray: 8;
+  animation: dash 0.6s linear infinite, glowPulse 1.5s ease-in-out infinite alternate;
+}
+
+@keyframes dash {
+  from {
+    stroke-dashoffset: 16;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+@keyframes glowPulse {
+  from {
+    filter: drop-shadow(0 0 1px rgba(124, 58, 237, 0.4));
+  }
+  to {
+    filter: drop-shadow(0 0 4px rgba(124, 58, 237, 0.8));
+  }
+}
+
+

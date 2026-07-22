@@ -33,7 +33,7 @@ Hackmanite is a desktop and web application built for extracting, exploring, and
 
 Hackmanite includes an interactive, browser-based **Documentation & Wiki Hub** styled in the exact visual design system of the Hackmanite desktop application.
 
-- **Live URL**: [https://therealmaxence.github.io/EntityGraph/](https://therealmaxence.github.io/EntityGraph/)
+- **Live URL**: [https://therealmaxence.github.io/Hackmanite/](https://therealmaxence.github.io/Hackmanite/)
 - **Automated Content Synchronization**: The website source code lives inside `website/`. Whenever you edit `README.md` or any Markdown file in `wiki/` on the `master` branch and push to GitHub, a GitHub Actions workflow (`.github/workflows/deploy-docs.yml`) automatically:
   1. Copies the updated `README.md` and `wiki/*.md` files into `website/src/content/`.
   2. Compiles the production static bundle using Vite.
@@ -88,7 +88,7 @@ Hackmanite includes an interactive, browser-based **Documentation & Wiki Hub** s
 ## Project Structure
 
 ```
-EntityGraph/
+Hackmanite/
 ├── apps/
 │   ├── desktop/                  # Electron wrapper (main process, splash screen, packaging)
 │   │   ├── main.js               # App entry point — orchestrates startup and window lifecycle
@@ -190,7 +190,7 @@ python -m spacy download ru_core_news_lg
 Copy the example at the **repository root** and fill in values:
 
 ```powershell
-# From the repository root (EntityGraph/)
+# From the repository root (Hackmanite/)
 copy .env.example .env   # then edit .env
 ```
 

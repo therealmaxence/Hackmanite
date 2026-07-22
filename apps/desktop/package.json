@@ -2,7 +2,7 @@
   "name": "hackmanite-desktop",
   "version": "1.0.0",
   "description": "Hackmanite: Standalone desktop application for Entity Graph Explorer",
-  "homepage": "https://github.com/therealmaxence/EntityGraph",
+  "homepage": "https://github.com/therealmaxence/Hackmanite",
   "main": "main.js",
   "scripts": {
     "start": "electron .",

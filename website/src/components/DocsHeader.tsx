@@ -48,7 +48,7 @@ export const DocsHeader: React.FC<DocsHeaderProps> = ({
       {/* GitHub Action Button */}
       <div className="flex items-center space-x-3">
         <a
-          href="https://github.com/therealmaxence/EntityGraph"
+          href="https://github.com/therealmaxence/Hackmanite"
           target="_blank"
           rel="noopener noreferrer"
           className="btn-hackmanite flex items-center space-x-1.5 px-3 py-1.5 text-xs font-semibold"

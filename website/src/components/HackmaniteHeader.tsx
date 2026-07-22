@@ -165,7 +165,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
 
       <div className="flex items-center space-x-3">
         <a
-          href="https://github.com/therealmaxence/EntityGraph"
+          href="https://github.com/therealmaxence/Hackmanite"
           target="_blank"
           rel="noopener noreferrer"
           className="btn-hackmanite flex items-center space-x-2 px-3.5 py-2 text-xs font-medium bg-[#18171c] text-[#f0f0f4] rounded-md shadow-md border-none"

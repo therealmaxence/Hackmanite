@@ -1,0 +1,16 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPoints": ["lib"],
+  "entryPointStrategy": "expand",
+  "out": "docs/typedoc",
+  "name": "Hackmanite Web Core API Reference",
+  "exclude": [
+    "**/node_modules/**",
+    "**/.next/**",
+    "**/prisma/**",
+    "**/*.test.ts"
+  ],
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "cleanOutputDir": true
+}

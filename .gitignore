@@ -1,0 +1,101 @@
+# Dependencies
+node_modules/
+.pnp
+.pnp.js
+
+# Next.js
+apps/web/.next/
+apps/web/next-production/
+apps/web/out/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.egg-info/
+.venv/
+venv/
+env/
+apps/nlp-service/.venv/
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Logs
+logs/
+*.log
+npm-debug.log*
+
+# Scratch & Temporary Tools
+scratch/
+
+# Data & Local Databases
+/data/
+apps/data/
+apps/web/tests/sample_data
+!website/src/data/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+
+# Prisma
+apps/web/prisma/migrations/dev.db
+apps/web/prisma/prisma/dev.db
+apps/data/db/dev.db
+
+# Testing
+coverage/
+.coverage
+htmlcov/
+.pytest_cache/
+tests/
+
+# Build
+apps/web/build/
+dist/
+website/dist/
+
+# Test script outputs
+test_scripts/
+
+# SQLite local databases
+apps/web/prisma/dev.db
+apps/web/prisma/dev.db-journal
+
+# Local dynamic runtime caches
+apps/web/cache.json
+
+# Temporary uploads directories
+apps/web/uploads/
+
+# Backups
+apps/web/node_modules_old/
+node_modules_old/
+
+# Electron builds
+apps/desktop/dist/
+
+# PyInstaller build artifacts
+apps/nlp-service/build/
+apps/nlp-service/dist/
+apps/nlp-service/package-lock.json
+
+# KuzuDB runtime database (created automatically at first run, never commit)
+apps/nlp-service/kuzu_data/
+kuzu_data/
+
+# TypeScript
+*.tsbuildinfo
+
+# Auto-generated documentation
+apps/web/docs/typedoc/
+apps/web/docs/prisma/
+apps/nlp-service/site/

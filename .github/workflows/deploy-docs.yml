@@ -1,0 +1,56 @@
+name: Deploy Hackmanite Documentation & Wiki
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'wiki/**'
+      - 'README.md'
+      - 'website/**'
+      - '.github/workflows/**'
+  workflow_dispatch:
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'pages'
+  cancel-in-progress: true
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - name: Checkout Master Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync Wiki & README Markdown Content
+        run: |
+          mkdir -p src/content/wiki
+          cp ../README.md src/content/README.md 2>/dev/null || true
+          if [ -d ../wiki ]; then
+            find ../wiki -name '*.md' -exec cp {} src/content/wiki/ \;
+          fi
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Production Website
+        run: npm run build
+
+      - name: Deploy Built Site to gh-pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: website/dist
+          branch: gh-pages

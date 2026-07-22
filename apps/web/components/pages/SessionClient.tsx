@@ -1,0 +1,44 @@
+'use client';
+import Header from '@/components/layout/Header';
+import { useSessionManager } from '@/hooks/useSessionManager';
+import { useTranslation } from '@/lib/i18n';
+import LocalSessionManager from '@/components/session/LocalSessionManager';
+import ExportCard from '@/components/session/ExportCard';
+import ImportCard from '@/components/session/ImportCard';
+
+export default function SessionClient() {
+  const { sessionId, sessions, isLoadingSessions, deletingSessionId, isDeletingAllSessions, handleSwitchSession, handleDeleteSession, handleDeleteAllSessions, handleStartNewSession } = useSessionManager();
+  const { t } = useTranslation();
+
+  return (
+    <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column', background: 'var(--bg-base)' }}>
+      <Header />
+      <main style={{ flex: 1, overflowY: 'auto', padding: 'clamp(2rem, 5vw, 4rem) clamp(1rem, 5vw, 3rem)' }}>
+        <div style={{ maxWidth: '760px', margin: '0 auto', display: 'flex', flexDirection: 'column', gap: '3rem' }}>
+          <header>
+            <p style={{ fontSize: '0.75rem', fontWeight: 500, color: 'var(--color-primary)', letterSpacing: '0.05em', textTransform: 'uppercase', marginBottom: '0.75rem' }}>{t('session.kicker')}</p>
+            <h1 style={{ fontSize: 'clamp(1.75rem, 4vw, 2.5rem)', fontWeight: 600, color: 'var(--color-text)', margin: 0, lineHeight: 1.2 }}>{t('session.title')}</h1>
+            <p style={{ fontSize: '0.875rem', color: 'var(--color-text-muted)', marginTop: '0.75rem', lineHeight: 1.6, maxWidth: '520px' }}>{t('session.copy')}</p>
+          </header>
+
+          <div style={{ padding: '1rem 1.25rem', background: sessionId ? 'var(--color-surface-hover)' : 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+            <div style={{ width: '8px', height: '8px', borderRadius: '50%', background: sessionId ? '#10B981' : '#6B7280', flexShrink: 0 }} />
+            <div style={{ flex: 1, minWidth: 0 }}>
+              <p style={{ fontSize: '0.75rem', color: 'var(--color-text-muted)', margin: 0, marginBottom: '0.2rem' }}>{sessionId ? t('session.active_badge') : t('session.no_active_badge')}</p>
+              <p style={{ fontSize: '0.8125rem', fontFamily: 'var(--font-mono)', color: 'var(--color-text)', margin: 0, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{sessionId ?? t('session.no_active_copy')}</p>
+            </div>
+          </div>
+
+          <LocalSessionManager isLoadingSessions={isLoadingSessions} sessions={sessions} sessionId={sessionId} deletingSessionId={deletingSessionId} isDeletingAllSessions={isDeletingAllSessions} handleStartNewSession={handleStartNewSession} handleSwitchSession={handleSwitchSession} handleDeleteSession={handleDeleteSession} handleDeleteAllSessions={handleDeleteAllSessions} />
+          <ExportCard sessionId={sessionId} />
+          <ImportCard />
+
+          <div style={{ padding: '1rem 1.25rem', background: 'var(--color-surface)', border: '1px solid var(--color-border)', borderRadius: 'var(--radius)', fontSize: '0.8125rem', color: 'var(--color-text-muted)', lineHeight: 1.6, display: 'flex', gap: '0.75rem' }}>
+            <span style={{ fontSize: '0.75rem', fontWeight: 'bold', color: '#4C9EF0', flexShrink: 0, paddingTop: '2px' }}>{t('session.info_prefix')}</span>
+            <span>{t('session.info_copy')}</span>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

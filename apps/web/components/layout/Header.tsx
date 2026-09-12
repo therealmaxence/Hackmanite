@@ -2,9 +2,10 @@
 import Link from 'next/link';
 import Image from 'next/image';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import { NAVIGATION_SHORTCUTS } from '@/hooks/useNavigationShortcuts';
+import { startHomeTour } from '@/lib/tour/tourService';
 
 type NavItem = { href: string; labelKey: string; id: string };
 type NavGroup = { key: string; labelKey: string; id: string; items: NavItem[] };
@@ -73,11 +74,25 @@ const navButtonStyle = (active: boolean): CSSProperties => ({
 
 export default function Header() {
   const pathname = usePathname();
+  const router = useRouter();
   const [isOpen, setIsOpen] = useState(false);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [logoHovered, setLogoHovered] = useState(false);
   const [pillStyle, setPillStyle] = useState({ left: 0, width: 0, height: 0, top: 0 });
   const { t } = useTranslation();
+
+  const handleTriggerTour = () => {
+    setOpenMenu(null);
+    setIsOpen(false);
+    if (pathname === '/') {
+      startHomeTour(t);
+    } else {
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('hackmanite_trigger_tour', 'true');
+      }
+      router.push('/');
+    }
+  };
 
   const syncPill = useCallback((path: string) => {
     const id = activeSurfaceId(path);
@@ -233,6 +248,47 @@ export default function Header() {
                         </Link>
                       );
                     })}
+                    {group.key === 'general-settings' && (
+                      <>
+                        <div style={{ height: 1, background: 'var(--color-surface-raised)', margin: '4px 0' }} />
+                        <button
+                          type="button"
+                          role="menuitem"
+                          onClick={handleTriggerTour}
+                          style={{
+                            padding: '0.625rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            color: 'var(--color-text-muted)',
+                            background: 'transparent',
+                            border: 'none',
+                            cursor: 'pointer',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            width: '100%',
+                            textAlign: 'left',
+                            transition: 'background-color 120ms ease, color 120ms ease',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--color-surface-raised)';
+                            e.currentTarget.style.color = 'var(--color-primary-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = 'transparent';
+                            e.currentTarget.style.color = 'var(--color-text-muted)';
+                          }}
+                        >
+                          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                            <circle cx="12" cy="12" r="10" />
+                            <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                            <line x1="12" y1="17" x2="12.01" y2="17" />
+                          </svg>
+                          <span>{t('tour.action.start')}</span>
+                        </button>
+                      </>
+                    )}
                   </div>
                 </div>
               )}
@@ -272,6 +328,35 @@ export default function Header() {
                       </Link>
                     );
                   })}
+                  {group.key === 'general-settings' && (
+                    <button
+                      type="button"
+                      onClick={handleTriggerTour}
+                      style={{
+                        padding: '0.625rem 1rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        borderRadius: 'var(--radius-sm)',
+                        fontSize: '0.875rem',
+                        fontWeight: 500,
+                        color: 'var(--color-text-muted)',
+                        background: 'transparent',
+                        border: 'none',
+                        cursor: 'pointer',
+                        width: '100%',
+                        textAlign: 'left',
+                        transition: 'background-color 80ms ease, color 300ms ease-in',
+                      }}
+                    >
+                      <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                        <circle cx="12" cy="12" r="10" />
+                        <path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3" />
+                        <line x1="12" y1="17" x2="12.01" y2="17" />
+                      </svg>
+                      <span>{t('tour.action.start')}</span>
+                    </button>
+                  )}
                 </div>
               ))}
             </div>

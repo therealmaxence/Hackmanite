@@ -1,0 +1,110 @@
+/* Hackmanite Native UI Theme for Driver.js - Borderless & Opaque Design System */
+
+.driver-overlay {
+  background-color: rgba(5, 4, 7, 0.5) !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.driver-popover.hackmanite-tour-popover {
+  background: var(--color-surface, #111014) !important;
+  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border-radius: var(--radius, 6px) !important;
+  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65) !important;
+  color: var(--color-text, #f0f0f4) !important;
+  padding: 1.25rem 1.25rem !important;
+  font-family: var(--font-body, system-ui, -apple-system, sans-serif) !important;
+  max-width: 380px !important;
+  backdrop-filter: none !important;
+  -webkit-backdrop-filter: none !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-title {
+  font-family: var(--font-heading, inherit) !important;
+  font-size: 0.95rem !important;
+  font-weight: 600 !important;
+  color: var(--color-text, #f0f0f4) !important;
+  margin-bottom: 0.5rem !important;
+  display: flex !important;
+  align-items: center !important;
+  gap: 0.5rem !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-description {
+  font-size: 0.8125rem !important;
+  line-height: 1.55 !important;
+  color: var(--color-text-muted, #80808c) !important;
+  margin-bottom: 1.15rem !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-footer {
+  display: flex !important;
+  align-items: center !important;
+  justify-content: space-between !important;
+  gap: 0.5rem !important;
+  margin-top: 0.25rem !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-progress-text {
+  font-family: var(--font-mono, monospace) !important;
+  font-size: 0.72rem !important;
+  color: var(--color-text-dim, #484852) !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-close-btn {
+  color: var(--color-text-dim, #484852) !important;
+  transition: color 120ms ease !important;
+  top: 10px !important;
+  right: 10px !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-close-btn:hover {
+  color: var(--color-text, #f0f0f4) !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-prev-btn {
+  background: var(--color-surface-raised, #18171c) !important;
+  border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  color: var(--color-text, #f0f0f4) !important;
+  border-radius: var(--radius-sm, 4px) !important;
+  padding: 0.35rem 0.75rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 80ms ease, color 180ms ease-out !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-prev-btn:hover {
+  background: var(--color-surface-hover, #222029) !important;
+  color: var(--color-primary-hover, #a78bfa) !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-next-btn {
+  background: var(--color-primary, #7c3aed) !important;
+  border: none !important;
+  color: var(--color-on-primary, #f0f0f4) !important;
+  border-radius: var(--radius-sm, 4px) !important;
+  padding: 0.35rem 0.85rem !important;
+  font-size: 0.75rem !important;
+  font-weight: 500 !important;
+  cursor: pointer !important;
+  transition: background-color 80ms ease, box-shadow 240ms cubic-bezier(0.22, 1, 0.36, 1) !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-next-btn:hover {
+  background: var(--color-primary-hover, #a78bfa) !important;
+  box-shadow: var(--glow-leger, 0 0 12px rgba(124, 58, 237, 0.35)) !important;
+}
+
+.driver-popover.hackmanite-tour-popover .driver-popover-arrow-side-top {
+  border-top-color: var(--color-surface, #111014) !important;
+}
+.driver-popover.hackmanite-tour-popover .driver-popover-arrow-side-bottom {
+  border-bottom-color: var(--color-surface, #111014) !important;
+}
+.driver-popover.hackmanite-tour-popover .driver-popover-arrow-side-left {
+  border-left-color: var(--color-surface, #111014) !important;
+}
+.driver-popover.hackmanite-tour-popover .driver-popover-arrow-side-right {
+  border-right-color: var(--color-surface, #111014) !important;
+}

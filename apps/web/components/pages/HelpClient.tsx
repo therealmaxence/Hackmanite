@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 import Header from '@/components/layout/Header';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/lib/i18n';
@@ -331,9 +332,17 @@ const HELP_TRANSLATIONS = {
 };
 
 export default function HelpClient() {
-  const { language } = useTranslation();
+  const router = useRouter();
+  const { language, t } = useTranslation();
   const [activeTab, setActiveTab] = useState<TabKey>('guide');
   const [hoveredTab, setHoveredTab] = useState<TabKey | null>(null);
+
+  const handleStartTour = () => {
+    if (typeof window !== 'undefined') {
+      sessionStorage.setItem('hackmanite_trigger_tour', 'true');
+    }
+    router.push('/');
+  };
 
   const content = HELP_TRANSLATIONS[language] || HELP_TRANSLATIONS.en;
 
@@ -416,6 +425,67 @@ export default function HelpClient() {
               <h2 className="text-2xl font-semibold text-white/95">{content.sections[activeTab].title}</h2>
               <p className="text-sm text-white/50 mt-1 max-w-3xl leading-relaxed">{content.sections[activeTab].desc}</p>
             </div>
+
+            {activeTab === 'guide' && (
+              <div
+                style={{
+                  padding: '1.5rem 2rem',
+                  background: 'linear-gradient(135deg, rgba(124, 58, 237, 0.15) 0%, rgba(147, 51, 234, 0.05) 100%)',
+                  border: '1px solid rgba(139, 92, 246, 0.35)',
+                  borderRadius: 'var(--radius)',
+                  display: 'flex',
+                  flexDirection: 'row',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  gap: '1.5rem',
+                  flexWrap: 'wrap',
+                }}
+              >
+                <div style={{ maxWidth: '600px' }}>
+                  <h3 style={{ fontSize: '1.1rem', fontWeight: 600, color: '#ffffff', marginBottom: '0.35rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="var(--color-primary-hover)" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                      <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2" />
+                    </svg>
+                    {t('tour.help.banner_title')}
+                  </h3>
+                  <p style={{ fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.7)', margin: 0 }}>
+                    {t('tour.help.banner_desc')}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleStartTour}
+                  style={{
+                    background: 'linear-gradient(135deg, #7c3aed 0%, #9333ea 100%)',
+                    border: '1px solid rgba(168, 85, 247, 0.6)',
+                    color: '#ffffff',
+                    padding: '0.6rem 1.25rem',
+                    borderRadius: 'var(--radius-sm)',
+                    fontSize: '0.85rem',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    boxShadow: '0 4px 15px rgba(124, 58, 237, 0.35)',
+                    transition: 'all 150ms ease',
+                  }}
+                  onMouseEnter={(e) => {
+                    e.currentTarget.style.boxShadow = '0 6px 20px rgba(139, 92, 246, 0.5)';
+                    e.currentTarget.style.transform = 'translateY(-1px)';
+                  }}
+                  onMouseLeave={(e) => {
+                    e.currentTarget.style.boxShadow = '0 4px 15px rgba(124, 58, 237, 0.35)';
+                    e.currentTarget.style.transform = 'none';
+                  }}
+                >
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+                    <polygon points="5 3 19 12 5 21 5 3" />
+                  </svg>
+                  {t('tour.help.banner_btn')}
+                </button>
+              </div>
+            )}
 
             <div className="grid grid-cols-1 gap-6">
               {content.sections[activeTab].items.map((item, index) => (

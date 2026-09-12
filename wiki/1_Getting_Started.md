@@ -33,6 +33,20 @@ If you wish to compile the application binaries yourself or build a new portable
 
 ---
 
+## Interactive Guided Onboarding
+
+When you first launch Hackmanite (on both desktop and web), an interactive step-by-step onboarding tour automatically launches to walk you through the interface:
+* **Welcome Overview**: Introduces Hackmanite's private, local entity-relationship graph concept.
+* **Document Dropzone**: Highlights supported file types and OCR extraction.
+* **Extraction Queue**: Explains asynchronous pipeline processing and retrying failed files.
+* **Navigation & Shortcuts**: Reviews analytical views and keyboard shortcuts (`Alt + <Key>`).
+* **Session Status**: Shows active database session metrics and queue status.
+
+> [!TIP]
+> You can replay the guided tour at any time by clicking the **"Guided Tour"** button in the Workspace menu, from the Home screen, or via the interactive tour banner in the Help Center. The tour is available in both English and French.
+
+---
+
 ## Document Ingestion Dropzone
 
 When you launch Hackmanite, you will land on the **Home Dashboard**. 

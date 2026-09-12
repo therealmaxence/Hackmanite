@@ -28,6 +28,7 @@
     "cytoscape-cose-bilkent": "^4.1.0",
     "date-fns": "^3.6.0",
     "decimal.js-light": "^2.5.1",
+    "driver.js": "^1.8.0",
     "fast-equals": "^6.0.0",
     "file-type": "^19.4.0",
     "framer-motion": "^11.2.10",

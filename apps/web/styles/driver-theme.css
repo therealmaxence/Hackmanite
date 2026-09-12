@@ -1,16 +1,40 @@
 /* Hackmanite Native UI Theme for Driver.js - Borderless & Opaque Design System */
 
 .driver-overlay {
-  background-color: rgba(5, 4, 7, 0.5) !important;
+  background-color: transparent !important;
   backdrop-filter: none !important;
   -webkit-backdrop-filter: none !important;
+  clip-path: inset(2px) !important;
+}
+
+/* Glowing Spotlight on the active stage cutout */
+.driver-overlay path {
+  fill: #000000 !important;
+  fill-opacity: 0.85 !important;
+  stroke: var(--color-primary, #7c3aed) !important;
+  stroke-width: 2.5px !important;
+  stroke-linejoin: round !important;
+  filter: drop-shadow(0 0 12px rgba(124, 58, 237, 0.8)) drop-shadow(0 0 3px rgba(167, 139, 250, 0.9)) !important;
+}
+
+/* When a step is centered without a target element (e.g. final step), suppress the stage border */
+body:has(#driver-dummy-element.driver-active-element) .driver-overlay path {
+  stroke: transparent !important;
+  filter: none !important;
+}
+
+/* Elevate and subtly brighten the active element so it pops clearly against the dark background */
+.driver-active-element {
+  filter: brightness(1.08) !important;
+  box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.35), 0 0 24px rgba(124, 58, 237, 0.25) !important;
+  transition: filter 200ms ease, box-shadow 200ms ease !important;
 }
 
 .driver-popover.hackmanite-tour-popover {
   background: var(--color-surface, #111014) !important;
-  border: 1px solid rgba(255, 255, 255, 0.1) !important;
+  border: 1px solid rgba(139, 92, 246, 0.35) !important;
   border-radius: var(--radius, 6px) !important;
-  box-shadow: 0 16px 36px rgba(0, 0, 0, 0.65) !important;
+  box-shadow: 0 20px 48px rgba(0, 0, 0, 0.85), 0 0 24px rgba(124, 58, 237, 0.15) !important;
   color: var(--color-text, #f0f0f4) !important;
   padding: 1.25rem 1.25rem !important;
   font-family: var(--font-body, system-ui, -apple-system, sans-serif) !important;

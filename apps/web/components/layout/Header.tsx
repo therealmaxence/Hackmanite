@@ -195,8 +195,14 @@ export default function Header() {
                 </svg>
               </button>
               {expanded && (
-                <div style={{ position: 'absolute', top: '100%', left: 0, paddingTop: 8, zIndex: 10 }}>
-                  <div role="menu" style={{ minWidth: 210, background: 'var(--color-surface)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: 6, boxShadow: '0 16px 34px rgba(0, 0, 0, 0.48)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                <div style={{
+                  position: 'absolute',
+                  top: '100%',
+                  ...(group.key === 'general-settings' ? { right: 0 } : { left: 0 }),
+                  paddingTop: 8,
+                  zIndex: 10,
+                }}>
+                  <div role="menu" style={{ minWidth: 230, background: 'var(--color-surface)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: 6, boxShadow: '0 16px 34px rgba(0, 0, 0, 0.48)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {group.items.map((item) => {
                       const itemActive = pathname === item.href;
                       const shortcut = getShortcutDisplay(item.href);

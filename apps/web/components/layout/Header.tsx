@@ -4,9 +4,13 @@ import Image from 'next/image';
 import { useState, useEffect, useCallback, type CSSProperties } from 'react';
 import { usePathname } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
+import { NAVIGATION_SHORTCUTS } from '@/hooks/useNavigationShortcuts';
 
 type NavItem = { href: string; labelKey: string; id: string };
 type NavGroup = { key: string; labelKey: string; id: string; items: NavItem[] };
+
+const getShortcutDisplay = (href: string) =>
+  NAVIGATION_SHORTCUTS.find((s) => s.route === href)?.keyDisplay;
 
 const UPLOAD_ITEM: NavItem = { href: '/', labelKey: 'nav.upload', id: 'nav-upload' };
 const NAV_GROUPS: NavGroup[] = [
@@ -138,6 +142,7 @@ export default function Header() {
         <Link
           id={UPLOAD_ITEM.id}
           href={UPLOAD_ITEM.href}
+          title={`${t(UPLOAD_ITEM.labelKey)} (Alt+U)`}
           style={navButtonStyle(pathname === UPLOAD_ITEM.href)}
           onMouseEnter={(e) => hoverSurface(e.currentTarget, pathname === UPLOAD_ITEM.href)}
           onMouseLeave={(e) => { if (pathname !== UPLOAD_ITEM.href) e.currentTarget.style.color = 'var(--color-text-muted)'; }}
@@ -176,12 +181,55 @@ export default function Header() {
               </button>
               {expanded && (
                 <div style={{ position: 'absolute', top: '100%', left: 0, paddingTop: 8, zIndex: 10 }}>
-                  <div role="menu" style={{ minWidth: 190, background: 'var(--color-surface)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: 6, boxShadow: '0 16px 34px rgba(0, 0, 0, 0.48)', display: 'flex', flexDirection: 'column', gap: 2 }}>
+                  <div role="menu" style={{ minWidth: 210, background: 'var(--color-surface)', border: '1px solid var(--color-surface-raised)', borderRadius: 'var(--radius)', padding: 6, boxShadow: '0 16px 34px rgba(0, 0, 0, 0.48)', display: 'flex', flexDirection: 'column', gap: 2 }}>
                     {group.items.map((item) => {
                       const itemActive = pathname === item.href;
+                      const shortcut = getShortcutDisplay(item.href);
                       return (
-                        <Link key={item.href} href={item.href} role="menuitem" onClick={() => setOpenMenu(null)} style={{ padding: '0.625rem 0.75rem', borderRadius: 'var(--radius-sm)', fontSize: '0.8125rem', fontWeight: 500, textDecoration: 'none', color: itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: itemActive ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 120ms ease, color 120ms ease' }} onMouseEnter={(e) => { e.currentTarget.style.background = 'var(--color-surface-raised)'; e.currentTarget.style.color = 'var(--color-primary-hover)'; }} onMouseLeave={(e) => { e.currentTarget.style.background = itemActive ? 'var(--color-surface-raised)' : 'transparent'; e.currentTarget.style.color = itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)'; }}>
-                          {t(item.labelKey)}
+                        <Link
+                          key={item.href}
+                          href={item.href}
+                          role="menuitem"
+                          onClick={() => setOpenMenu(null)}
+                          style={{
+                            padding: '0.625rem 0.75rem',
+                            borderRadius: 'var(--radius-sm)',
+                            fontSize: '0.8125rem',
+                            fontWeight: 500,
+                            textDecoration: 'none',
+                            color: itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)',
+                            background: itemActive ? 'var(--color-surface-raised)' : 'transparent',
+                            transition: 'background-color 120ms ease, color 120ms ease',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'space-between',
+                            gap: '0.75rem',
+                          }}
+                          onMouseEnter={(e) => {
+                            e.currentTarget.style.background = 'var(--color-surface-raised)';
+                            e.currentTarget.style.color = 'var(--color-primary-hover)';
+                          }}
+                          onMouseLeave={(e) => {
+                            e.currentTarget.style.background = itemActive ? 'var(--color-surface-raised)' : 'transparent';
+                            e.currentTarget.style.color = itemActive ? 'var(--color-primary-hover)' : 'var(--color-text-muted)';
+                          }}
+                        >
+                          <span>{t(item.labelKey)}</span>
+                          {shortcut && (
+                            <kbd style={{
+                              fontSize: '0.6875rem',
+                              fontFamily: 'var(--font-mono, monospace)',
+                              color: 'var(--color-text-dim)',
+                              background: 'rgba(255, 255, 255, 0.05)',
+                              border: '1px solid rgba(255, 255, 255, 0.12)',
+                              borderRadius: '3px',
+                              padding: '1px 5px',
+                              fontWeight: 400,
+                              letterSpacing: '0.02em',
+                            }}>
+                              {shortcut}
+                            </kbd>
+                          )}
                         </Link>
                       );
                     })}
@@ -205,17 +253,22 @@ export default function Header() {
           <>
             <div onClick={() => setIsOpen(false)} style={{ position: 'fixed', top: 64, left: 0, right: 0, bottom: 0, zIndex: 99, background: 'rgba(0, 0, 0, 0.6)' }} />
             <div style={{ position: 'absolute', top: 'calc(100% + 8px)', right: 0, width: '230px', background: 'var(--color-surface)', border: 'none', borderRadius: 'var(--radius)', padding: '6px', boxShadow: '0 12px 30px rgba(0, 0, 0, 0.6)', display: 'flex', flexDirection: 'column', gap: '2px', zIndex: 100 }}>
-              <Link href={UPLOAD_ITEM.href} onClick={() => setIsOpen(false)} style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', color: pathname === UPLOAD_ITEM.href ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: pathname === UPLOAD_ITEM.href ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 80ms ease, color 300ms ease-in' }}>
-                {t(UPLOAD_ITEM.labelKey)}
+              <Link href={UPLOAD_ITEM.href} onClick={() => setIsOpen(false)} style={{ padding: '0.75rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', color: pathname === UPLOAD_ITEM.href ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: pathname === UPLOAD_ITEM.href ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 80ms ease, color 300ms ease-in' }}>
+                <span>{t(UPLOAD_ITEM.labelKey)}</span>
+                <kbd style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--color-text-dim)', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '3px', padding: '1px 5px' }}>Alt+U</kbd>
               </Link>
               {NAV_GROUPS.map((group) => (
                 <div key={group.key} style={{ display: 'flex', flexDirection: 'column', gap: 2, paddingTop: 6, marginTop: 4, borderTop: '1px solid var(--color-surface-raised)' }}>
                   <span style={{ padding: '0.375rem 1rem 0.25rem', fontSize: '0.6875rem', fontWeight: 700, color: 'var(--color-text-dim)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{t(group.labelKey)}</span>
                   {group.items.map((item) => {
                     const active = pathname === item.href;
+                    const shortcut = getShortcutDisplay(item.href);
                     return (
-                      <Link key={item.href} id={`${item.id}-mobile`} href={item.href} onClick={() => setIsOpen(false)} style={{ padding: '0.625rem 1rem', display: 'flex', alignItems: 'center', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', color: active ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: active ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 80ms ease, color 300ms ease-in' }}>
-                        {t(item.labelKey)}
+                      <Link key={item.href} id={`${item.id}-mobile`} href={item.href} onClick={() => setIsOpen(false)} style={{ padding: '0.625rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between', borderRadius: 'var(--radius-sm)', fontSize: '0.875rem', fontWeight: 500, textDecoration: 'none', color: active ? 'var(--color-primary-hover)' : 'var(--color-text-muted)', background: active ? 'var(--color-surface-raised)' : 'transparent', transition: 'background-color 80ms ease, color 300ms ease-in' }}>
+                        <span>{t(item.labelKey)}</span>
+                        {shortcut && (
+                          <kbd style={{ fontSize: '0.6875rem', fontFamily: 'var(--font-mono, monospace)', color: 'var(--color-text-dim)', background: 'rgba(255, 255, 255, 0.05)', border: '1px solid rgba(255, 255, 255, 0.12)', borderRadius: '3px', padding: '1px 5px' }}>{shortcut}</kbd>
+                        )}
                       </Link>
                     );
                   })}

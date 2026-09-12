@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "@/styles/globals.css";
 import ElectronTitleBar from "@/components/layout/ElectronTitleBar";
+import NavigationShortcuts from "@/components/layout/NavigationShortcuts";
 import { I18nProvider } from "@/lib/i18n";
 
 export const metadata: Metadata = {
@@ -23,6 +24,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body className="antialiased">
         <I18nProvider>
+          <NavigationShortcuts />
           <ElectronTitleBar />
           <div className="page-container">{children}</div>
         </I18nProvider>

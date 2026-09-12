@@ -5,7 +5,7 @@ import Header from '@/components/layout/Header';
 import { motion } from 'framer-motion';
 import { useTranslation } from '@/lib/i18n';
 
-type TabKey = 'guide' | 'algorithms' | 'filters' | 'weak_signals' | 'pipelines' | 'ai_report';
+type TabKey = 'guide' | 'algorithms' | 'filters' | 'weak_signals' | 'pipelines' | 'ai_report' | 'shortcuts';
 
 const HELP_TRANSLATIONS = {
   en: {
@@ -18,6 +18,7 @@ const HELP_TRANSLATIONS = {
       weak_signals: 'Weak Signals',
       pipelines: 'Pipelines',
       ai_report: 'LLM Reports',
+      shortcuts: 'Keyboard Shortcuts',
     },
     sections: {
       guide: {
@@ -155,6 +156,16 @@ const HELP_TRANSLATIONS = {
           },
         ]
       },
+      shortcuts: {
+        title: 'Keyboard Navigation Shortcuts',
+        desc: 'Hackmanite provides global Alt-based shortcuts to navigate between views instantly without clicking. Shortcuts are disabled while editing text in inputs or textareas.',
+        items: [
+          {
+            title: 'Global Navigation Shortcuts Map',
+            content: 'Press Alt with any of the following keys to jump straight to the corresponding view:\n\n• **Alt + U** : Upload & Home\n• **Alt + G** : Interactive Graph Explorer\n• **Alt + E** : Email Dashboard\n• **Alt + S** : Statistics Dashboard\n• **Alt + W** : Weak Signals Discovery\n• **Alt + P** : Pipeline Builder\n• **Alt + R** : LLM Intelligence Report\n• **Alt + O** : Session Management\n• **Alt + ,** : Application Settings\n• **Alt + H** : Help Center\n\n*Note: Shortcuts are paused automatically while focused on input fields or search bars to prevent interfering with typing.*',
+          },
+        ]
+      },
     },
   },
   fr: {
@@ -167,6 +178,7 @@ const HELP_TRANSLATIONS = {
       weak_signals: 'Signaux Faibles',
       pipelines: 'Pipelines',
       ai_report: 'Rapports LLM',
+      shortcuts: 'Raccourcis Clavier',
     },
     sections: {
       guide: {
@@ -304,6 +316,16 @@ const HELP_TRANSLATIONS = {
           },
         ]
       },
+      shortcuts: {
+        title: 'Raccourcis Clavier de Navigation',
+        desc: "Hackmanite intègre des raccourcis globaux avec la touche Alt pour basculer instantanément d'une page à l'autre sans utiliser la souris. Ils sont désactivés lors de la saisie dans un champ de texte.",
+        items: [
+          {
+            title: 'Tableau des Raccourcis Globaux',
+            content: 'Appuyez simultanément sur Alt et la touche indiquée pour naviguer immédiatement vers le module souhaité :\n\n• **Alt + U** : Import / Accueil\n• **Alt + G** : Explorateur de Graphe Interactif\n• **Alt + E** : Registre des E-mails\n• **Alt + S** : Tableau de Bord Statistiques\n• **Alt + W** : Détection des Signaux Faibles\n• **Alt + P** : Constructeur de Pipelines\n• **Alt + R** : Rapport d\'Intelligence LLM\n• **Alt + O** : Gestion des Sessions\n• **Alt + ,** : Paramètres de l\'Application\n• **Alt + H** : Centre d\'Aide\n\n*Remarque : Les raccourcis sont automatiquement ignorés lorsque vous tapez dans un champ de saisie ou une zone de texte.*',
+          },
+        ]
+      },
     },
   },
 };
@@ -322,6 +344,7 @@ export default function HelpClient() {
     { key: 'weak_signals', label: content.tabs.weak_signals },
     { key: 'pipelines', label: content.tabs.pipelines },
     { key: 'ai_report', label: content.tabs.ai_report },
+    { key: 'shortcuts', label: content.tabs.shortcuts },
   ];
 
   return (

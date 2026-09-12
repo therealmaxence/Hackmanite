@@ -11,7 +11,7 @@ This wiki is designed to help you understand all the capabilities of Hackmanite,
 Explore specific modules and features of the application:
 
 1. **[Getting Started](1_Getting_Started.md)**
-   * Installation methods, first-time setup, the Ingestion Dropzone, supported formats, and OCR configuration.
+   * Installation methods, first-time setup, the Ingestion Dropzone, supported formats, OCR configuration, and navigation keyboard shortcuts.
 2. **[Session Management](2_Session_Management.md)**
    * Creating and switching sessions, database storage, and exporting/importing snapshots (JSON, GraphML, Obsidian Vault).
 3. **[Interactive Graph Explorer](3_Interactive_Graph_Explorer.md)**

@@ -20,6 +20,7 @@ export const TRANSLATIONS = {
     'nav.session': 'Session',
     'nav.settings': 'Settings',
     'nav.help': 'Help',
+    'nav.shortcuts.title': 'Keyboard Shortcuts',
 
     // Pipeline Page
     'pipeline.title': 'Pipeline',
@@ -691,6 +692,7 @@ export const TRANSLATIONS = {
     'nav.session': 'Session',
     'nav.settings': 'Paramètres',
     'nav.help': 'Aide',
+    'nav.shortcuts.title': 'Raccourcis Clavier',
 
     // Pipeline Page
     'pipeline.title': 'Pipeline',

@@ -79,3 +79,26 @@ To extract entities from scanned documents, image-based PDFs, or standalone imag
 
 ### Auto-Detection:
 Hackmanite will automatically detect Tesseract if installed at its standard system location. Once detected, any scanned or image documents dropped into the application will be OCR-scanned before applying NLP entity recognition.
+
+---
+
+## Navigation Keyboard Shortcuts
+
+To navigate rapidly between views without mouse clicks, Hackmanite features global `Alt`-based keyboard shortcuts. These shortcuts work across the application (and automatically pause when actively typing inside form inputs or textareas):
+
+| Shortcut | Destination | Description |
+| :--- | :--- | :--- |
+| **`Alt + U`** | **Upload / Home** (`/`) | Return to the file ingestion dropzone and queue |
+| **`Alt + G`** | **Interactive Graph** (`/graph`) | Open the interactive entity-relationship graph canvas |
+| **`Alt + E`** | **Email Dashboard** (`/emails`) | Browse and filter extracted email archives and headers |
+| **`Alt + S`** | **Statistics Dashboard** (`/stats`) | Inspect entity distributions, category counts, and centrality |
+| **`Alt + W`** | **Weak Signals Discovery** (`/weak-signals`) | Discover rare bridges, niche topics, and spiking signals |
+| **`Alt + P`** | **Pipeline Builder** (`/pipelines`) | Create and run automated graph analysis pipelines |
+| **`Alt + R`** | **AI Intelligence Report** (`/ai-report`) | Generate structured LLM summaries and entity dossiers |
+| **`Alt + O`** | **Session Management** (`/session`) | Switch between active sessions or restore backups |
+| **`Alt + ,`** | **Application Settings** (`/settings`) | Manage models, appearance, language, and system settings |
+| **`Alt + H`** | **Help Center** (`/help`) | Access user guides, algorithms, and documentation |
+
+> [!TIP]
+> Shortcut badges are also displayed directly inside the top navigation menu dropdowns for quick reference.
+

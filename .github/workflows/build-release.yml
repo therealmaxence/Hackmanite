@@ -44,7 +44,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Calculate & Update Version
         id: version_step
@@ -81,7 +81,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -96,6 +96,7 @@ jobs:
           npx prisma generate
           $env:BUILD_DIR="next-production"
           npm run build
+          npm prune --omit=dev
 
       - name: Build Python NLP Service
         shell: powershell
@@ -138,7 +139,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Setup Python
         uses: actions/setup-python@v5
@@ -156,6 +157,7 @@ jobs:
           npm install
           npx prisma generate
           BUILD_DIR="next-production" npm run build
+          npm prune --omit=dev
 
       - name: Build Python NLP Service
         run: |
@@ -198,9 +200,21 @@ jobs:
           name: linux-binaries
           path: release-assets
 
-      - name: Generate Checksums
+      - name: Verify and Prepare Assets
         run: |
           cd release-assets
+          ls -lh
+          for file in *; do
+            if [ -f "$file" ]; then
+              size=$(stat -c%s "$file" 2>/dev/null || stat -f%z "$file" 2>/dev/null)
+              if [ "$size" -ge 2147483648 ]; then
+                echo "Warning: $file is $size bytes (exceeds GitHub Release 2GB limit)."
+                echo "Compressing $file with gzip to fit under 2GB limit..."
+                gzip -c "$file" > "${file}.gz"
+                rm "$file"
+              fi
+            fi
+          done
           sha256sum * > SHA256SUMS.txt
           cat SHA256SUMS.txt
 
@@ -232,7 +246,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 20
+          node-version: 22
 
       - name: Sync Wiki & README Content
         run: |

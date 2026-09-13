@@ -2,7 +2,7 @@
   "appId": "com.datalake.hackmanite",
   "productName": "Hackmanite",
   "npmRebuild": false,
-  "compression": "normal",
+  "compression": "maximum",
   "directories": {
     "output": "dist"
   },
@@ -30,8 +30,17 @@
         "!cache.json",
         "!uploads/**/*",
         "!node_modules_old/**/*",
-        "!.next/cache/**/*",
-        "!logs/**/*"
+        "!.next/**/*",
+        "!next-production/cache/**/*",
+        "!logs/**/*",
+        "!docs/**/*",
+        "!tests/**/*",
+        "!test/**/*",
+        "!playwright-report/**/*",
+        "!test-results/**/*",
+        "!node_modules/@playwright/**/*",
+        "!node_modules/.cache/**/*",
+        "!node_modules/typedoc/**/*"
       ]
     }
   ],

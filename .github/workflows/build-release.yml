@@ -33,6 +33,7 @@ jobs:
     outputs:
       new_version: ${{ steps.version_step.outputs.new_version }}
       tag_name: ${{ steps.version_step.outputs.tag_name }}
+      commit_sha: ${{ steps.commit_step.outputs.commit_sha }}
     steps:
       - name: Checkout Code
         uses: actions/checkout@v4
@@ -50,27 +51,32 @@ jobs:
         run: node scripts/bump-version.js ${{ github.event.inputs.bump_type || 'patch' }}
 
       - name: Commit & Tag Release
+        id: commit_step
         run: |
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add apps/desktop/package.json apps/web/package.json website/package.json README.md
           if ! git diff --cached --quiet; then
             git commit -m "chore(release): bump version to ${{ steps.version_step.outputs.new_version }} [skip ci]"
-            git tag ${{ steps.version_step.outputs.tag_name }}
-            git push origin ${{ github.ref_name }} --follow-tags
+            git tag -a "${{ steps.version_step.outputs.tag_name }}" -m "Release ${{ steps.version_step.outputs.tag_name }}"
+            git push origin ${{ github.ref_name }}
+            git push origin "${{ steps.version_step.outputs.tag_name }}"
           else
-            git tag ${{ steps.version_step.outputs.tag_name }} || true
-            git push origin ${{ steps.version_step.outputs.tag_name }}
+            git tag -a "${{ steps.version_step.outputs.tag_name }}" -m "Release ${{ steps.version_step.outputs.tag_name }}" || true
+            git push origin "${{ steps.version_step.outputs.tag_name }}" || true
           fi
+          echo "commit_sha=$(git rev-parse HEAD)" >> $GITHUB_OUTPUT
 
   build-windows:
     runs-on: windows-latest
     needs: bump-version
     steps:
-      - name: Checkout Code at Tag
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.bump-version.outputs.tag_name }}
+          ref: ${{ needs.bump-version.outputs.commit_sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -122,10 +128,12 @@ jobs:
     runs-on: ubuntu-latest
     needs: bump-version
     steps:
-      - name: Checkout Code at Tag
+      - name: Checkout Code
         uses: actions/checkout@v4
         with:
-          ref: ${{ needs.bump-version.outputs.tag_name }}
+          ref: ${{ needs.bump-version.outputs.commit_sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
@@ -200,6 +208,7 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.bump-version.outputs.tag_name }}
+          target_commitish: ${{ needs.bump-version.outputs.commit_sha }}
           name: Hackmanite v${{ needs.bump-version.outputs.new_version }}
           draft: false
           prerelease: false
@@ -216,7 +225,9 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.ref_name }}
+          ref: ${{ needs.bump-version.outputs.commit_sha }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v4

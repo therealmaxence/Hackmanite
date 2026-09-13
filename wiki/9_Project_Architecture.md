@@ -411,3 +411,82 @@ graph TD
 1. **Graph DB Insertion**: Nodes representing `Entity` and `FileRef` and edges representing `OCCURS_IN` and `CO_OCCURS` are added to **KuzuDB** using parameterized Cypher statements.
 2. **Relational Synchronization**: In parallel, occurrence counts, text neighborhoods, and email metadata are saved to SQLite via Prisma transactions ([executor.ts](file:///c:/Users/maxen/Documents/POLYTECH/Stage_FI4/EntityGraph/EntityGraph/apps/web/lib/queue/executor.ts)), and the file status is updated to `DONE`.
 3. **UI Update**: Next.js UI queries the updated graph and renders the interactive network using **Cytoscape.js**.
+
+---
+
+## 5. Automated CI/CD & Release Pipeline Architecture
+
+Hackmanite features a fully automated Continuous Integration and Continuous Delivery (CI/CD) pipeline built with GitHub Actions (`.github/workflows/build-release.yml`). The pipeline eliminates the need for end users to manually clone the repository or configure Python and Node.js toolchains.
+
+```mermaid
+flowchart TD
+    subgraph Trigger["1. Trigger & Change Filter"]
+        Push["git push origin master"] --> Filter{"Did apps/** or configs change?"}
+        Filter -- "Docs only (wiki/, website/, README)" --> DocsOnly["Trigger deploy-docs.yml\nFast docs site update"]
+        Filter -- "Code changed (apps/**)" --> BumpJob["Job 1: bump-version\n(ubuntu-latest)"]
+    end
+
+    subgraph Versioning["2. Version Management"]
+        BumpJob --> CalcVersion["scripts/bump-version.js\nCalculate patch bump"]
+        CalcVersion --> UpdateManifests["Update package.json (desktop, web, website)\nUpdate README.md"]
+        UpdateManifests --> GitCommit["git commit [skip ci]\ngit tag vX.Y.Z\ngit push --follow-tags"]
+    end
+
+    subgraph Matrix["3. Parallel Matrix Compilation"]
+        GitCommit --> WinRunner["Job 2: build-windows\n(windows-latest)"]
+        GitCommit --> LinRunner["Job 3: build-linux\n(ubuntu-latest)"]
+
+        subgraph WinSteps["Windows Build"]
+            WinRunner --> WinNext["Build Next.js\nBUILD_DIR=next-production"]
+            WinNext --> WinNLP["PyInstaller hackmanite-nlp.spec\nen/fr/ru spaCy models + KuzuDB"]
+            WinNLP --> WinElectron["electron-builder\nProduce .exe installer + .zip portable"]
+        end
+
+        subgraph LinSteps["Linux Build"]
+            LinRunner --> LinNext["Build Next.js\nBUILD_DIR=next-production"]
+            LinNext --> LinNLP["PyInstaller hackmanite-nlp.spec\nLinux ELF binary"]
+            LinNLP --> LinElectron["electron-builder --linux\nProduce .deb package + .AppImage"]
+        end
+    end
+
+    subgraph Release["4. Distribution & Deployment"]
+        WinElectron --> Collect["Job 4: publish-release\n(ubuntu-latest)"]
+        LinElectron --> Collect
+        Collect --> Checksum["Generate SHA256SUMS.txt"]
+        Checksum --> GHRelease["Publish GitHub Release (vX.Y.Z)\nUpload .exe, .zip, .deb, .AppImage"]
+
+        GHRelease --> WebDeploy["Job 5: deploy-website\n(ubuntu-latest)"]
+        WebDeploy --> GenManifest["Generate src/data/releases.json\nInject asset download URLs"]
+        GenManifest --> BuildSite["Vite production build\nSync wiki & README markdown"]
+        BuildSite --> GHPages["Deploy to gh-pages branch\nLive on therealmaxence.github.io/Hackmanite"]
+    end
+
+    style Push fill:#1e293b,stroke:#a78bfa,stroke-width:2px,color:#fff
+    style Filter fill:#1e293b,stroke:#7c3aed,stroke-width:1px,color:#fff
+    style BumpJob fill:#1e293b,stroke:#475569,stroke-width:1px,color:#fff
+    style WinRunner fill:#1e293b,stroke:#38bdf8,stroke-width:1px,color:#fff
+    style LinRunner fill:#1e293b,stroke:#f97316,stroke-width:1px,color:#fff
+    style GHRelease fill:#1e293b,stroke:#a78bfa,stroke-width:2px,color:#fff
+    style GHPages fill:#1e293b,stroke:#34d399,stroke-width:2px,color:#fff
+```
+
+### 5.1 Change Detection & Path Filtering
+The release workflow is gated by GitHub path filters:
+* Triggers exclusively on changes to `apps/**`, root configurations, and release workflows.
+* Pure documentation commits (`wiki/**`, `website/**`, `README.md`) bypass the desktop build entirely and route to `deploy-docs.yml`, preventing unneeded multi-runner compilation cycles.
+
+### 5.2 Deterministic Version Bumping
+The version step executes `scripts/bump-version.js` on an isolated Ubuntu runner:
+* Synchronizes semantic versions across `apps/desktop/package.json`, `apps/web/package.json`, and `website/package.json`.
+* Applies a `[skip ci]` commit back to `master` and creates git tag `vX.Y.Z`.
+* Guarantees all binary names, installer manifests, and Electron runtime APIs (`app.getVersion()`) match identically.
+
+### 5.3 Parallel Native Compilation
+Because Python binaries and native Node C++ addons (Prisma, KuzuDB) are platform-specific, cross-compilation from a single runner is avoided:
+* **`windows-latest`**: Native compilation of `hackmanite-nlp.exe` using PyInstaller, packaging the Next.js bundle into `resources/web`, and bundling into `Hackmanite-Setup-X.Y.Z.exe` and `Hackmanite-X.Y.Z-win.zip`.
+* **`ubuntu-latest`**: Native compilation of the Linux ELF `hackmanite-nlp` binary, packaging into Debian `hackmanite-desktop_X.Y.Z_amd64.deb` and universal `Hackmanite-X.Y.Z.AppImage`.
+
+### 5.4 Dual-Channel Distribution
+* **GitHub Releases**: Hosts full binary artifacts with SHA-256 integrity verification files.
+* **GitHub Pages Web Portal**: Automatically redeploys with updated download endpoints, allowing users to download platform-specific packages with one click directly from [https://therealmaxence.github.io/Hackmanite/](https://therealmaxence.github.io/Hackmanite/).
+

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { ChevronDown, Github } from 'lucide-react';
+import { ChevronDown, Github, Download } from 'lucide-react';
+import { useReleaseData } from '../utils/useReleaseData';
+import { DownloadModal } from './DownloadModal';
 
 interface HackmaniteHeaderProps {
   activeTab: string;
@@ -13,6 +15,8 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
   selectedDocId,
   setSelectedDocId,
 }) => {
+  const { release } = useReleaseData();
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   const [openDropdown, setOpenDropdown] = useState<string | null>(null);
 
   const navGroups = [
@@ -90,7 +94,7 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
             by GEODE
           </span>
           <span className="hidden sm:inline-block text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-[#18171c] text-[#80808c]">
-            v1.0.0
+            {release.tag}
           </span>
         </div>
       </div>
@@ -164,6 +168,14 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
       </nav>
 
       <div className="flex items-center space-x-3">
+        <button
+          onClick={() => setIsDownloadOpen(true)}
+          className="flex items-center space-x-2 px-3.5 py-2 text-xs font-semibold bg-gradient-to-r from-purple-600 to-indigo-600 hover:from-purple-500 hover:to-indigo-500 text-white rounded-md shadow-md shadow-purple-600/20 transition-all border-none cursor-pointer"
+        >
+          <Download className="w-3.5 h-3.5" />
+          <span>Download</span>
+        </button>
+
         <a
           href="https://github.com/therealmaxence/Hackmanite"
           target="_blank"
@@ -174,6 +186,8 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
           <span className="hidden sm:inline">GitHub Repository</span>
         </a>
       </div>
+
+      <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
     </header>
   );
 };

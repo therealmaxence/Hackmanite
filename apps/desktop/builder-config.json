@@ -38,6 +38,12 @@
   "win": {
     "target": [
       {
+        "target": "nsis",
+        "arch": [
+          "x64"
+        ]
+      },
+      {
         "target": "zip",
         "arch": [
           "x64"
@@ -45,6 +51,12 @@
       }
     ],
     "icon": "hackmanite_main_icon.ico"
+  },
+  "nsis": {
+    "oneClick": false,
+    "allowToChangeInstallationDirectory": true,
+    "createDesktopShortcut": true,
+    "createStartMenuShortcut": true
   },
   "linux": {
     "target": [

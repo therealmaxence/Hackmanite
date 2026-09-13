@@ -1,11 +1,15 @@
-import React from 'react';
-import { Network, ArrowRight, ShieldCheck, Database, Cpu, FileText, Sparkles, Layers } from 'lucide-react';
+import React, { useState } from 'react';
+import { Network, ArrowRight, ShieldCheck, Database, Cpu, FileText, Sparkles, Layers, Download } from 'lucide-react';
+import { useReleaseData } from '../utils/useReleaseData';
+import { DownloadModal } from './DownloadModal';
 
 interface HeroProps {
   onNavigate: (id: string) => void;
 }
 
 export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
+  const { release } = useReleaseData();
+  const [isDownloadOpen, setIsDownloadOpen] = useState(false);
   return (
     <section id="overview" className="relative pt-32 pb-20 overflow-hidden">
       {/* Background Ambient Glows */}
@@ -63,16 +67,24 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           {/* Action CTAs */}
           <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
             <button
-              onClick={() => onNavigate('graph-sandbox')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-indigo-600 via-indigo-500 to-purple-600 hover:from-indigo-500 hover:to-purple-500 text-white font-semibold text-sm shadow-xl shadow-indigo-600/30 hover:shadow-indigo-600/50 transition-all transform hover:-translate-y-0.5"
+              onClick={() => setIsDownloadOpen(true)}
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gradient-to-r from-purple-600 via-indigo-600 to-indigo-500 hover:from-purple-500 hover:to-indigo-500 text-white font-semibold text-sm shadow-xl shadow-purple-600/30 hover:shadow-purple-600/50 transition-all transform hover:-translate-y-0.5 cursor-pointer"
             >
-              <span>Explore Interactive Graph Sandbox</span>
+              <Download className="w-4 h-4" />
+              <span>Download Desktop App ({release.tag})</span>
+            </button>
+
+            <button
+              onClick={() => onNavigate('graph-sandbox')}
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900/80 hover:bg-gray-800/80 text-gray-200 border border-gray-700/60 font-semibold text-sm transition-all hover:text-white cursor-pointer"
+            >
+              <span>Explore Graph Sandbox</span>
               <ArrowRight className="w-4 h-4" />
             </button>
 
             <button
               onClick={() => onNavigate('db-schema')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900/80 hover:bg-gray-800/80 text-gray-200 border border-gray-700/60 font-semibold text-sm transition-all hover:text-white"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900/80 hover:bg-gray-800/80 text-gray-200 border border-gray-700/60 font-semibold text-sm transition-all hover:text-white cursor-pointer"
             >
               <Database className="w-4 h-4 text-indigo-400" />
               <span>Inspect Database Schema</span>
@@ -80,7 +92,7 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
 
             <button
               onClick={() => onNavigate('wiki')}
-              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900/80 hover:bg-gray-800/80 text-gray-200 border border-gray-700/60 font-semibold text-sm transition-all hover:text-white"
+              className="flex items-center gap-2 px-6 py-3.5 rounded-xl bg-gray-900/80 hover:bg-gray-800/80 text-gray-200 border border-gray-700/60 font-semibold text-sm transition-all hover:text-white cursor-pointer"
             >
               <FileText className="w-4 h-4 text-purple-400" />
               <span>Full Wiki Documentation</span>
@@ -113,6 +125,8 @@ export const Hero: React.FC<HeroProps> = ({ onNavigate }) => {
           ))}
         </div>
       </div>
+
+      <DownloadModal isOpen={isDownloadOpen} onClose={() => setIsDownloadOpen(false)} />
     </section>
   );
 };

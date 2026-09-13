@@ -1,0 +1,263 @@
+name: Build & Release Desktop Apps
+
+on:
+  push:
+    branches:
+      - master
+      - feature-updates
+    paths:
+      - 'apps/**'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/build-release.yml'
+      - 'scripts/**'
+  workflow_dispatch:
+    inputs:
+      bump_type:
+        description: 'Version bump level (patch, minor, major, or explicit semver)'
+        required: false
+        default: 'patch'
+
+permissions:
+  contents: write
+  pages: write
+  id-token: write
+
+concurrency:
+  group: 'release-desktop'
+  cancel-in-progress: false
+
+jobs:
+  bump-version:
+    runs-on: ubuntu-latest
+    outputs:
+      new_version: ${{ steps.version_step.outputs.new_version }}
+      tag_name: ${{ steps.version_step.outputs.tag_name }}
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Calculate & Update Version
+        id: version_step
+        run: node scripts/bump-version.js ${{ github.event.inputs.bump_type || 'patch' }}
+
+      - name: Commit & Tag Release
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add apps/desktop/package.json apps/web/package.json website/package.json README.md
+          if ! git diff --cached --quiet; then
+            git commit -m "chore(release): bump version to ${{ steps.version_step.outputs.new_version }} [skip ci]"
+            git tag ${{ steps.version_step.outputs.tag_name }}
+            git push origin ${{ github.ref_name }} --follow-tags
+          else
+            git tag ${{ steps.version_step.outputs.tag_name }} || true
+            git push origin ${{ steps.version_step.outputs.tag_name }}
+          fi
+
+  build-windows:
+    runs-on: windows-latest
+    needs: bump-version
+    steps:
+      - name: Checkout Code at Tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bump-version.outputs.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Build Web Application
+        shell: powershell
+        run: |
+          cd apps/web
+          npm install
+          npx prisma generate
+          $env:BUILD_DIR="next-production"
+          npm run build
+
+      - name: Build Python NLP Service
+        shell: powershell
+        run: |
+          cd apps/nlp-service
+          pip install -r requirements.txt
+          python -m spacy download en_core_web_lg
+          python -m spacy download fr_core_news_lg
+          python -m spacy download ru_core_news_lg
+          pip install pyinstaller
+          pyinstaller hackmanite-nlp.spec --noconfirm
+
+      - name: Package Windows Desktop App
+        shell: powershell
+        run: |
+          cd apps/desktop
+          npm install
+          npm run dist
+
+      - name: Upload Windows Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-binaries
+          path: |
+            apps/desktop/dist/*.zip
+            apps/desktop/dist/*.exe
+          if-no-files-found: error
+
+  build-linux:
+    runs-on: ubuntu-latest
+    needs: bump-version
+    steps:
+      - name: Checkout Code at Tag
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ needs.bump-version.outputs.tag_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install Linux Packaging Dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y dpkg fakeroot libarchive-tools
+
+      - name: Build Web Application
+        run: |
+          cd apps/web
+          npm install
+          npx prisma generate
+          BUILD_DIR="next-production" npm run build
+
+      - name: Build Python NLP Service
+        run: |
+          cd apps/nlp-service
+          pip install -r requirements.txt
+          python -m spacy download en_core_web_lg
+          python -m spacy download fr_core_news_lg
+          python -m spacy download ru_core_news_lg
+          pip install pyinstaller
+          pyinstaller hackmanite-nlp.spec --noconfirm
+
+      - name: Package Linux Desktop App
+        run: |
+          cd apps/desktop
+          npm install
+          npm run dist -- --linux
+
+      - name: Upload Linux Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: linux-binaries
+          path: |
+            apps/desktop/dist/*.AppImage
+            apps/desktop/dist/*.deb
+          if-no-files-found: error
+
+  publish-release:
+    runs-on: ubuntu-latest
+    needs: [bump-version, build-windows, build-linux]
+    steps:
+      - name: Download Windows Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: windows-binaries
+          path: release-assets
+
+      - name: Download Linux Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-binaries
+          path: release-assets
+
+      - name: Generate Checksums
+        run: |
+          cd release-assets
+          sha256sum * > SHA256SUMS.txt
+          cat SHA256SUMS.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ needs.bump-version.outputs.tag_name }}
+          name: Hackmanite v${{ needs.bump-version.outputs.new_version }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: release-assets/*
+
+  deploy-website:
+    runs-on: ubuntu-latest
+    needs: [bump-version, publish-release]
+    defaults:
+      run:
+        working-directory: website
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.ref_name }}
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Sync Wiki & README Content
+        run: |
+          mkdir -p src/content/wiki
+          cp ../README.md src/content/README.md 2>/dev/null || true
+          if [ -d ../wiki ]; then
+            find ../wiki -name '*.md' -exec cp {} src/content/wiki/ \;
+          fi
+
+      - name: Generate Release Manifest
+        run: |
+          node -e '
+            const fs = require("fs");
+            const v = "${{ needs.bump-version.outputs.new_version }}";
+            const manifest = {
+              version: v,
+              tag: "v" + v,
+              publishedAt: new Date().toISOString(),
+              downloads: {
+                winExe: `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/v${v}/Hackmanite-Setup-${v}.exe`,
+                winZip: `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/v${v}/Hackmanite-${v}-win.zip`,
+                linuxDeb: `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/v${v}/hackmanite-desktop_${v}_amd64.deb`,
+                linuxAppImage: `https://github.com/${process.env.GITHUB_REPOSITORY}/releases/download/v${v}/Hackmanite-${v}.AppImage`
+              }
+            };
+            fs.writeFileSync("src/data/releases.json", JSON.stringify(manifest, null, 2));
+          '
+
+      - name: Install Dependencies
+        run: npm install
+
+      - name: Build Production Website
+        run: npm run build
+
+      - name: Deploy Built Site to gh-pages Branch
+        uses: JamesIves/github-pages-deploy-action@v4
+        with:
+          folder: website/dist
+          branch: gh-pages

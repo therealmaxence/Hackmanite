@@ -8,7 +8,7 @@ on:
       - 'wiki/**'
       - 'README.md'
       - 'website/**'
-      - '.github/workflows/**'
+      - '.github/workflows/deploy-docs.yml'
   workflow_dispatch:
 
 permissions:

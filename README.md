@@ -264,15 +264,21 @@ docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
 
 Services started: `web` (Next.js, port 3000), `nlp` (FastAPI, port 8000), `redis` (port 6379), `redis-insight` (port 5540).
 
-### Option C — Portable ZIP (no installation needed)
+### Option C — Pre-built Standalone App (Recommended for Users)
 
-> Use **[7-Zip](https://www.7-zip.org/)** to extract — Windows' built-in extractor can silently corrupt files in large ZIPs.
+Pre-compiled standalone desktop bundles are published automatically on every release:
+* **GitHub Pages Web Portal**: [https://therealmaxence.github.io/Hackmanite/](https://therealmaxence.github.io/Hackmanite/)
+* **GitHub Releases**: [https://github.com/therealmaxence/Hackmanite/releases/latest](https://github.com/therealmaxence/Hackmanite/releases/latest)
 
-1. Right-click `Hackmanite-1.0.0-win.zip` → **7-Zip → Extract Here**
-2. Double-click **`Hackmanite.exe`** inside the extracted folder
-3. Done
+#### Windows:
+* **Installer (`.exe`)**: Run `Hackmanite-Setup-<version>.exe` to install with start-menu and desktop shortcuts.
+* **Portable (`.zip`)**: Extract with **[7-Zip](https://www.7-zip.org/)** and double-click **`Hackmanite.exe`**.
 
-Everything (Python runtime, spaCy models, Next.js server) is bundled inside the ZIP. No Python, Node.js, or Docker required.
+#### Linux (Debian / Ubuntu / Universal):
+* **Debian Package (`.deb`)**: `sudo apt install ./hackmanite-desktop_<version>_amd64.deb`
+* **AppImage (`.AppImage`)**: `chmod +x Hackmanite-<version>.AppImage && ./Hackmanite-<version>.AppImage`
+
+Everything (Python runtime, spaCy models, Next.js server, SQLite, and KuzuDB) is bundled inside. No Python, Node.js, or Docker required.
 
 ---
 
@@ -475,17 +481,12 @@ Documentation is powered by **TypeDoc** (for TypeScript) and **Prisma Docs Gener
 
 ---
 
-## Versioning
+## Versioning & Automated Releases
 
-To release a new version, update the version field in [`apps/desktop/package.json`](apps/desktop/package.json):
-
-```json
-{
-  "version": "1.0.0"
-}
-```
-
-Then rebuild using the steps above. The ZIP filename will automatically reflect the new version.
+Hackmanite uses automated semantic versioning driven by the CI/CD pipeline (`.github/workflows/build-release.yml`):
+* **Automatic Bumping**: On every push to `master` where application code in `apps/` changes, GitHub Actions automatically executes `scripts/bump-version.js` to increment the patch version, synchronizes `apps/desktop/package.json`, `apps/web/package.json`, `website/package.json`, and `README.md`, and creates a new release tag `vX.Y.Z`.
+* **Multi-Platform Releases**: The pipeline automatically compiles and publishes Windows (`.exe`, `.zip`) and Linux (`.deb`, `.AppImage`) binaries to GitHub Releases and updates the official GitHub Pages website.
+* **Manual Trigger**: Releases can also be dispatched manually via the GitHub Actions tab, supporting custom bump levels (`patch`, `minor`, `major`).
 
 ---
 

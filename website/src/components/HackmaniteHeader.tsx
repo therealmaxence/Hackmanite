@@ -90,9 +90,6 @@ export const HackmaniteHeader: React.FC<HackmaniteHeaderProps> = ({
           <span className="font-extrabold text-xl tracking-tight bg-gradient-to-r from-white via-[#f0f0f4] to-[#a78bfa] bg-clip-text text-transparent">
             Hackmanite
           </span>
-          <span className="text-[10px] font-semibold text-[#a78bfa] bg-[#7c3aed]/20 px-2 py-0.5 rounded tracking-wide border-none">
-            by GEODE
-          </span>
           <span className="hidden sm:inline-block text-[10px] font-mono font-medium px-2 py-0.5 rounded bg-[#18171c] text-[#80808c]">
             {release.tag}
           </span>

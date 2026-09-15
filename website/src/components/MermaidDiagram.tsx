@@ -5,6 +5,7 @@ import { Maximize2, X } from 'lucide-react';
 mermaid.initialize({
   startOnLoad: false,
   theme: 'dark',
+  suppressErrorRendering: true,
   themeVariables: {
     darkMode: true,
     background: '#111014',
@@ -35,6 +36,8 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     
     let cleanChart = chart.trim();
     cleanChart = cleanChart.replace(/%%\{init:[\s\S]*?\}%%/g, '').trim();
+    // Sanitize unescaped ampersands to avoid XML DOMParser errors in SVG rendering
+    cleanChart = cleanChart.replace(/&(?!(?:amp|lt|gt|quot|apos|#\d+|#x[a-f0-9]+);)/gi, 'and');
 
     const id = `mermaid-svg-${Math.random().toString(36).substring(2, 9)}`;
 
@@ -68,11 +71,19 @@ export const MermaidDiagram: React.FC<MermaidDiagramProps> = ({ chart }) => {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [isFullscreen]);
 
-  if (error || !svgContent) {
+  if (error) {
     return (
-      <div className="my-6 p-4 rounded-xl bg-[#111014] border border-transparent font-mono text-xs text-[#a78bfa] overflow-x-auto">
+      <div className="my-6 p-4 rounded-xl bg-[#111014] border border-red-500/20 font-mono text-xs text-[#a78bfa] overflow-x-auto">
         <div className="text-[10px] font-bold text-slate-500 uppercase mb-2">Diagram Source</div>
         <pre>{chart}</pre>
+      </div>
+    );
+  }
+
+  if (!svgContent) {
+    return (
+      <div className="my-6 p-6 rounded-xl bg-[#111014] border border-white/5 flex items-center justify-center min-h-[140px] text-slate-500 text-xs animate-pulse">
+        Rendering diagram...
       </div>
     );
   }

@@ -421,45 +421,45 @@ Hackmanite features a fully automated Continuous Integration and Continuous Deli
 
 ```mermaid
 flowchart TD
-    subgraph Trigger["1. Trigger & Change Filter"]
+    subgraph Trigger["1. Trigger and Change Filter"]
         Push["git push origin master"] --> Filter{"Did apps/** or configs change?"}
-        Filter -- "Docs only (wiki/, website/, README)" --> DocsOnly["Trigger deploy-docs.yml\nFast docs site update"]
-        Filter -- "Code changed (apps/**)" --> BumpJob["Job 1: bump-version\n(ubuntu-latest)"]
+        Filter -->|"Docs only (wiki, website, README)"| DocsOnly["Trigger deploy-docs.yml<br/>Fast docs site update"]
+        Filter -->|"Code changed (apps/**)"| BumpJob["Job 1: bump-version<br/>(ubuntu-latest)"]
     end
 
     subgraph Versioning["2. Version Management"]
-        BumpJob --> CalcVersion["scripts/bump-version.js\nCalculate patch bump"]
-        CalcVersion --> UpdateManifests["Update package.json (desktop, web, website)\nUpdate README.md"]
-        UpdateManifests --> GitCommit["git commit [skip ci]\ngit tag vX.Y.Z\ngit push --follow-tags"]
+        BumpJob --> CalcVersion["scripts/bump-version.js<br/>Calculate patch bump"]
+        CalcVersion --> UpdateManifests["Update package.json (desktop, web, website)<br/>Update README.md"]
+        UpdateManifests --> GitCommit["git commit (skip ci)<br/>git tag vX.Y.Z<br/>git push --follow-tags"]
     end
 
     subgraph Matrix["3. Parallel Matrix Compilation"]
-        GitCommit --> WinRunner["Job 2: build-windows\n(windows-latest)"]
-        GitCommit --> LinRunner["Job 3: build-linux\n(ubuntu-latest)"]
+        GitCommit --> WinRunner["Job 2: build-windows<br/>(windows-latest)"]
+        GitCommit --> LinRunner["Job 3: build-linux<br/>(ubuntu-latest)"]
 
         subgraph WinSteps["Windows Build"]
-            WinRunner --> WinNext["Build Next.js\nBUILD_DIR=next-production"]
-            WinNext --> WinNLP["PyInstaller hackmanite-nlp.spec\nen/fr/ru spaCy models + KuzuDB"]
-            WinNLP --> WinElectron["electron-builder\nProduce .exe installer + .zip portable"]
+            WinRunner --> WinNext["Build Next.js<br/>BUILD_DIR=next-production"]
+            WinNext --> WinNLP["PyInstaller hackmanite-nlp.spec<br/>en/fr/ru spaCy models + KuzuDB"]
+            WinNLP --> WinElectron["electron-builder<br/>Produce .exe installer + .zip portable"]
         end
 
         subgraph LinSteps["Linux Build"]
-            LinRunner --> LinNext["Build Next.js\nBUILD_DIR=next-production"]
-            LinNext --> LinNLP["PyInstaller hackmanite-nlp.spec\nLinux ELF binary"]
-            LinNLP --> LinElectron["electron-builder --linux\nProduce .deb package + .AppImage"]
+            LinRunner --> LinNext["Build Next.js<br/>BUILD_DIR=next-production"]
+            LinNext --> LinNLP["PyInstaller hackmanite-nlp.spec<br/>Linux ELF binary"]
+            LinNLP --> LinElectron["electron-builder --linux<br/>Produce .deb package + .AppImage"]
         end
     end
 
-    subgraph Release["4. Distribution & Deployment"]
-        WinElectron --> Collect["Job 4: publish-release\n(ubuntu-latest)"]
+    subgraph Release["4. Distribution and Deployment"]
+        WinElectron --> Collect["Job 4: publish-release<br/>(ubuntu-latest)"]
         LinElectron --> Collect
         Collect --> Checksum["Generate SHA256SUMS.txt"]
-        Checksum --> GHRelease["Publish GitHub Release (vX.Y.Z)\nUpload .exe, .zip, .deb, .AppImage"]
+        Checksum --> GHRelease["Publish GitHub Release (vX.Y.Z)<br/>Upload .exe, .zip, .deb, .AppImage"]
 
-        GHRelease --> WebDeploy["Job 5: deploy-website\n(ubuntu-latest)"]
-        WebDeploy --> GenManifest["Generate src/data/releases.json\nInject asset download URLs"]
-        GenManifest --> BuildSite["Vite production build\nSync wiki & README markdown"]
-        BuildSite --> GHPages["Deploy to gh-pages branch\nLive on therealmaxence.github.io/Hackmanite"]
+        GHRelease --> WebDeploy["Job 5: deploy-website<br/>(ubuntu-latest)"]
+        WebDeploy --> GenManifest["Generate src/data/releases.json<br/>Inject asset download URLs"]
+        GenManifest --> BuildSite["Vite production build<br/>Sync wiki and README markdown"]
+        BuildSite --> GHPages["Deploy to gh-pages branch<br/>Live on therealmaxence.github.io/Hackmanite"]
     end
 
     style Push fill:#1e293b,stroke:#a78bfa,stroke-width:2px,color:#fff

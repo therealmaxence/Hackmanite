@@ -6,6 +6,10 @@ import { usePathname, useRouter } from 'next/navigation';
 import { useTranslation } from '@/lib/i18n';
 import { NAVIGATION_SHORTCUTS } from '@/hooks/useNavigationShortcuts';
 import { startHomeTour } from '@/lib/tour/tourService';
+import { version as appPkgVersion } from '@/package.json';
+
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || appPkgVersion || '1.0.0';
+const formattedVersion = APP_VERSION.startsWith('v') ? APP_VERSION : `v${APP_VERSION}`;
 
 type NavItem = { href: string; labelKey: string; id: string };
 type NavGroup = { key: string; labelKey: string; id: string; items: NavItem[] };
@@ -148,7 +152,7 @@ export default function Header() {
           by GEODE
         </span>
         <span className="hidden sm:inline-block" style={{ fontSize: '0.7rem', color: 'var(--color-text-muted)', background: 'var(--color-surface-raised)', border: 'none', borderRadius: 'var(--radius-sm)', padding: '2px 8px', fontFamily: 'var(--font-mono)' }}>
-          v1.0.0
+          {formattedVersion}
         </span>
       </Link>
 

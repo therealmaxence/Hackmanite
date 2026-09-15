@@ -5,6 +5,8 @@ const rootDir = path.resolve(__dirname, '..');
 const desktopPkgPath = path.join(rootDir, 'apps', 'desktop', 'package.json');
 const webPkgPath = path.join(rootDir, 'apps', 'web', 'package.json');
 const websitePkgPath = path.join(rootDir, 'website', 'package.json');
+const splashPath = path.join(rootDir, 'apps', 'desktop', 'splash.html');
+const releasesJsonPath = path.join(rootDir, 'website', 'src', 'data', 'releases.json');
 const readmePath = path.join(rootDir, 'README.md');
 
 function parseSemver(versionStr) {
@@ -45,6 +47,33 @@ function updateJsonVersion(filePath, newVersion) {
   fs.writeFileSync(filePath, JSON.stringify(json, null, 2) + '\n', 'utf8');
 }
 
+function updateSplashVersion(filePath, newVersion) {
+  if (!fs.existsSync(filePath)) return;
+  let content = fs.readFileSync(filePath, 'utf8');
+  content = content.replace(
+    /NATIVE DESKTOP v\d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?/g,
+    `NATIVE DESKTOP v${newVersion}`
+  );
+  fs.writeFileSync(filePath, content, 'utf8');
+}
+
+function updateReleasesJson(filePath, newVersion) {
+  if (!fs.existsSync(filePath)) return;
+  const content = fs.readFileSync(filePath, 'utf8');
+  const json = JSON.parse(content);
+  json.version = newVersion;
+  json.tag = `v${newVersion}`;
+  json.publishedAt = new Date().toISOString();
+  if (json.downloads) {
+    for (const key of Object.keys(json.downloads)) {
+      json.downloads[key] = json.downloads[key].replace(/v?\d+\.\d+\.\d+/g, (match) => {
+        return match.startsWith('v') ? `v${newVersion}` : newVersion;
+      });
+    }
+  }
+  fs.writeFileSync(filePath, JSON.stringify(json, null, 2) + '\n', 'utf8');
+}
+
 function updateReadmeVersion(filePath, oldVersion, newVersion) {
   if (!fs.existsSync(filePath)) return;
   let content = fs.readFileSync(filePath, 'utf8');
@@ -64,6 +93,8 @@ function main() {
   updateJsonVersion(desktopPkgPath, newVersion);
   updateJsonVersion(webPkgPath, newVersion);
   updateJsonVersion(websitePkgPath, newVersion);
+  updateSplashVersion(splashPath, newVersion);
+  updateReleasesJson(releasesJsonPath, newVersion);
   updateReadmeVersion(readmePath, currentVersion, newVersion);
 
   console.log(`Version updated from ${currentVersion} to ${newVersion}`);

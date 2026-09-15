@@ -197,7 +197,7 @@
         <h1>Hackmanite</h1>
         <span class="by-geode">by GEODE</span>
       </div>
-      <span class="version-badge">NATIVE DESKTOP v1.0.0</span>
+      <span class="version-badge">NATIVE DESKTOP v1.0.3</span>
     </div>
 
     <div class="progress-section">
@@ -216,6 +216,14 @@
     const progressBar = document.getElementById('progress');
     const statusText = document.getElementById('status');
     const percentageText = document.getElementById('percentage');
+
+    try {
+      const pkg = require('./package.json');
+      if (pkg && pkg.version) {
+        const badge = document.querySelector('.version-badge');
+        if (badge) badge.innerText = `NATIVE DESKTOP v${pkg.version}`;
+      }
+    } catch (e) {}
 
     ipcRenderer.on('status-update', (event, { status, percent }) => {
       statusText.innerText = status;

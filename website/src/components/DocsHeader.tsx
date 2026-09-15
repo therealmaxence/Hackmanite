@@ -1,5 +1,6 @@
 import React from 'react';
 import { Search, Github } from 'lucide-react';
+import { useReleaseData } from '../utils/useReleaseData';
 
 interface DocsHeaderProps {
   searchQuery: string;
@@ -14,6 +15,8 @@ export const DocsHeader: React.FC<DocsHeaderProps> = ({
   selectedDocId,
   setSelectedDocId,
 }) => {
+  const { release } = useReleaseData();
+
   return (
     <header className="h-14 bg-[#111827] border-b border-[#374151] px-4 flex items-center justify-between sticky top-0 z-50 text-slate-100 font-sans shadow-md">
       
@@ -29,7 +32,7 @@ export const DocsHeader: React.FC<DocsHeaderProps> = ({
           Hackmanite
         </span>
         <span className="text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-[#1f2937] text-indigo-400 border border-[#374151]">
-          v1.0.0 Wiki & Docs
+          {release.tag} Wiki & Docs
         </span>
       </div>
 

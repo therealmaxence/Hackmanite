@@ -1,11 +1,11 @@
 {
-  "version": "1.0.0",
-  "tag": "v1.0.0",
-  "publishedAt": "2026-09-13T00:00:00.000Z",
+  "version": "1.0.3",
+  "tag": "v1.0.3",
+  "publishedAt": "2026-09-14T00:00:00.000Z",
   "downloads": {
-    "winExe": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/Hackmanite-Setup-1.0.0.exe",
-    "winZip": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/Hackmanite-1.0.0-win.zip",
-    "linuxDeb": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/hackmanite-desktop_1.0.0_amd64.deb",
-    "linuxAppImage": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/Hackmanite-1.0.0.AppImage"
+    "winExe": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/Hackmanite-Setup-1.0.3.exe",
+    "winZip": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/Hackmanite-1.0.3-win.zip",
+    "linuxDeb": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/hackmanite-desktop_1.0.3_amd64.deb",
+    "linuxAppImage": "https://github.com/therealmaxence/Hackmanite/releases/latest/download/Hackmanite-1.0.3.AppImage"
   }
 }

@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { FolderGit2, Network, Mail, Sparkles, Workflow, Bot, Database, BookOpen, Layers, Menu, X } from 'lucide-react';
+import { useReleaseData } from '../utils/useReleaseData';
 
 interface NavbarProps {
   activeTab: string;
@@ -7,6 +8,7 @@ interface NavbarProps {
 }
 
 export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
+  const { release } = useReleaseData();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   const navItems = [
@@ -40,7 +42,7 @@ export const Navbar: React.FC<NavbarProps> = ({ activeTab, setActiveTab }) => {
           Hackmanite
         </span>
         <span className="hidden sm:inline-block text-[10px] font-mono font-semibold px-2 py-0.5 rounded bg-slate-800 text-slate-400 border border-slate-700/80">
-          v1.0.0
+          {release.tag}
         </span>
       </div>
 

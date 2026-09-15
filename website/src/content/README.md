@@ -1,7 +1,7 @@
 # Hackmanite — DataLake Entity Graph Explorer
 
 
-> **Version 1.0.0**
+> **Version 1.0.5**
 
 
 Hackmanite is a desktop and web application built for extracting, exploring, and visualizing **named entities** (persons, organizations, locations, dates, emails, phone numbers, …) from documents. It supports a wide variety of file formats and provides an interactive graph interface to navigate relationships between entities across sessions and much more.
@@ -375,9 +375,13 @@ $env:BUILD_DIR="next-production"; npm run build
 # 2. Recompile the Python NLP service (only if Python code changed)
 cd ../nlp-service
 pyinstaller hackmanite-nlp.spec --noconfirm
+
+# 3. Package everything into a ZIP
+cd ../desktop
+npm run dist
 ```
 
-Output: `apps/desktop/dist/Hackmanite-1.0.0-win.zip`
+Output: `apps/desktop/dist/Hackmanite-*-win.zip` (and `Hackmanite Setup *.exe`)
 
 ### Building for Linux/Ubuntu
 
@@ -407,24 +411,24 @@ npm install
 npm run dist -- --linux
 ```
 
-Output: `apps/desktop/dist/Hackmanite-1.0.0.AppImage` & `apps/desktop/dist/Hackmanite_1.0.0_amd64.deb`
+Output: `apps/desktop/dist/Hackmanite-*.AppImage` & `apps/desktop/dist/hackmanite-desktop_*_amd64.deb`
 
 ### Installing & Running on Linux
 
 To install the generated Debian (`.deb`) package:
 ```bash
 sudo apt update
-sudo apt install ./apps/desktop/dist/hackmanite-desktop_1.0.0_amd64.deb
+sudo apt install ./apps/desktop/dist/hackmanite-desktop_*_amd64.deb
 ```
 If `apt install` does not work on your distribution, install via `dpkg`:
 ```bash
-sudo dpkg -i ./apps/desktop/dist/hackmanite-desktop_1.0.0_amd64.deb
+sudo dpkg -i ./apps/desktop/dist/hackmanite-desktop_*_amd64.deb
 ```
 
 To run the standalone `AppImage`:
 ```bash
-chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
-./apps/desktop/dist/Hackmanite-1.0.0.AppImage
+chmod +x apps/desktop/dist/Hackmanite-*.AppImage
+./apps/desktop/dist/Hackmanite-*.AppImage
 ```
 
 ### Partial rebuilds

@@ -8,6 +8,7 @@ const websitePkgPath = path.join(rootDir, 'website', 'package.json');
 const splashPath = path.join(rootDir, 'apps', 'desktop', 'splash.html');
 const releasesJsonPath = path.join(rootDir, 'website', 'src', 'data', 'releases.json');
 const readmePath = path.join(rootDir, 'README.md');
+const websiteReadmePath = path.join(rootDir, 'website', 'src', 'content', 'README.md');
 
 function parseSemver(versionStr) {
   const match = versionStr.match(/^(\d+)\.(\d+)\.(\d+)(?:-(.+))?$/);
@@ -74,11 +75,11 @@ function updateReleasesJson(filePath, newVersion) {
   fs.writeFileSync(filePath, JSON.stringify(json, null, 2) + '\n', 'utf8');
 }
 
-function updateReadmeVersion(filePath, oldVersion, newVersion) {
+function updateReadmeVersion(filePath, newVersion) {
   if (!fs.existsSync(filePath)) return;
   let content = fs.readFileSync(filePath, 'utf8');
   content = content.replace(
-    new RegExp(`> \\*\\*Version ${oldVersion.replace(/\./g, '\\.')}\\*\\*`, 'g'),
+    /> \*\*Version \d+\.\d+\.\d+(?:-[a-zA-Z0-9.]+)?\*\*/g,
     `> **Version ${newVersion}**`
   );
   fs.writeFileSync(filePath, content, 'utf8');
@@ -95,7 +96,8 @@ function main() {
   updateJsonVersion(websitePkgPath, newVersion);
   updateSplashVersion(splashPath, newVersion);
   updateReleasesJson(releasesJsonPath, newVersion);
-  updateReadmeVersion(readmePath, currentVersion, newVersion);
+  updateReadmeVersion(readmePath, newVersion);
+  updateReadmeVersion(websiteReadmePath, newVersion);
 
   console.log(`Version updated from ${currentVersion} to ${newVersion}`);
 

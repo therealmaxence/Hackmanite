@@ -1,7 +1,10 @@
 import React from 'react';
 import { Network, Github, Heart } from 'lucide-react';
+import { useReleaseData } from '../utils/useReleaseData';
 
 export const Footer: React.FC = () => {
+  const { release } = useReleaseData();
+
   return (
     <footer className="bg-gray-950 border-t border-gray-900 py-12 text-xs text-gray-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -25,10 +28,10 @@ export const Footer: React.FC = () => {
           {/* Links & License */}
           <div className="flex items-center gap-6">
             <span className="text-[11px] text-gray-500">
-              Version 1.0.0 • Open Source
+              Version {release.version} • Open Source
             </span>
             <a
-              href="https://github.com"
+              href="https://github.com/therealmaxence/Hackmanite"
               target="_blank"
               rel="noopener noreferrer"
               className="flex items-center gap-1.5 text-gray-400 hover:text-white transition-colors"

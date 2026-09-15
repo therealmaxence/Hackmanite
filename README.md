@@ -381,7 +381,7 @@ cd ../desktop
 npm run dist
 ```
 
-Output: `apps/desktop/dist/Hackmanite-1.0.0-win.zip`
+Output: `apps/desktop/dist/Hackmanite-*-win.zip` (and `Hackmanite Setup *.exe`)
 
 ### Building for Linux/Ubuntu
 
@@ -411,24 +411,24 @@ npm install
 npm run dist -- --linux
 ```
 
-Output: `apps/desktop/dist/Hackmanite-1.0.0.AppImage` & `apps/desktop/dist/Hackmanite_1.0.0_amd64.deb`
+Output: `apps/desktop/dist/Hackmanite-*.AppImage` & `apps/desktop/dist/hackmanite-desktop_*_amd64.deb`
 
 ### Installing & Running on Linux
 
 To install the generated Debian (`.deb`) package:
 ```bash
 sudo apt update
-sudo apt install ./apps/desktop/dist/hackmanite-desktop_1.0.0_amd64.deb
+sudo apt install ./apps/desktop/dist/hackmanite-desktop_*_amd64.deb
 ```
 If `apt install` does not work on your distribution, install via `dpkg`:
 ```bash
-sudo dpkg -i ./apps/desktop/dist/hackmanite-desktop_1.0.0_amd64.deb
+sudo dpkg -i ./apps/desktop/dist/hackmanite-desktop_*_amd64.deb
 ```
 
 To run the standalone `AppImage`:
 ```bash
-chmod +x apps/desktop/dist/Hackmanite-1.0.0.AppImage
-./apps/desktop/dist/Hackmanite-1.0.0.AppImage
+chmod +x apps/desktop/dist/Hackmanite-*.AppImage
+./apps/desktop/dist/Hackmanite-*.AppImage
 ```
 
 ### Partial rebuilds

@@ -25,7 +25,7 @@ Hackmanite (EntityGraph Explorer) is designed to run locally on your system, pro
 Depending on how you received Hackmanite, you can launch it in one of the following ways:
 
 ### 1. Portable ZIP (Recommended for Users)
-* Use **7-Zip** to extract the \`Hackmanite-1.0.0-win.zip\` package (Windows' built-in extractor can silently corrupt files in large ZIP archives).
+* Use **7-Zip** to extract the \`Hackmanite-*-win.zip\` package (Windows' built-in extractor can silently corrupt files in large ZIP archives).
 * Double-click **\`Hackmanite.exe\`** in the extracted directory. All required services (FastAPI NLP service, Next.js web server, and SQLite database) will boot automatically.
 
 ### 2. Docker Mode (Development)

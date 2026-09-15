@@ -1,6 +1,6 @@
 {
   "name": "hackmanite-desktop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "Hackmanite: Standalone desktop application for Entity Graph Explorer",
   "homepage": "https://github.com/therealmaxence/Hackmanite",
   "main": "main.js",
